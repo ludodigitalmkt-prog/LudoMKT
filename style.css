@@ -1,3 +1,5 @@
+@property --rotate { syntax: "<angle>"; initial-value: 132deg; inherits: false; }
+
 :root {
     --bg-body: #0a0c10; 
     --bg-sidebar: #12151c;
@@ -11,89 +13,76 @@
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Roboto, Helvetica, sans-serif; }
-
 body { background-color: var(--bg-body); color: var(--text-main); height: 100vh; display: flex; overflow: hidden; }
 
-/* TELA DE LOGIN E SPLASH */
+/* TELA DE SPLASH */
 #splash-screen { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: var(--bg-body); display: flex; justify-content: center; align-items: center; z-index: 9999; transition: opacity 0.8s ease; }
 .splash-logo { width: 150px; animation: zoomInOut 2s ease forwards; }
 @keyframes zoomInOut { 0% { transform: scale(0.5); opacity: 0; } 50% { transform: scale(1.2); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
 
+/* --- LOGIN UIVERSE --- */
 #login-screen { width: 100vw; height: 100vh; display: flex; align-items: center; justify-content: center; background: radial-gradient(circle at center, #1a1e29 0%, #0a0c10 100%); position: absolute; z-index: 1000; }
-.login-card { background: rgba(26, 30, 41, 0.8); backdrop-filter: blur(10px); padding: 50px 40px; border-radius: 24px; box-shadow: var(--shadow); width: 100%; max-width: 420px; text-align: center; border: 1px solid var(--border); }
-.login-logo { max-width: 180px; margin-bottom: 10px; }
-.sidebar-logo { max-width: 150px; }
+.form { display: flex; flex-direction: column; gap: 10px; padding: 2em; background-color: #171717; border-radius: 25px; transition: .4s ease-in-out; border: 1px solid var(--border); box-shadow: var(--shadow);}
+.form:hover { transform: scale(1.02); border: 1px solid var(--accent); }
+#heading { text-align: center; margin-bottom: 1.5em; color: white; font-size: 1.5em; font-weight: bold;}
+.field { display: flex; align-items: center; justify-content: center; gap: 0.5em; border-radius: 25px; padding: 0.8em; border: none; outline: none; color: white; background-color: #171717; box-shadow: inset 2px 5px 10px rgb(5, 5, 5); }
+.input-icon { height: 1.3em; width: 1.3em; fill: var(--text-muted); }
+.input-field { background: none; border: none; outline: none; width: 100%; color: #d3d3d3; font-size: 16px;}
+.form .btn { display: flex; justify-content: center; flex-direction: row; margin-top: 2em; }
+.button1 { padding: 0.8em 2em; border-radius: 12px; border: none; outline: none; transition: .4s ease-in-out; background-color: var(--accent); color: white; cursor: pointer; font-weight: bold; width: 100%; font-size: 16px;}
+.button1:hover { background-color: var(--accent-hover); color: white; transform: scale(1.05);}
 
-.input-group { display: flex; align-items: center; background: var(--bg-body); border-radius: 12px; padding: 15px; margin-top: 15px; border: 1px solid var(--border); transition: 0.3s; }
-.input-group:focus-within { border-color: var(--accent); }
-.input-group span { color: var(--text-muted); font-size: 20px; }
-.input-group input { border: none; background: transparent; outline: none; width: 100%; margin-left: 12px; color: var(--text-main); font-size: 15px; }
+/* --- BOTÃO UIVERSE SPACIOUS74 --- */
+.button-uiverse { cursor: pointer; border-radius: 12px; border: none; padding: 2px; background: radial-gradient(circle 80px at 80% -10%, #6c5ce7, #181b1b); position: relative; }
+.button-uiverse::after { content: ""; position: absolute; width: 65%; height: 60%; border-radius: 120px; top: 0; right: 0; box-shadow: 0 0 20px rgba(108, 92, 231, 0.4); z-index: -1; }
+.blob1 { position: absolute; width: 70px; height: 100%; border-radius: 16px; bottom: 0; left: 0; background: radial-gradient(circle 60px at 0% 100%, #ff3366, #6c5ce7, transparent); box-shadow: -10px 10px 30px rgba(108, 92, 231, 0.3); }
+.inner { padding: 12px 20px; border-radius: 10px; color: #fff; z-index: 3; position: relative; background: radial-gradient(circle 80px at 80% -50%, #2a2d3e, #0f1111); display: flex; align-items: center; gap: 8px; font-weight: bold;}
+.inner::before { content: ""; width: 100%; height: 100%; left: 0; top: 0; border-radius: 14px; background: radial-gradient(circle 60px at 0% 100%, rgba(108, 92, 231, 0.1), transparent); position: absolute; }
 
-.btn-primary { width: 100%; padding: 16px; background: var(--accent); color: #fff; border: none; border-radius: 12px; margin-top: 30px; font-weight: 600; font-size: 16px; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(108, 92, 231, 0.3); }
-.btn-primary:hover { background: var(--accent-hover); transform: translateY(-2px); }
-
-/* WORKSPACE */
+/* WORKSPACE BÁSICO */
 #app-container { width: 100vw; height: 100vh; }
 .sidebar { width: 280px; background-color: var(--bg-sidebar); border-right: 1px solid var(--border); padding: 24px; display: flex; flex-direction: column; }
-.sidebar .logo { margin-bottom: 40px; }
+.sidebar .logo { margin-bottom: 40px; text-align: center;}
+.sidebar-logo { max-width: 150px; }
 .menu { flex-grow: 1; display: flex; flex-direction: column; gap: 8px; }
 .menu-btn { color: var(--text-muted); background: transparent; border: none; padding: 14px 16px; border-radius: 12px; cursor: pointer; display: flex; align-items: center; gap: 12px; width: 100%; font-size: 15px; font-weight: 500; transition: 0.2s; }
 .menu-btn:hover, .menu-btn.active { background: var(--accent); color: #fff; }
 .bottom-actions { border-top: 1px solid var(--border); padding-top: 20px; }
-.admin-btn { color: #ff4757; }
-.admin-btn:hover, .admin-btn.active { background: #ff4757; color: #fff;}
-
 .content { flex-grow: 1; padding: 40px; background-color: var(--bg-body); overflow-y: auto; }
 .tab-content { display: none; animation: fadeIn 0.3s ease; }
 .tab-content.active { display: block; }
 .header-top { margin-bottom: 30px; }
-.header-top h1 { font-size: 28px; font-weight: 600; }
 .card { background: var(--bg-card); border-radius: 16px; padding: 30px; box-shadow: var(--shadow); border: 1px solid var(--border); }
 
-/* KANBAN E CORES DO TRELLO */
+/* --- KANBAN E MAGIC CARD (MYTHRILL) --- */
 .agenda-header { display: flex; justify-content: space-between; align-items: center; }
-.btn-nova-tarefa { width: auto; padding: 10px 20px; margin: 0; display: flex; gap: 8px; align-items: center;}
 .kanban-board { display: flex; gap: 20px; height: 70vh; }
-.kanban-column { flex: 1; background: var(--bg-sidebar); border-radius: 12px; padding: 20px; border: 1px solid var(--border); }
-.kanban-column h3 { margin-bottom: 20px; font-size: 16px; color: var(--text-muted); }
+.kanban-column { flex: 1; background: var(--bg-sidebar); border-radius: 12px; padding: 20px; border: 1px solid var(--border); overflow-y:auto;}
+#coluna-vermelha { border-top: 4px solid #ff3366 !important; }
+#coluna-amarela { border-top: 4px solid #ffaa00 !important; }
+#coluna-verde { border-top: 4px solid #00ff88 !important; }
 
-/* As Cores Mágicas das Colunas */
-#coluna-vermelha { border-top: 4px solid #ff3366 !important; background: linear-gradient(to bottom, rgba(255, 51, 102, 0.05), transparent); }
-#coluna-amarela { border-top: 4px solid #ffaa00 !important; background: linear-gradient(to bottom, rgba(255, 170, 0, 0.05), transparent); }
-#coluna-verde { border-top: 4px solid #00ff88 !important; background: linear-gradient(to bottom, rgba(0, 255, 136, 0.05), transparent); }
+/* Aplicação do Magic Card adaptada para não quebrar a tela */
+.kanban-card { background: #191c29; padding: 15px; border-radius: 8px; margin-bottom: 15px; position: relative; cursor: pointer; display: flex; flex-direction: column; color: #fff; text-align: left; z-index: 1;}
+.kanban-card:hover { transition: color 1s; }
+.kanban-card::before { content: ""; width: 104%; height: 104%; border-radius: 10px; background-image: linear-gradient(var(--rotate), #5ddcff, #3c67e3 43%, #4e00c2); position: absolute; z-index: -1; top: -2%; left: -2%; animation: spin 3s linear infinite; opacity: 0; transition: opacity 0.3s;}
+.kanban-card:hover::before { opacity: 1; }
+@keyframes spin { 0% { --rotate: 0deg; } 100% { --rotate: 360deg; } }
 
-.kanban-card { background: var(--bg-card); padding: 15px; border-radius: 8px; margin-bottom: 12px; border: 1px solid var(--border); cursor: grab; box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
-.neon-card { position: relative; border-left: 4px solid transparent; transition: all 0.3s ease; }
-.neon-card:hover { transform: translateY(-3px); }
-.prioridade-urgente { border-left-color: #ff3366; box-shadow: -2px 0px 15px rgba(255, 51, 102, 0.2); }
-.prioridade-urgente h4 { color: #ff3366; }
-.badge-prioridade { font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: #ff3366; font-weight: bold; }
-.card-footer { display: flex; justify-content: space-between; margin-top: 15px; border-top: 1px solid var(--border); padding-top: 10px; }
-.icon-link { color: var(--accent); }
-
-/* MODAL E IA */
+/* MODAL */
 .modal-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.7); backdrop-filter: blur(5px); display: flex; justify-content: center; align-items: center; z-index: 2000; }
 .modal-content { background: var(--bg-card); width: 100%; max-width: 600px; padding: 30px; border-radius: 20px; border: 1px solid var(--border); box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
 .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
 .close-btn { background: transparent; border: none; color: var(--text-muted); cursor: pointer; }
-.close-btn:hover { color: #ff3366; }
 .modal-input { width: 100%; background: var(--bg-body); border: 1px solid var(--border); padding: 12px; border-radius: 10px; color: #fff; margin-bottom: 15px; }
 .modal-row { display: flex; gap: 15px; }
-.modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 10px; }
+.modal-actions { display: flex; justify-content: flex-end; margin-top: 10px; }
 
-.chat-hidden { opacity: 0; pointer-events: none; transform: translateY(20px); }
-.chat-active { opacity: 1; pointer-events: all; transform: translateY(0); }
+/* FULLCALENDAR DARK MODE */
+.fc { color: var(--text-main); }
+.fc-theme-standard .fc-scrollgrid, .fc-theme-standard td, .fc-theme-standard th { border-color: var(--border) !important; }
+.fc-col-header-cell { background-color: var(--bg-sidebar); padding: 10px 0 !important; }
+.fc .fc-button-primary { background-color: var(--accent); border-color: var(--accent); text-transform: capitalize; }
+.fc-event { cursor: pointer; border: none; padding: 4px; font-size: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.4); border-radius: 4px;}
 
 @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-/* --- ESTILOS DO CALENDÁRIO (FULLCALENDAR DARK MODE) --- */
-.fc { color: var(--text-main); font-family: 'Segoe UI', sans-serif; }
-.fc-theme-standard .fc-scrollgrid, .fc-theme-standard td, .fc-theme-standard th { border-color: var(--border) !important; }
-.fc-col-header-cell { background-color: var(--bg-sidebar); padding: 12px 0 !important; border-bottom: 1px solid var(--border); }
-.fc-day-today { background-color: rgba(108, 92, 231, 0.1) !important; }
-.fc .fc-button-primary { background-color: var(--accent); border-color: var(--accent); font-weight: bold; text-transform: capitalize; }
-.fc .fc-button-primary:hover, .fc .fc-button-primary:not(:disabled).fc-button-active { background-color: var(--accent-hover); border-color: var(--accent-hover); }
-.fc-event { cursor: pointer; border-radius: 6px; border: none; padding: 4px 6px; font-size: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.2); transition: 0.2s;}
-.fc-event:hover { transform: scale(1.02); }
-.fc-event-title { font-weight: 600; }
-.fc-h-event .fc-event-main { color: #fff; }
-.fc .fc-toolbar-title { font-size: 1.5em; margin: 0; color: var(--accent); }
