@@ -18,17 +18,10 @@
         <div class="login-card">
             <img src="logo.png" alt="LudoMKT" class="login-logo">
             <p>Workspace</p>
-            
             <form id="login-form">
-                <div class="input-group">
-                    <span class="material-icons">email</span>
-                    <input type="email" id="email" placeholder="E-mail corporativo" required>
-                </div>
-                <div class="input-group">
-                    <span class="material-icons">lock</span>
-                    <input type="password" id="password" placeholder="Senha" required>
-                </div>
-                <button type="button" id="btn-entrar" class="btn-primary">Acessar Workspace</button>
+                <div class="input-group"><span class="material-icons">email</span><input type="email" id="email" placeholder="E-mail" required></div>
+                <div class="input-group"><span class="material-icons">lock</span><input type="password" id="password" placeholder="Senha" required></div>
+                <button type="button" id="btn-entrar" class="btn-primary">Acessar</button>
             </form>
         </div>
     </div>
@@ -36,120 +29,109 @@
     <div id="app-container" style="display: none;">
         
         <aside class="sidebar">
-            <div class="logo">
-                <img src="logo.png" alt="LudoMKT" class="sidebar-logo">
-            </div>
-            
+            <div class="logo"><img src="logo.png" alt="LudoMKT" class="sidebar-logo"></div>
             <nav class="menu">
                 <button class="menu-btn active" data-target="home"><span class="material-icons">home</span> Início</button>
-                <button class="menu-btn" data-target="agenda"><span class="material-icons">view_kanban</span> Agenda & Atividades</button>
-                <button class="menu-btn" data-target="social"><span class="material-icons">share</span> Redes Sociais</button>
-                <button class="menu-btn" data-target="tools"><span class="material-icons">brush</span> Canva Workspace</button>
-                <button class="menu-btn" data-target="ai"><span class="material-icons">smart_toy</span> IA Nativa</button>
+                <button class="menu-btn" data-target="agenda"><span class="material-icons">view_kanban</span> Agenda</button>
+                <button class="menu-btn" data-target="ferramentas"><span class="material-icons">apps</span> Redes & Canva</button>
+                <button class="menu-btn" data-target="rh"><span class="material-icons">groups</span> RH & Equipe</button>
                 <button class="menu-btn" data-target="music"><span class="material-icons">headphones</span> LudoPlay</button>
             </nav>
-
             <div class="bottom-actions">
-                <button class="menu-btn admin-btn" data-target="admin"><span class="material-icons">admin_panel_settings</span> Configurações</button>
+                <button class="menu-btn admin-btn" data-target="admin"><span class="material-icons">settings</span> Configurações</button>
             </div>
         </aside>
 
         <main class="content">
-            <section id="home" class="tab-content active">
-                <div class="header-top"><h1>Visão Geral</h1></div>
-                <div class="card"><p>Área de widgets da LudoMKT.</p></div>
-            </section>
+            <section id="home" class="tab-content active"><div class="header-top"><h1>Visão Geral</h1></div><div class="card"><p>Bem-vindo.</p></div></section>
 
             <section id="agenda" class="tab-content">
                 <div class="header-top agenda-header">
                     <h1>Gestão de Atividades</h1>
                     <button class="btn-primary btn-nova-tarefa" onclick="abrirModal()"><span class="material-icons">add</span> Nova Atividade</button>
                 </div>
-
-                <div class="view-controls">
-                    <button class="view-btn active" onclick="mudarVisao('kanban')"><span class="material-icons">view_week</span> Kanban</button>
-                    <button class="view-btn" onclick="mudarVisao('lista')"><span class="material-icons">format_list_bulleted</span> Lista de Cards</button>
-                    <button class="view-btn" onclick="mudarVisao('calendario')"><span class="material-icons">calendar_month</span> Calendário</button>
-                </div>
-
                 <div id="visao-kanban" class="agenda-view active">
                     <div class="kanban-board">
-                        <div class="kanban-column">
-                            <h3>Pendente <span class="badge">1</span></h3>
-                            <div class="kanban-card neon-card prioridade-urgente" onclick="abrirModal()">
-                                <div class="card-badges"><span class="badge-prioridade">Urgente</span></div>
-                                <h4>Criar post Instagram</h4>
-                                <p>Responsável: João</p>
-                                <div class="card-footer">
-                                    <span class="material-icons icon-link">link</span>
-                                    <span class="material-icons icon-alert">notifications_active</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="kanban-column">
-                            <h3>Análise <span class="badge">0</span></h3>
-                        </div>
-                        <div class="kanban-column">
-                            <h3>Concluído <span class="badge">0</span></h3>
-                        </div>
+                        <div class="kanban-column"><h3>Pendente</h3><div class="cards-container" id="col-pendente"></div></div>
+                        <div class="kanban-column"><h3>Em Análise</h3><div class="cards-container" id="col-analise"></div></div>
+                        <div class="kanban-column"><h3>Concluído</h3><div class="cards-container" id="col-concluido"></div></div>
                     </div>
                 </div>
+            </section>
 
-                <div id="visao-lista" class="agenda-view" style="display: none;">
-                    <div class="card"><p>Modo lista detalhada aparecerá aqui.</p></div>
-                </div>
-
-                <div id="visao-calendario" class="agenda-view" style="display: none;">
-                    <div class="card"><p>Grade do calendário do mês aparecerá aqui.</p></div>
+            <section id="ferramentas" class="tab-content">
+                <div class="header-top"><h1>Ferramentas & Redes Sociais</h1></div>
+                <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+                    <div class="card" style="text-align: center; width: 200px;">
+                        <span class="material-icons" style="font-size: 40px; color:#00C4CC;">brush</span>
+                        <h3>Canva</h3>
+                        <a href="https://canva.com" target="_blank" class="btn-primary" style="margin-top: 10px; display:block; text-decoration:none;">Abrir Canva</a>
+                    </div>
+                    <div class="card" style="text-align: center; width: 200px;">
+                        <span class="material-icons" style="font-size: 40px; color:#E1306C;">photo_camera</span>
+                        <h3>Instagram</h3>
+                        <a href="https://instagram.com" target="_blank" class="btn-primary" style="margin-top: 10px; display:block; text-decoration:none; background:#E1306C;">Abrir Insta</a>
+                    </div>
                 </div>
             </section>
 
-            <section id="music" class="tab-content">
-                <div class="header-top"><h1>LudoPlay</h1></div>
-                <div class="input-group" style="margin-bottom: 20px;">
-                    <span class="material-icons">link</span>
-                    <input type="text" placeholder="Cole o link da sua Playlist do Spotify aqui e aperte Enter">
-                </div>
-                <div class="card" style="padding: 0; overflow: hidden; border-radius: 15px;">
-                    <iframe style="border-radius:12px" src="https://open.spotify.com/embed/playlist/37i9dQZF1DXcBWIGoYBM5M" width="100%" height="352" frameBorder="0" allowfullscreen="" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>
+            <section id="rh" class="tab-content">
+                <div class="header-top"><h1>Gestão de Pessoas (RH)</h1></div>
+                <div class="card" style="max-width: 500px;">
+                    <h3>Cadastrar Colaborador</h3>
+                    <form id="form-rh">
+                        <input type="text" class="modal-input" placeholder="Nome Completo" style="margin-top:15px;">
+                        <input type="email" class="modal-input" placeholder="E-mail corporativo">
+                        <input type="password" class="modal-input" placeholder="Senha Provisória">
+                        <select class="modal-input">
+                            <option value="colaborador">Nível: Colaborador (Acesso Restrito)</option>
+                            <option value="gestor">Nível: Gestor (Acesso Total)</option>
+                        </select>
+                        <button type="button" class="btn-primary">Criar Acesso</button>
+                    </form>
                 </div>
             </section>
+
+            <section id="music" class="tab-content"><div class="header-top"><h1>LudoPlay</h1></div><div class="card"><p>Música aqui.</p></div></section>
+            <section id="admin" class="tab-content"><div class="header-top"><h1>Ajustes do Sistema</h1></div><div class="card"><p>Painel de design e cores virá aqui.</p></div></section>
         </main>
+    </div>
+
+    <div id="ludotech-widget">
+        <div id="ludotech-chat" class="chat-hidden">
+            <div class="chat-header">
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <img src="logo.png" alt="IA Logo" style="width: 30px; border-radius: 50%;">
+                    <strong>LudoTech IA</strong>
+                </div>
+                <button onclick="toggleIA()" style="background:none; border:none; color:#fff; cursor:pointer;"><span class="material-icons">close</span></button>
+            </div>
+            <div class="chat-body" id="chat-messages">
+                <div class="msg-ia">Olá! Sou a LudoTech. Como posso te ajudar na LudoMKT hoje?</div>
+            </div>
+            <div class="chat-footer">
+                <input type="text" id="chat-input" placeholder="Pergunte à IA...">
+                <button id="send-ia"><span class="material-icons">send</span></button>
+            </div>
+        </div>
+        <button id="ludotech-btn" onclick="toggleIA()">
+            <span class="material-icons">smart_toy</span>
+        </button>
     </div>
 
     <div id="task-modal" class="modal-overlay" style="display: none;">
         <div class="modal-content">
-            <div class="modal-header">
-                <h2>Detalhes da Atividade</h2>
-                <button class="close-btn" onclick="fecharModal()"><span class="material-icons">close</span></button>
-            </div>
+            <div class="modal-header"><h2>Nova Atividade</h2><button class="close-btn" onclick="fecharModal()"><span class="material-icons">close</span></button></div>
             <form id="task-form">
                 <input type="text" placeholder="Título da Atividade" class="modal-input" required>
-                
                 <div class="modal-row">
-                    <select class="modal-input">
-                        <option value="">Responsável</option>
-                        <option value="joao">João</option>
-                        <option value="maria">Maria</option>
-                    </select>
-                    <select class="modal-input">
-                        <option value="ordinario">Ordinário</option>
-                        <option value="urgente">Urgente</option>
-                        <option value="extraordinario">Extraordinário</option>
-                    </select>
+                    <select class="modal-input"><option value="joao">João</option><option value="maria">Maria</option></select>
+                    <select class="modal-input"><option value="urgente">Urgente</option><option value="ordinario">Ordinário</option></select>
                 </div>
-
-                <div class="modal-row">
-                    <input type="date" class="modal-input" title="Data Início">
-                    <input type="date" class="modal-input" title="Data Fim">
-                </div>
-
-                <input type="url" placeholder="Link de Referência (Canva, Docs, etc)" class="modal-input">
-                <textarea placeholder="Descrição ou Feedback da análise..." class="modal-input" rows="4"></textarea>
-
+                <input type="text" placeholder="Datas (Ex: 10/05, 12/05 e 15/05)" class="modal-input" required title="Pode digitar várias datas de entrega">
+                <input type="url" placeholder="Link de Referência (Canva, Drive...)" class="modal-input">
+                <textarea placeholder="Descrição..." class="modal-input" rows="3"></textarea>
                 <div class="modal-actions">
-                    <button type="button" class="btn-secundary">Excluir</button>
-                    <button type="button" class="btn-primary" style="background: #ffaa00;">Enviar p/ Análise</button>
                     <button type="submit" class="btn-primary">Salvar Atividade</button>
                 </div>
             </form>
