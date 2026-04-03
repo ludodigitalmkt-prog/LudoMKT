@@ -10,341 +10,78 @@
     --shadow: 0 8px 24px rgba(0,0,0,0.4);
 }
 
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-    font-family: 'Segoe UI', Roboto, Helvetica, sans-serif;
-}
+* { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Roboto, Helvetica, sans-serif; }
 
-body {
-    background-color: var(--bg-body);
-    color: var(--text-main);
-    height: 100vh;
-    display: flex;
-    overflow: hidden;
-}
+body { background-color: var(--bg-body); color: var(--text-main); height: 100vh; display: flex; overflow: hidden; }
 
-/* --- TELA DE LOGIN --- */
-#login-screen {
-    width: 100vw;
-    height: 100vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: radial-gradient(circle at center, #1a1e29 0%, #0a0c10 100%);
-    position: absolute;
-    z-index: 1000;
-}
+/* TELA DE LOGIN E SPLASH */
+#splash-screen { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: var(--bg-body); display: flex; justify-content: center; align-items: center; z-index: 9999; transition: opacity 0.8s ease; }
+.splash-logo { width: 150px; animation: zoomInOut 2s ease forwards; }
+@keyframes zoomInOut { 0% { transform: scale(0.5); opacity: 0; } 50% { transform: scale(1.2); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
 
-.login-card {
-    background: rgba(26, 30, 41, 0.8);
-    backdrop-filter: blur(10px);
-    padding: 50px 40px;
-    border-radius: 24px;
-    box-shadow: var(--shadow);
-    width: 100%;
-    max-width: 420px;
-    text-align: center;
-    border: 1px solid var(--border);
-}
+#login-screen { width: 100vw; height: 100vh; display: flex; align-items: center; justify-content: center; background: radial-gradient(circle at center, #1a1e29 0%, #0a0c10 100%); position: absolute; z-index: 1000; }
+.login-card { background: rgba(26, 30, 41, 0.8); backdrop-filter: blur(10px); padding: 50px 40px; border-radius: 24px; box-shadow: var(--shadow); width: 100%; max-width: 420px; text-align: center; border: 1px solid var(--border); }
+.login-logo { max-width: 180px; margin-bottom: 10px; }
+.sidebar-logo { max-width: 150px; }
 
-.logo-text { font-size: 36px; font-weight: 800; color: #fff; margin-bottom: 5px; }
-.logo-text span { color: var(--accent); }
-.login-card p { color: var(--text-muted); margin-bottom: 30px; font-size: 14px; }
-
-.input-group {
-    display: flex;
-    align-items: center;
-    background: var(--bg-body);
-    border-radius: 12px;
-    padding: 15px;
-    margin-top: 15px;
-    border: 1px solid var(--border);
-    transition: 0.3s;
-}
-
+.input-group { display: flex; align-items: center; background: var(--bg-body); border-radius: 12px; padding: 15px; margin-top: 15px; border: 1px solid var(--border); transition: 0.3s; }
 .input-group:focus-within { border-color: var(--accent); }
 .input-group span { color: var(--text-muted); font-size: 20px; }
-.input-group input {
-    border: none;
-    background: transparent;
-    outline: none;
-    width: 100%;
-    margin-left: 12px;
-    color: var(--text-main);
-    font-size: 15px;
-}
+.input-group input { border: none; background: transparent; outline: none; width: 100%; margin-left: 12px; color: var(--text-main); font-size: 15px; }
 
-.btn-primary {
-    width: 100%;
-    padding: 16px;
-    background: var(--accent);
-    color: #fff;
-    border: none;
-    border-radius: 12px;
-    margin-top: 30px;
-    font-weight: 600;
-    font-size: 16px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    box-shadow: 0 4px 15px rgba(108, 92, 231, 0.3);
-}
+.btn-primary { width: 100%; padding: 16px; background: var(--accent); color: #fff; border: none; border-radius: 12px; margin-top: 30px; font-weight: 600; font-size: 16px; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(108, 92, 231, 0.3); }
+.btn-primary:hover { background: var(--accent-hover); transform: translateY(-2px); }
 
-.btn-primary:hover {
-    background: var(--accent-hover);
-    transform: translateY(-2px);
-}
-
-/* --- WORKSPACE --- */
-#app-container {
-    width: 100vw;
-    height: 100vh;
-}
-
-.sidebar {
-    width: 280px;
-    background-color: var(--bg-sidebar);
-    border-right: 1px solid var(--border);
-    padding: 24px;
-    display: flex;
-    flex-direction: column;
-}
-
+/* WORKSPACE */
+#app-container { width: 100vw; height: 100vh; }
+.sidebar { width: 280px; background-color: var(--bg-sidebar); border-right: 1px solid var(--border); padding: 24px; display: flex; flex-direction: column; }
 .sidebar .logo { margin-bottom: 40px; }
-
 .menu { flex-grow: 1; display: flex; flex-direction: column; gap: 8px; }
-
-.menu-btn {
-    color: var(--text-muted);
-    background: transparent;
-    border: none;
-    padding: 14px 16px;
-    border-radius: 12px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    width: 100%;
-    font-size: 15px;
-    font-weight: 500;
-    transition: 0.2s;
-}
-
-.menu-btn:hover, .menu-btn.active {
-    background: var(--accent);
-    color: #fff;
-}
-
+.menu-btn { color: var(--text-muted); background: transparent; border: none; padding: 14px 16px; border-radius: 12px; cursor: pointer; display: flex; align-items: center; gap: 12px; width: 100%; font-size: 15px; font-weight: 500; transition: 0.2s; }
+.menu-btn:hover, .menu-btn.active { background: var(--accent); color: #fff; }
 .bottom-actions { border-top: 1px solid var(--border); padding-top: 20px; }
 .admin-btn { color: #ff4757; }
 .admin-btn:hover, .admin-btn.active { background: #ff4757; color: #fff;}
 
-.content {
-    flex-grow: 1;
-    padding: 40px;
-    background-color: var(--bg-body);
-    overflow-y: auto;
-}
-
+.content { flex-grow: 1; padding: 40px; background-color: var(--bg-body); overflow-y: auto; }
 .tab-content { display: none; animation: fadeIn 0.3s ease; }
 .tab-content.active { display: block; }
-
 .header-top { margin-bottom: 30px; }
 .header-top h1 { font-size: 28px; font-weight: 600; }
+.card { background: var(--bg-card); border-radius: 16px; padding: 30px; box-shadow: var(--shadow); border: 1px solid var(--border); }
 
-.card {
-    background: var(--bg-card);
-    border-radius: 16px;
-    padding: 30px;
-    box-shadow: var(--shadow);
-    border: 1px solid var(--border);
-}
-
-/* KANBAN BOARD */
-.kanban-board { display: flex; gap: 20px; height: 70vh; }
-.kanban-column {
-    flex: 1;
-    background: var(--bg-sidebar);
-    border-radius: 12px;
-    padding: 20px;
-    border: 1px solid var(--border);
-}
-.kanban-column h3 { margin-bottom: 20px; font-size: 16px; color: var(--text-muted); }
-.kanban-card {
-    background: var(--bg-card);
-    padding: 15px;
-    border-radius: 8px;
-    margin-bottom: 12px;
-    border: 1px solid var(--border);
-    cursor: grab;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-}
-
-/* iFrames Containers */
-.iframe-container {
-    width: 100%;
-    height: 75vh;
-    border-radius: 16px;
-    overflow: hidden;
-    border: 1px solid var(--border);
-}
-.iframe-container iframe { width: 100%; height: 100%; border: none; }
-
-@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-
-/* --- TELA DE SPLASH (CARREGAMENTO) --- */
-#splash-screen {
-    position: fixed;
-    top: 0; left: 0; width: 100vw; height: 100vh;
-    background: var(--bg-body);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 9999;
-    transition: opacity 0.8s ease;
-}
-
-.splash-logo {
-    width: 150px;
-    animation: zoomInOut 2s ease forwards;
-}
-
-@keyframes zoomInOut {
-    0% { transform: scale(0.5); opacity: 0; }
-    50% { transform: scale(1.2); opacity: 1; }
-    100% { transform: scale(1); opacity: 1; }
-}
-
-/* --- LOGOS --- */
-.login-logo { max-width: 180px; margin-bottom: 10px; }
-.sidebar-logo { max-width: 150px; }
-
-/* --- CONTROLES DE VISÃO (AGENDA) --- */
+/* KANBAN E CORES DO TRELLO */
 .agenda-header { display: flex; justify-content: space-between; align-items: center; }
 .btn-nova-tarefa { width: auto; padding: 10px 20px; margin: 0; display: flex; gap: 8px; align-items: center;}
+.kanban-board { display: flex; gap: 20px; height: 70vh; }
+.kanban-column { flex: 1; background: var(--bg-sidebar); border-radius: 12px; padding: 20px; border: 1px solid var(--border); }
+.kanban-column h3 { margin-bottom: 20px; font-size: 16px; color: var(--text-muted); }
 
-.view-controls {
-    display: flex; gap: 10px; margin-bottom: 20px;
-    background: var(--bg-card); padding: 10px; border-radius: 12px; width: fit-content;
-}
-.view-btn {
-    background: transparent; border: none; color: var(--text-muted);
-    padding: 8px 16px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: 0.3s;
-}
-.view-btn.active, .view-btn:hover { background: var(--accent); color: #fff; }
+/* As Cores Mágicas das Colunas */
+#coluna-vermelha { border-top: 4px solid #ff3366 !important; background: linear-gradient(to bottom, rgba(255, 51, 102, 0.05), transparent); }
+#coluna-amarela { border-top: 4px solid #ffaa00 !important; background: linear-gradient(to bottom, rgba(255, 170, 0, 0.05), transparent); }
+#coluna-verde { border-top: 4px solid #00ff88 !important; background: linear-gradient(to bottom, rgba(0, 255, 136, 0.05), transparent); }
 
-/* --- EFEITOS NEON DO KANBAN --- */
-.badge { background: var(--bg-body); padding: 2px 8px; border-radius: 10px; font-size: 12px; color: var(--accent); }
-.kanban-column { border-top: 3px solid var(--border); }
-
-.neon-card {
-    position: relative;
-    border-left: 4px solid transparent;
-    transition: all 0.3s ease;
-}
+.kanban-card { background: var(--bg-card); padding: 15px; border-radius: 8px; margin-bottom: 12px; border: 1px solid var(--border); cursor: grab; box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
+.neon-card { position: relative; border-left: 4px solid transparent; transition: all 0.3s ease; }
 .neon-card:hover { transform: translateY(-3px); }
-
-/* Cores de Prioridade (Neon) */
-.prioridade-urgente { 
-    border-left-color: #ff3366; 
-    box-shadow: -2px 0px 15px rgba(255, 51, 102, 0.2); 
-}
+.prioridade-urgente { border-left-color: #ff3366; box-shadow: -2px 0px 15px rgba(255, 51, 102, 0.2); }
 .prioridade-urgente h4 { color: #ff3366; }
-
 .badge-prioridade { font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: #ff3366; font-weight: bold; }
 .card-footer { display: flex; justify-content: space-between; margin-top: 15px; border-top: 1px solid var(--border); padding-top: 10px; }
-.icon-alert { color: #ffaa00; animation: pulse 2s infinite; }
 .icon-link { color: var(--accent); }
 
-@keyframes pulse {
-    0% { transform: scale(1); opacity: 0.8; }
-    50% { transform: scale(1.2); opacity: 1; }
-    100% { transform: scale(1); opacity: 0.8; }
-}
-
-/* --- MODAL (POP-UP) --- */
-.modal-overlay {
-    position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-    background: rgba(0,0,0,0.7); backdrop-filter: blur(5px);
-    display: flex; justify-content: center; align-items: center; z-index: 2000;
-}
-.modal-content {
-    background: var(--bg-card); width: 100%; max-width: 600px;
-    padding: 30px; border-radius: 20px; border: 1px solid var(--border);
-    box-shadow: 0 20px 50px rgba(0,0,0,0.5);
-}
+/* MODAL E IA */
+.modal-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.7); backdrop-filter: blur(5px); display: flex; justify-content: center; align-items: center; z-index: 2000; }
+.modal-content { background: var(--bg-card); width: 100%; max-width: 600px; padding: 30px; border-radius: 20px; border: 1px solid var(--border); box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
 .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
 .close-btn { background: transparent; border: none; color: var(--text-muted); cursor: pointer; }
 .close-btn:hover { color: #ff3366; }
-
-.modal-input {
-    width: 100%; background: var(--bg-body); border: 1px solid var(--border);
-    padding: 12px; border-radius: 10px; color: #fff; margin-bottom: 15px;
-}
+.modal-input { width: 100%; background: var(--bg-body); border: 1px solid var(--border); padding: 12px; border-radius: 10px; color: #fff; margin-bottom: 15px; }
 .modal-row { display: flex; gap: 15px; }
 .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 10px; }
-.btn-secundary { background: transparent; color: #ff3366; border: 1px solid #ff3366; padding: 10px 20px; border-radius: 10px; cursor: pointer;}
 
-/* --- IA FLUTUANTE (LUDOTECH) --- */
-#ludotech-widget { position: fixed; bottom: 30px; right: 30px; z-index: 9000; }
-#ludotech-btn {
-    width: 60px; height: 60px; border-radius: 50%;
-    background: linear-gradient(135deg, var(--accent), #ff3366);
-    color: white; border: none; cursor: pointer;
-    box-shadow: 0 10px 25px rgba(108, 92, 231, 0.5);
-    display: flex; justify-content: center; align-items: center;
-    transition: transform 0.3s;
-}
-#ludotech-btn:hover { transform: scale(1.1); }
-#ludotech-btn .material-icons { font-size: 30px; }
-
-#ludotech-chat {
-    position: absolute; bottom: 80px; right: 0;
-    width: 350px; height: 500px;
-    background: var(--bg-card); border: 1px solid var(--border);
-    border-radius: 20px; box-shadow: var(--shadow);
-    display: flex; flex-direction: column; overflow: hidden;
-    transition: all 0.3s ease;
-}
 .chat-hidden { opacity: 0; pointer-events: none; transform: translateY(20px); }
 .chat-active { opacity: 1; pointer-events: all; transform: translateY(0); }
 
-.chat-header {
-    background: var(--bg-sidebar); padding: 15px;
-    display: flex; justify-content: space-between; align-items: center;
-    border-bottom: 1px solid var(--border);
-}
-.chat-body { flex-grow: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
-.msg-ia { background: var(--bg-body); padding: 10px 15px; border-radius: 15px 15px 15px 0; max-width: 80%; align-self: flex-start; color: var(--text-muted); font-size: 14px;}
-.msg-user { background: var(--accent); color: #fff; padding: 10px 15px; border-radius: 15px 15px 0 15px; max-width: 80%; align-self: flex-end; font-size: 14px;}
-
-.chat-footer {
-    padding: 15px; border-top: 1px solid var(--border);
-    display: flex; gap: 10px; background: var(--bg-sidebar);
-}
-.chat-footer input { flex-grow: 1; background: var(--bg-body); border: none; padding: 10px; border-radius: 20px; color: #fff; outline: none; }
-.chat-footer button { background: var(--accent); border: none; width: 40px; height: 40px; border-radius: 50%; color: #fff; cursor: pointer; display:flex; justify-content:center; align-items:center; }
-
-/* --- CORREÇÃO: ESCONDER IA NO LOGIN --- */
-#ludotech-widget {
-    position: fixed; bottom: 30px; right: 30px; z-index: 9000;
-    display: none; /* Garante que nasce escondida */
-}
-
-/* --- CORES DAS COLUNAS DO KANBAN --- */
-/* Pendente (Vermelho) */
-#visao-kanban .kanban-column:nth-child(1) {
-    border-top: 4px solid #ff3366;
-    background: linear-gradient(to bottom, rgba(255, 51, 102, 0.05), transparent);
-}
-/* Análise/Andamento (Amarelo) */
-#visao-kanban .kanban-column:nth-child(2) {
-    border-top: 4px solid #ffaa00;
-    background: linear-gradient(to bottom, rgba(255, 170, 0, 0.05), transparent);
-}
-/* Concluído (Verde) */
-#visao-kanban .kanban-column:nth-child(3) {
-    border-top: 4px solid #00ff88;
-    background: linear-gradient(to bottom, rgba(0, 255, 136, 0.05), transparent);
-}
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
