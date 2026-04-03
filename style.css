@@ -1,5 +1,6 @@
 :root {
     --bg-body: #0f111a; 
+    --bg-sidebar: #161925;
     --bg-card: #1e2130;
     --text-main: #ffffff;
     --text-muted: #8f9bb3;
@@ -20,8 +21,10 @@ body {
     color: var(--text-main);
     height: 100vh;
     display: flex;
+    overflow: hidden;
 }
 
+/* --- TELA DE LOGIN --- */
 #login-screen {
     width: 100vw;
     height: 100vh;
@@ -29,6 +32,8 @@ body {
     align-items: center;
     justify-content: center;
     background: var(--bg-body);
+    position: absolute;
+    z-index: 100;
 }
 
 .login-card {
@@ -42,23 +47,16 @@ body {
     border: 1px solid var(--border);
 }
 
-.login-card h2 {
-    font-size: 32px;
-    margin-bottom: 10px;
-    color: var(--accent);
-}
-
-.login-card p {
-    color: var(--text-muted);
-    margin-bottom: 30px;
-}
+.login-card h2 { font-size: 32px; color: var(--text-main); }
+.login-card h2 span { color: var(--accent); }
+.login-card p { color: var(--text-muted); margin-bottom: 30px; margin-top: 5px; }
 
 .input-group {
     display: flex;
     align-items: center;
     background: var(--bg-body);
     border-radius: 10px;
-    padding: 10px 15px;
+    padding: 12px 15px;
     margin-top: 15px;
     border: 1px solid var(--border);
 }
@@ -85,6 +83,66 @@ body {
     transition: 0.3s;
 }
 
-.btn-primary:hover {
-    background: #3311db;
+.btn-primary:hover { background: #3311db; }
+
+/* --- WORKSPACE (Painel Interno) --- */
+#app-container {
+    width: 100vw;
+    height: 100vh;
+    display: flex; /* Vai ser ativado pelo JS */
+}
+
+.sidebar {
+    width: 260px;
+    background-color: var(--bg-sidebar);
+    border-right: 1px solid var(--border);
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+}
+
+.sidebar .logo { margin-bottom: 40px; }
+.sidebar .logo h2 { color: #fff; }
+.sidebar .logo span { color: var(--accent); }
+
+.menu { flex-grow: 1; }
+
+.menu-btn {
+    color: var(--text-muted);
+    background: transparent;
+    border: none;
+    padding: 12px;
+    border-radius: 10px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    margin-bottom: 5px;
+    font-size: 15px;
+    transition: 0.2s;
+}
+
+.menu-btn:hover, .menu-btn.active {
+    background: var(--bg-card);
+    color: var(--accent);
+}
+
+.bottom-actions { border-top: 1px solid var(--border); padding-top: 20px; }
+.admin-btn { color: #ff3366; }
+
+.content {
+    flex-grow: 1;
+    padding: 40px;
+    background-color: var(--bg-body);
+}
+
+.header-top { margin-bottom: 30px; }
+
+.card {
+    background: var(--bg-card);
+    border-radius: 15px;
+    padding: 30px;
+    box-shadow: var(--shadow);
+    border: 1px solid var(--border);
 }
