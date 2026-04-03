@@ -45,16 +45,23 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
+    // --- TROCA DE ABAS DO MENU ---
     const buttons = document.querySelectorAll(".menu-btn[data-target]");
     buttons.forEach(button => {
         button.addEventListener("click", () => {
             const targetId = button.getAttribute("data-target");
             const targetElement = document.getElementById(targetId);
+            
             if(targetElement) {
                 buttons.forEach(btn => btn.classList.remove("active"));
                 document.querySelectorAll(".tab-content").forEach(tab => tab.classList.remove("active"));
                 button.classList.add("active");
                 targetElement.classList.add("active");
+
+                // SE CLICAR NO PLANNER, RENDERIZA O CALENDÁRIO
+                if(targetId === 'planner' && window.meuCalendario) {
+                    setTimeout(() => window.meuCalendario.render(), 100);
+                }
             }
         });
     });
@@ -153,7 +160,92 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         });
     });
+// ==========================================
+    // INICIALIZAÇÃO DO CALENDÁRIO UX (FULLCALENDAR)
+    // ==========================================
+    const calendarEl = document.getElementById('calendar');
+    if (calendarEl) {
+        window.meuCalendario = new FullCalendar.Calendar(calendarEl, {
+            initialView: 'dayGridMonth',
+            locale: 'pt-br',
+            headerToolbar: {
+                left: 'prev,next today',
+                center: 'title',
+                right: 'dayGridMonth,timeGridWeek'
+            },
+            editable: true, // Permite arrastar os eventos (Drag and Drop)
+            droppable: true,
+            buttonText: { today: 'Hoje', month: 'Mês', week: 'Semana' },
+            events: [], // Começa vazio, o Firebase vai preencher
+            
+            // QUANDO ARRASTAR UM EVENTO NO CALENDÁRIO, SALVA NO FIREBASE:
+            eventDrop: async function(info) {
+                const taskId = info.event.id;
+                // Pega a nova data no formato YYYY-MM-DD
+                const novaData = info.event.start.toISOString().split('T')[0]; 
+                
+                try {
+                    await updateDoc(doc(db, "atividades", taskId), { datas: novaData });
+                    console.log("Data atualizada na nuvem!");
+                } catch (error) {
+                    console.error("Erro ao atualizar data", error);
+                    info.revert(); // Se der erro na internet, volta o card pro lugar original
+                }
+            }
+        });
+        window.meuCalendario.render();
+    }
 
+    // --- INTEGRAR O KANBAN COM O CALENDÁRIO ---
+    // Encontre a sua variável `const q = query(...)` e substitua o bloco onSnapshot inteiro por este:
+    const q = query(collection(db, "atividades"), orderBy("criadoEm", "desc"));
+    onSnapshot(q, (snapshot) => {
+        if(kanbanColumns.pendente) kanbanColumns.pendente.innerHTML = '';
+        if(kanbanColumns.analise) kanbanColumns.analise.innerHTML = '';
+        if(kanbanColumns.concluido) kanbanColumns.concluido.innerHTML = '';
+
+        let eventosDoCalendario = []; // Lista vazia para o calendário
+
+        snapshot.forEach((docSnap) => {
+            const data = docSnap.data();
+            const id = docSnap.id;
+            
+            // 1. Renderiza no Kanban (Trello)
+            const card = document.createElement('div');
+            card.className = `kanban-card neon-card prioridade-${data.prioridade}`;
+            card.setAttribute('draggable', 'true');
+            card.dataset.id = id; 
+            card.innerHTML = `<h4>${data.titulo}</h4><p style="font-size:12px; color:#aaa;">Resp: ${data.responsavel}</p>`;
+            
+            card.addEventListener('dragstart', () => { card.classList.add('dragging'); card.style.opacity = '0.5'; });
+            card.addEventListener('dragend', () => { card.classList.remove('dragging'); card.style.opacity = '1'; });
+            
+            if(kanbanColumns[data.status]) kanbanColumns[data.status].appendChild(card);
+
+            // 2. Prepara para o Calendário
+            if (data.datas && data.datas !== '') {
+                // Define a cor baseada na coluna do Trello
+                let corDoEvento = '#ff3366'; // Pendente (Vermelho)
+                if (data.status === 'analise') corDoEvento = '#ffaa00'; // Amarelo
+                if (data.status === 'concluido') corDoEvento = '#00ff88'; // Verde
+
+                eventosDoCalendario.push({
+                    id: id,
+                    title: data.titulo,
+                    start: data.datas,
+                    backgroundColor: corDoEvento,
+                    borderColor: corDoEvento
+                });
+            }
+        });
+
+        // 3. Atualiza o Calendário na tela
+        if (window.meuCalendario) {
+            window.meuCalendario.removeAllEvents();
+            window.meuCalendario.addEventSource(eventosDoCalendario);
+        }
+    });
+    
     if ("serviceWorker" in navigator) {
         navigator.serviceWorker.register("sw.js").catch(err => console.log(err));
     }
