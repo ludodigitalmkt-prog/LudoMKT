@@ -1,42 +1,81 @@
 // ==========================================
-// 1. IMPORTS DO FIREBASE (Sempre na linha 1)
+// 1. IMPORTS DO FIREBASE
 // ==========================================
-import { db } from './firebase.js';
-import { collection, addDoc, onSnapshot, query, orderBy, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { db, auth } from './firebase.js'; // Importando auth agora
+import { collection, addDoc, onSnapshot, query, orderBy, doc, updateDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
-// ==========================================
-// 2. FUNÇÕES GLOBAIS (Modais, Abas e IA)
-// ==========================================
-// Fazem os botões com onclick="" no HTML funcionarem
-
-window.toggleIA = function() {
-    const chat = document.getElementById('ludotech-chat');
-    if (chat) {
-        if(chat.classList.contains('chat-hidden')) {
-            chat.classList.remove('chat-hidden');
-            chat.classList.add('chat-active');
-        } else {
-            chat.classList.remove('chat-active');
-            chat.classList.add('chat-hidden');
-        }
-    }
-};
-
+// Suas funções globais (toggleIA, abrirModal, mudarVisao) continuam aqui...
+window.toggleIA = function() { /* ... */ };
 window.abrirModal = () => document.getElementById('task-modal').style.display = 'flex';
 window.fecharModal = () => document.getElementById('task-modal').style.display = 'none';
+window.mudarVisao = function(visaoId) { /* ... */ };
 
-window.mudarVisao = function(visaoId) {
-    document.querySelectorAll('.view-btn').forEach(b => b.classList.remove('active'));
-    document.querySelectorAll('.agenda-view').forEach(v => v.style.display = 'none');
-    if(event) event.currentTarget.classList.add('active');
-    document.getElementById('visao-' + visaoId).style.display = 'block';
-};
-
-
-// ==========================================
-// 3. LÓGICA PRINCIPAL (Ao carregar a tela)
-// ==========================================
 document.addEventListener("DOMContentLoaded", () => {
+    
+    // --- LOGIN REAL COM FIREBASE ---
+    const btnEntrar = document.getElementById('btn-entrar');
+    btnEntrar?.addEventListener('click', async () => {
+        const email = document.getElementById('email').value;
+        const senha = document.getElementById('password').value;
+        
+        try {
+            // Tenta logar de verdade no Firebase
+            const userCredential = await signInWithEmailAndPassword(auth, email, senha);
+            const user = userCredential.user;
+            
+            // Sucesso! Muda a tela e mostra a IA
+            document.getElementById('login-screen').style.display = 'none';
+            document.getElementById('app-container').style.display = 'flex';
+            document.getElementById('ludotech-widget').style.display = 'block'; // Mostra a IA
+            
+            console.log("Logado como:", user.email);
+            // Futuramente: Aqui leremos as permissões do usuário para esconder/mostrar abas
+            
+        } catch (error) {
+            console.error("Erro no login:", error.code);
+            alert("E-mail ou senha incorretos! (Ou usuário não existe)");
+        }
+    });
+
+    // --- CADASTRO DE RH (CRIAR COLABORADOR) ---
+    const formRH = document.getElementById('form-rh');
+    formRH?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const nome = document.getElementById('rh-nome').value;
+        const email = document.getElementById('rh-email').value;
+        const senha = document.getElementById('rh-senha').value;
+        
+        // Pega todos os checkboxes marcados para salvar as permissões
+        const checkboxes = formRH.querySelectorAll('input[type="checkbox"]:checked');
+        const permissoes = Array.from(checkboxes).map(cb => cb.value);
+
+        try {
+            // 1. Cria a conta no sistema de Autenticação do Firebase
+            const userCredential = await createUserWithEmailAndPassword(auth, email, senha);
+            const novoUsuario = userCredential.user;
+
+            // 2. Salva o perfil e permissões no Banco de Dados
+            await setDoc(doc(db, "usuarios", novoUsuario.uid), {
+                nome: nome,
+                email: email,
+                permissoes: permissoes,
+                criadoEm: new Date().getTime()
+            });
+
+            alert(`Colaborador ${nome} cadastrado com sucesso!`);
+            formRH.reset();
+            
+        } catch (error) {
+            console.error("Erro ao criar usuário:", error);
+            if(error.code === 'auth/email-already-in-use') alert("Esse e-mail já está cadastrado.");
+            else if(error.code === 'auth/weak-password') alert("A senha deve ter pelo menos 6 caracteres.");
+            else alert("Erro ao cadastrar. Verifique o console.");
+        }
+    });
+
+    // ... restante do seu código do Kanban e Splash Screen continuam aqui ...
     
     // --- SPLASH SCREEN E LOGIN ---
     setTimeout(() => {
