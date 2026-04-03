@@ -1,8 +1,7 @@
 import { db, auth } from './firebase.js';
-import { collection, addDoc, onSnapshot, query, orderBy, doc, updateDoc, setDoc } from "[https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js](https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js)";
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from "[https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js](https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js)";
+import { collection, addDoc, onSnapshot, query, orderBy, doc, updateDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
-// Funções Globais da Tela
 window.toggleIA = function() {
     const chat = document.getElementById('ludotech-chat');
     if (chat) {
@@ -21,7 +20,6 @@ window.fecharModal = () => document.getElementById('task-modal').style.display =
 
 document.addEventListener("DOMContentLoaded", () => {
     
-    // Animação Inicial
     setTimeout(() => {
         const splash = document.getElementById('splash-screen');
         if(splash) {
@@ -30,7 +28,6 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }, 2000);
 
-    // LOGIN: Faz a transição de tela E MOSTRA a IA
     const btnEntrar = document.getElementById('btn-entrar');
     btnEntrar?.addEventListener('click', async () => {
         const email = document.getElementById('email').value;
@@ -38,25 +35,21 @@ document.addEventListener("DOMContentLoaded", () => {
         
         try {
             await signInWithEmailAndPassword(auth, email, senha);
-            
-            // Oculta Login, Mostra Painel e Exibe o Botão da IA
             document.getElementById('login-screen').style.display = 'none';
             document.getElementById('app-container').style.display = 'flex';
             document.getElementById('ludotech-widget').style.display = 'block'; 
             
         } catch (error) {
             console.error("Erro no login:", error.code);
-            alert("E-mail ou senha incorretos! (Crie o usuário na aba RH primeiro)");
+            alert("E-mail ou senha incorretos!");
         }
     });
 
-    // TROCA DE ABAS DO MENU
     const buttons = document.querySelectorAll(".menu-btn[data-target]");
     buttons.forEach(button => {
         button.addEventListener("click", () => {
             const targetId = button.getAttribute("data-target");
             const targetElement = document.getElementById(targetId);
-            
             if(targetElement) {
                 buttons.forEach(btn => btn.classList.remove("active"));
                 document.querySelectorAll(".tab-content").forEach(tab => tab.classList.remove("active"));
@@ -66,7 +59,6 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     });
 
-    // RH: CADASTRAR FUNCIONÁRIO
     const formRH = document.getElementById('form-rh');
     formRH?.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -88,7 +80,6 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    // AGENDA: CRIAR TAREFA
     const taskForm = document.getElementById('task-form');
     taskForm?.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -113,7 +104,6 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    // AGENDA: CARREGAR TAREFAS NO KANBAN
     const kanbanColumns = {
         'pendente': document.getElementById('col-pendente'),
         'analise': document.getElementById('col-analise'),
@@ -143,7 +133,6 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     });
 
-    // ARRASTAR CARDS ENTRE AS COLUNAS (Drag and Drop)
     document.querySelectorAll('.kanban-column').forEach(column => {
         column.addEventListener('dragover', e => {
             e.preventDefault();
@@ -165,7 +154,6 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     });
 
-    // APP INSTALÁVEL PWA
     if ("serviceWorker" in navigator) {
         navigator.serviceWorker.register("sw.js").catch(err => console.log(err));
     }
