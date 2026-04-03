@@ -1,6 +1,7 @@
 import { db, auth } from './firebase.js';
 import { collection, addDoc, onSnapshot, query, orderBy, doc, updateDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+// Adicionado o signOut para o botão de sair
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
 window.toggleIA = function() {
     const chat = document.getElementById('ludotech-chat');
@@ -28,6 +29,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }, 2000);
 
+    // --- LOGIN ---
     const btnEntrar = document.getElementById('btn-entrar');
     btnEntrar?.addEventListener('click', async () => {
         const email = document.getElementById('email').value;
@@ -38,10 +40,26 @@ document.addEventListener("DOMContentLoaded", () => {
             document.getElementById('login-screen').style.display = 'none';
             document.getElementById('app-container').style.display = 'flex';
             document.getElementById('ludotech-widget').style.display = 'block'; 
-            
         } catch (error) {
             console.error("Erro no login:", error.code);
             alert("E-mail ou senha incorretos!");
+        }
+    });
+
+    // --- SAIR (LOGOUT) ---
+    const btnSair = document.getElementById('btn-sair');
+    btnSair?.addEventListener('click', async () => {
+        try {
+            await signOut(auth); // Desloga do Firebase
+            // Esconde o painel e volta para a tela de login
+            document.getElementById('app-container').style.display = 'none';
+            document.getElementById('ludotech-widget').style.display = 'none'; 
+            document.getElementById('login-screen').style.display = 'flex';
+            
+            // Limpa as senhas do input
+            document.getElementById('login-form').reset();
+        } catch (error) {
+            alert("Erro ao sair.");
         }
     });
 
@@ -66,6 +84,7 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     });
 
+    // --- RH CADASTRO ---
     const formRH = document.getElementById('form-rh');
     formRH?.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -87,10 +106,11 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
+    // --- AGENDA SALVAR TAREFA ---
     const taskForm = document.getElementById('task-form');
     taskForm?.addEventListener('submit', async (e) => {
         e.preventDefault();
-        const inputsText = taskForm.querySelectorAll('input[type="text"]');
+        const inputsText = taskForm.querySelectorAll('input[type="text"], input[type="date"]');
         const selects = taskForm.querySelectorAll('select');
         
         const novaTarefa = {
@@ -111,6 +131,32 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
+    // --- CALENDÁRIO UX (BLINDADO CONTRA TRAVAMENTOS) ---
+    const calendarEl = document.getElementById('calendar');
+    if (calendarEl && typeof FullCalendar !== 'undefined') {
+        window.meuCalendario = new FullCalendar.Calendar(calendarEl, {
+            initialView: 'dayGridMonth',
+            locale: 'pt-br',
+            headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek' },
+            editable: true,
+            droppable: true,
+            buttonText: { today: 'Hoje', month: 'Mês', week: 'Semana' },
+            events: [],
+            
+            eventDrop: async function(info) {
+                const taskId = info.event.id;
+                const novaData = info.event.start.toISOString().split('T')[0]; 
+                try {
+                    await updateDoc(doc(db, "atividades", taskId), { datas: novaData });
+                } catch (error) {
+                    info.revert(); 
+                }
+            }
+        });
+        window.meuCalendario.render();
+    }
+
+    // --- INTEGRAR O KANBAN COM O CALENDÁRIO ---
     const kanbanColumns = {
         'pendente': document.getElementById('col-pendente'),
         'analise': document.getElementById('col-analise'),
@@ -123,10 +169,13 @@ document.addEventListener("DOMContentLoaded", () => {
         if(kanbanColumns.analise) kanbanColumns.analise.innerHTML = '';
         if(kanbanColumns.concluido) kanbanColumns.concluido.innerHTML = '';
 
+        let eventosDoCalendario = [];
+
         snapshot.forEach((docSnap) => {
             const data = docSnap.data();
             const id = docSnap.id;
             
+            // Renderiza no Kanban
             const card = document.createElement('div');
             card.className = `kanban-card neon-card prioridade-${data.prioridade}`;
             card.setAttribute('draggable', 'true');
@@ -137,9 +186,30 @@ document.addEventListener("DOMContentLoaded", () => {
             card.addEventListener('dragend', () => { card.classList.remove('dragging'); card.style.opacity = '1'; });
             
             if(kanbanColumns[data.status]) kanbanColumns[data.status].appendChild(card);
+
+            // Prepara para o Calendário
+            if (data.datas && data.datas !== '') {
+                let corDoEvento = '#ff3366'; 
+                if (data.status === 'analise') corDoEvento = '#ffaa00'; 
+                if (data.status === 'concluido') corDoEvento = '#00ff88'; 
+
+                eventosDoCalendario.push({
+                    id: id,
+                    title: data.titulo,
+                    start: data.datas,
+                    backgroundColor: corDoEvento,
+                    borderColor: corDoEvento
+                });
+            }
         });
+
+        if (window.meuCalendario) {
+            window.meuCalendario.removeAllEvents();
+            window.meuCalendario.addEventSource(eventosDoCalendario);
+        }
     });
 
+    // --- RECEBER OS CARDS NAS COLUNAS (Restaurado) ---
     document.querySelectorAll('.kanban-column').forEach(column => {
         column.addEventListener('dragover', e => {
             e.preventDefault();
@@ -160,92 +230,8 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         });
     });
-// ==========================================
-    // INICIALIZAÇÃO DO CALENDÁRIO UX (FULLCALENDAR)
-    // ==========================================
-    const calendarEl = document.getElementById('calendar');
-    if (calendarEl) {
-        window.meuCalendario = new FullCalendar.Calendar(calendarEl, {
-            initialView: 'dayGridMonth',
-            locale: 'pt-br',
-            headerToolbar: {
-                left: 'prev,next today',
-                center: 'title',
-                right: 'dayGridMonth,timeGridWeek'
-            },
-            editable: true, // Permite arrastar os eventos (Drag and Drop)
-            droppable: true,
-            buttonText: { today: 'Hoje', month: 'Mês', week: 'Semana' },
-            events: [], // Começa vazio, o Firebase vai preencher
-            
-            // QUANDO ARRASTAR UM EVENTO NO CALENDÁRIO, SALVA NO FIREBASE:
-            eventDrop: async function(info) {
-                const taskId = info.event.id;
-                // Pega a nova data no formato YYYY-MM-DD
-                const novaData = info.event.start.toISOString().split('T')[0]; 
-                
-                try {
-                    await updateDoc(doc(db, "atividades", taskId), { datas: novaData });
-                    console.log("Data atualizada na nuvem!");
-                } catch (error) {
-                    console.error("Erro ao atualizar data", error);
-                    info.revert(); // Se der erro na internet, volta o card pro lugar original
-                }
-            }
-        });
-        window.meuCalendario.render();
-    }
 
-    // --- INTEGRAR O KANBAN COM O CALENDÁRIO ---
-    // Encontre a sua variável `const q = query(...)` e substitua o bloco onSnapshot inteiro por este:
-    const q = query(collection(db, "atividades"), orderBy("criadoEm", "desc"));
-    onSnapshot(q, (snapshot) => {
-        if(kanbanColumns.pendente) kanbanColumns.pendente.innerHTML = '';
-        if(kanbanColumns.analise) kanbanColumns.analise.innerHTML = '';
-        if(kanbanColumns.concluido) kanbanColumns.concluido.innerHTML = '';
-
-        let eventosDoCalendario = []; // Lista vazia para o calendário
-
-        snapshot.forEach((docSnap) => {
-            const data = docSnap.data();
-            const id = docSnap.id;
-            
-            // 1. Renderiza no Kanban (Trello)
-            const card = document.createElement('div');
-            card.className = `kanban-card neon-card prioridade-${data.prioridade}`;
-            card.setAttribute('draggable', 'true');
-            card.dataset.id = id; 
-            card.innerHTML = `<h4>${data.titulo}</h4><p style="font-size:12px; color:#aaa;">Resp: ${data.responsavel}</p>`;
-            
-            card.addEventListener('dragstart', () => { card.classList.add('dragging'); card.style.opacity = '0.5'; });
-            card.addEventListener('dragend', () => { card.classList.remove('dragging'); card.style.opacity = '1'; });
-            
-            if(kanbanColumns[data.status]) kanbanColumns[data.status].appendChild(card);
-
-            // 2. Prepara para o Calendário
-            if (data.datas && data.datas !== '') {
-                // Define a cor baseada na coluna do Trello
-                let corDoEvento = '#ff3366'; // Pendente (Vermelho)
-                if (data.status === 'analise') corDoEvento = '#ffaa00'; // Amarelo
-                if (data.status === 'concluido') corDoEvento = '#00ff88'; // Verde
-
-                eventosDoCalendario.push({
-                    id: id,
-                    title: data.titulo,
-                    start: data.datas,
-                    backgroundColor: corDoEvento,
-                    borderColor: corDoEvento
-                });
-            }
-        });
-
-        // 3. Atualiza o Calendário na tela
-        if (window.meuCalendario) {
-            window.meuCalendario.removeAllEvents();
-            window.meuCalendario.addEventSource(eventosDoCalendario);
-        }
-    });
-    
+    // --- PWA ---
     if ("serviceWorker" in navigator) {
         navigator.serviceWorker.register("sw.js").catch(err => console.log(err));
     }
