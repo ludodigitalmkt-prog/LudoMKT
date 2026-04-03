@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LudoMkt Workspace</title>
+    <title>LudoMKT Workspace</title>
     <link rel="shortcut icon" href="data:image/x-icon;," type="image/x-icon"> 
     
-    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="style.css">
     
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
 </head>
@@ -14,8 +14,8 @@
 
     <div id="login-screen">
         <div class="login-card">
-            <h2>LudoMkt<span>.</span></h2>
-            <p>Faça login para acessar o Workspace</p>
+            <h2 class="logo-text">LudoMKT<span>.</span></h2>
+            <p>Sistema Interno e Gestão</p>
             
             <form id="login-form">
                 <div class="input-group">
@@ -26,7 +26,7 @@
                     <span class="material-icons">lock</span>
                     <input type="password" id="password" placeholder="Senha" required>
                 </div>
-                <button type="button" id="btn-entrar" class="btn-primary">Entrar no Workspace</button>
+                <button type="button" id="btn-entrar" class="btn-primary">Acessar Workspace</button>
             </form>
         </div>
     </div>
@@ -35,40 +35,92 @@
         
         <aside class="sidebar">
             <div class="logo">
-                <h2>LudoMkt<span>.</span></h2>
+                <h2 class="logo-text">LudoMKT<span>.</span></h2>
+                <p>Workspace</p>
             </div>
             
             <nav class="menu">
-                <button class="menu-btn active" data-target="home"><span class="material-icons">dashboard</span> Início</button>
-                <button class="menu-btn" data-target="agenda"><span class="material-icons">calendar_today</span> Agenda & Kanban</button>
-                <button class="menu-btn" data-target="music"><span class="material-icons">graphic_eq</span> Música</button>
+                <button class="menu-btn active" data-target="home"><span class="material-icons">home</span> Início</button>
+                <button class="menu-btn" data-target="agenda"><span class="material-icons">view_kanban</span> Agenda & Kanban</button>
+                <button class="menu-btn" data-target="social"><span class="material-icons">share</span> Redes Sociais</button>
+                <button class="menu-btn" data-target="tools"><span class="material-icons">brush</span> Canva & Wpp</button>
+                <button class="menu-btn" data-target="ai"><span class="material-icons">smart_toy</span> Gemini IA</button>
+                <button class="menu-btn" data-target="music"><span class="material-icons">headphones</span> Spotify</button>
             </nav>
 
             <div class="bottom-actions">
-                <button class="menu-btn admin-btn"><span class="material-icons">admin_panel_settings</span> Gestão</button>
+                <button class="menu-btn admin-btn" data-target="admin"><span class="material-icons">admin_panel_settings</span> Painel Admin</button>
             </div>
         </aside>
 
         <main class="content">
+            
             <section id="home" class="tab-content active">
                 <div class="header-top">
-                    <h1>Visão Geral da Empresa</h1>
+                    <h1>Visão Geral</h1>
                 </div>
                 <div class="card">
-                    <h2>Bem-vindo de volta!</h2>
-                    <p>Aqui ficarão os atalhos rápidos e notificações.</p>
+                    <h2>Bem-vindo à LudoMKT!</h2>
+                    <p>Utilize o menu lateral para navegar entre suas ferramentas de trabalho, agenda e inteligência artificial.</p>
                 </div>
             </section>
 
-            <section id="agenda" class="tab-content" style="display: none;">
-                <h1>Kanban de Atividades</h1>
-                <div class="card">
-                    <p>Colunas do Trello entrarão aqui.</p>
+            <section id="agenda" class="tab-content">
+                <div class="header-top">
+                    <h1>Agenda e Atividades</h1>
+                </div>
+                <div class="kanban-board">
+                    <div class="kanban-column">
+                        <h3>Pendente</h3>
+                        <div class="kanban-card">Criar post Instagram</div>
+                        <div class="kanban-card">Reunião de Briefing</div>
+                    </div>
+                    <div class="kanban-column">
+                        <h3>Em Andamento</h3>
+                        <div class="kanban-card">Design Landing Page</div>
+                    </div>
+                    <div class="kanban-column">
+                        <h3>Concluído</h3>
+                        <div class="kanban-card">Aprovação de logo</div>
+                    </div>
                 </div>
             </section>
+
+            <section id="social" class="tab-content">
+                <div class="header-top"><h1>Redes Sociais</h1></div>
+                <div class="card"><p>Integrações de links rápidos e métricas virão aqui.</p></div>
+            </section>
+
+            <section id="tools" class="tab-content">
+                <div class="header-top"><h1>Ferramentas de Criação</h1></div>
+                <div class="iframe-container">
+                    <iframe src="https://www.canva.com/" title="Canva"></iframe>
+                </div>
+            </section>
+
+            <section id="ai" class="tab-content">
+                <div class="header-top"><h1>Assistente IA</h1></div>
+                <div class="iframe-container">
+                    <iframe src="https://gemini.google.com/" title="Gemini"></iframe>
+                </div>
+            </section>
+
+            <section id="music" class="tab-content">
+                <div class="header-top"><h1>Foco e Música</h1></div>
+                <div class="card" style="padding: 0; overflow: hidden; border-radius: 15px;">
+                    <iframe style="border-radius:12px" src="https://open.spotify.com/embed/playlist/37i9dQZF1DXcBWIGoYBM5M?utm_source=generator&theme=0" width="100%" height="352" frameBorder="0" allowfullscreen="" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>
+                </div>
+            </section>
+
+            <section id="admin" class="tab-content">
+                <div class="header-top"><h1>Gestão e Cadastros</h1></div>
+                <div class="card"><p>Área restrita para administradores da LudoMKT.</p></div>
+            </section>
+
         </main>
     </div>
 
-    <script src="js/app.js"></script>
+    <script type="module" src="firebase.js"></script>
+    <script src="app.js"></script>
 </body>
 </html>
