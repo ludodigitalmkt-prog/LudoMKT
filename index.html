@@ -12,9 +12,9 @@
 </head>
 <body>
 
-    <div id="login-screen" class="screen-active">
+    <div id="login-screen">
         <div class="login-card">
-            <h2>LudoMkt.</h2>
+            <h2>LudoMkt<span>.</span></h2>
             <p>Faça login para acessar o Workspace</p>
             
             <form id="login-form">
@@ -26,10 +26,49 @@
                     <span class="material-icons">lock</span>
                     <input type="password" id="password" placeholder="Senha" required>
                 </div>
-                <button type="button" class="btn-primary" onclick="alert('Login visual funcionou! Depois ligamos no Firebase.')">Entrar no Workspace</button>
+                <button type="button" id="btn-entrar" class="btn-primary">Entrar no Workspace</button>
             </form>
         </div>
     </div>
 
+    <div id="app-container" style="display: none;">
+        
+        <aside class="sidebar">
+            <div class="logo">
+                <h2>LudoMkt<span>.</span></h2>
+            </div>
+            
+            <nav class="menu">
+                <button class="menu-btn active" data-target="home"><span class="material-icons">dashboard</span> Início</button>
+                <button class="menu-btn" data-target="agenda"><span class="material-icons">calendar_today</span> Agenda & Kanban</button>
+                <button class="menu-btn" data-target="music"><span class="material-icons">graphic_eq</span> Música</button>
+            </nav>
+
+            <div class="bottom-actions">
+                <button class="menu-btn admin-btn"><span class="material-icons">admin_panel_settings</span> Gestão</button>
+            </div>
+        </aside>
+
+        <main class="content">
+            <section id="home" class="tab-content active">
+                <div class="header-top">
+                    <h1>Visão Geral da Empresa</h1>
+                </div>
+                <div class="card">
+                    <h2>Bem-vindo de volta!</h2>
+                    <p>Aqui ficarão os atalhos rápidos e notificações.</p>
+                </div>
+            </section>
+
+            <section id="agenda" class="tab-content" style="display: none;">
+                <h1>Kanban de Atividades</h1>
+                <div class="card">
+                    <p>Colunas do Trello entrarão aqui.</p>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script src="js/app.js"></script>
 </body>
 </html>
