@@ -19,8 +19,7 @@
             <img src="logo.png" alt="LudoMKT" class="login-logo">
             <p>Workspace</p>
             <form id="login-form">
-                <div class="input-group"><span class="material-icons">email</span><input type="email" id="email" placeholder="E-mail" required></div>
-                <div class="input-group"><span class="material-icons">lock</span><input type="password" id="password" placeholder="Senha" required></div>
+                <div class="input-group"><span class="material-icons">lock</span><input type="password" id="password" placeholder="Senha" required autocomplete="current-password"></div>
                 <button type="button" id="btn-entrar" class="btn-primary">Acessar</button>
             </form>
         </div>
@@ -132,17 +131,24 @@
 
             <section id="rh" class="tab-content">
                 <div class="header-top"><h1>Gestão de Pessoas (RH)</h1></div>
-                <div class="card" style="max-width: 500px;">
-                    <h3>Cadastrar Colaborador</h3>
+                <div class="card" style="max-width: 600px;">
+                    <h3>Cadastrar Novo Colaborador</h3>
                     <form id="form-rh">
-                        <input type="text" class="modal-input" placeholder="Nome Completo" style="margin-top:15px;">
-                        <input type="email" class="modal-input" placeholder="E-mail corporativo">
-                        <input type="password" class="modal-input" placeholder="Senha Provisória">
-                        <select class="modal-input">
-                            <option value="colaborador">Nível: Colaborador (Acesso Restrito)</option>
-                            <option value="gestor">Nível: Gestor (Acesso Total)</option>
-                        </select>
-                        <button type="button" class="btn-primary">Criar Acesso</button>
+                        <input type="text" id="rh-nome" class="modal-input" placeholder="Nome Completo" style="margin-top:15px;" required>
+                        <input type="email" id="rh-email" class="modal-input" placeholder="E-mail corporativo" required autocomplete="username">
+                        <input type="password" id="rh-senha" class="modal-input" placeholder="Senha Provisória (Mín. 6 caracteres)" required autocomplete="new-password">
+                        
+                        <h4 style="margin: 15px 0 10px 0; color: var(--text-muted);">Permissões de Acesso:</h4>
+                        <div class="permissoes-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px;">
+                            <label style="display: flex; gap: 10px; align-items: center;"><input type="checkbox" value="agenda" checked> Agenda Geral</label>
+                            <label style="display: flex; gap: 10px; align-items: center;"><input type="checkbox" value="planner" checked> Meu Planner</label>
+                            <label style="display: flex; gap: 10px; align-items: center;"><input type="checkbox" value="ferramentas" checked> Ferramentas & Redes</label>
+                            <label style="display: flex; gap: 10px; align-items: center;"><input type="checkbox" value="beneficios" checked> Benefícios</label>
+                            <label style="display: flex; gap: 10px; align-items: center;"><input type="checkbox" value="rh"> RH & Equipe (Admin)</label>
+                            <label style="display: flex; gap: 10px; align-items: center;"><input type="checkbox" value="admin"> Configurações (Admin)</label>
+                        </div>
+
+                        <button type="submit" class="btn-primary">Criar Acesso no Firebase</button>
                     </form>
                 </div>
             </section>
@@ -193,6 +199,36 @@
         </div>
     </div>
 
+<div id="ludotech-widget" style="display: none;">
+        ```
+
+---
+
+### 🔥 2. Conectando a Autenticação no `firebase.js`
+
+Para criarmos logins, o `firebase.js` precisa exportar a ferramenta de Autenticação (`getAuth`). Atualize seu arquivo para ficar assim:
+
+```javascript
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+// NOVA LINHA: Importando a Autenticação
+import { getAuth } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBCFIL5NCeutlSciYuHj8sV6fr88-T2d-w",
+  authDomain: "ludomkt-75d14.firebaseapp.com",
+  projectId: "ludomkt-75d14",
+  storageBucket: "ludomkt-75d14.firebasestorage.app",
+  messagingSenderId: "173305323322",
+  appId: "1:173305323322:web:b2cd9947aaa9806dc33a03"
+};
+
+const app = initializeApp(firebaseConfig);
+export const auth = getAuth(app); // Exportando o Auth
+export const db = initializeFirestore(app, {
+  localCache: persistentLocalCache({tabManager: persistentMultipleTabManager()})
+});
+    
     <script type="module" src="app.js"></script>
 </body>
 </html>
