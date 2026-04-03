@@ -1,0 +1,151 @@
+/* Definição de Cores - Modo Claro (Padrão) */
+:root {
+    --bg-body: #f4f7fe;
+    --bg-sidebar: #ffffff;
+    --bg-card: #ffffff;
+    --text-main: #2b3674;
+    --text-muted: #a3aed1;
+    --accent: #4318FF; /* Azul moderno */
+    --accent-hover: #3311db;
+    --border: #e0e5f2;
+    --shadow: 0 10px 20px rgba(0,0,0,0.05);
+}
+
+/* Definição de Cores - Modo Escuro */
+[data-theme="dark"] {
+    --bg-body: #0f111a; /* Fundo escuro inspirado na imagem de música */
+    --bg-sidebar: #161925;
+    --bg-card: #1e2130;
+    --text-main: #ffffff;
+    --text-muted: #8f9bb3;
+    --accent: #ff3366; /* Rosa neon inspirado na imagem */
+    --accent-hover: #ff0040;
+    --border: #2a2e3f;
+    --shadow: 0 10px 30px rgba(0,0,0,0.5);
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Segoe UI', sans-serif;
+    transition: background-color 0.3s, color 0.3s; /* Transição suave ao mudar tema */
+}
+
+body {
+    background-color: var(--bg-body);
+    color: var(--text-main);
+    height: 100vh;
+    display: flex;
+}
+
+/* 🔐 TELA DE LOGIN */
+#login-screen {
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg-body);
+    position: absolute;
+    z-index: 100;
+}
+
+.login-card {
+    background: var(--bg-card);
+    padding: 40px;
+    border-radius: 20px;
+    box-shadow: var(--shadow);
+    width: 100%;
+    max-width: 400px;
+    text-align: center;
+    border: 1px solid var(--border);
+}
+
+.login-logo {
+    max-width: 150px;
+    margin-bottom: 20px;
+}
+
+.input-group {
+    display: flex;
+    align-items: center;
+    background: var(--bg-body);
+    border-radius: 10px;
+    padding: 10px 15px;
+    margin-top: 15px;
+    border: 1px solid var(--border);
+}
+
+.input-group input {
+    border: none;
+    background: transparent;
+    outline: none;
+    width: 100%;
+    margin-left: 10px;
+    color: var(--text-main);
+}
+
+/* Base do botão principal (vamos melhorar com os seus) */
+.btn-primary {
+    width: 100%;
+    padding: 15px;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    margin-top: 20px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+/* 🚀 WORKSPACE GERAL */
+#app-container {
+    width: 100vw;
+    height: 100vh;
+}
+
+.screen-hidden { display: none !important; }
+.screen-active { display: flex; }
+
+/* Adicione as classes da sidebar e content atualizadas usando as variáveis */
+.sidebar {
+    width: 260px;
+    background-color: var(--bg-sidebar);
+    border-right: 1px solid var(--border);
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+}
+
+.menu-btn {
+    color: var(--text-muted);
+    background: transparent;
+    border: none;
+    padding: 12px;
+    border-radius: 10px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    margin-bottom: 5px;
+}
+
+.menu-btn:hover, .menu-btn.active {
+    background: var(--bg-body);
+    color: var(--accent);
+}
+
+.content {
+    flex-grow: 1;
+    padding: 30px;
+}
+
+.card {
+    background: var(--bg-card);
+    border-radius: 15px;
+    padding: 20px;
+    box-shadow: var(--shadow);
+    border: 1px solid var(--border);
+}

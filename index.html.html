@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#4318FF">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LudoMkt Workspace</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+</head>
+<body>
+
+    <div id="login-screen" class="screen-active">
+        <div class="login-card">
+            <img src="https://via.placeholder.com/150x50?text=LudoMkt+Logo" alt="Logo LudoMkt" class="login-logo">
+            <h2>Bem-vindo de volta</h2>
+            <p>Faça login para acessar o Workspace</p>
+            
+            <form id="login-form">
+                <div class="input-group">
+                    <span class="material-icons">email</span>
+                    <input type="email" id="email" placeholder="E-mail corporativo" required>
+                </div>
+                <div class="input-group">
+                    <span class="material-icons">lock</span>
+                    <input type="password" id="password" placeholder="Senha" required>
+                </div>
+                <button type="submit" class="btn-primary">Entrar no Workspace</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="app-container" class="screen-hidden">
+        
+        <aside class="sidebar">
+            <div class="logo">
+                <h2>LudoMkt<span>.</span></h2>
+            </div>
+            
+            <nav class="menu">
+                <button class="menu-btn active" data-target="home"><span class="material-icons">dashboard</span> Início</button>
+                <button class="menu-btn" data-target="agenda"><span class="material-icons">calendar_today</span> Agenda & Kanban</button>
+                <button class="menu-btn" data-target="social"><span class="material-icons">share</span> Redes Sociais</button>
+                <button class="menu-btn" data-target="music"><span class="material-icons">graphic_eq</span> Música</button>
+            </nav>
+
+            <div class="bottom-actions">
+                <button id="theme-toggle" class="menu-btn"><span class="material-icons">dark_mode</span> Tema Escuro</button>
+                <button class="menu-btn admin-btn" data-target="admin"><span class="material-icons">admin_panel_settings</span> Gestão</button>
+            </div>
+        </aside>
+
+        <main class="content">
+            <section id="home" class="tab-content active">
+                <div class="header-top">
+                    <h1>Visão Geral</h1>
+                    <div class="user-profile">
+                        <img src="https://via.placeholder.com/40" alt="Avatar" class="avatar">
+                    </div>
+                </div>
+                <div class="card">
+                    <p>Conteúdo da tela inicial...</p>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script type="module" src="js/firebase.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>

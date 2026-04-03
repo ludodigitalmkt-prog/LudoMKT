@@ -1,0 +1,21 @@
+{
+  "name": "LudoMkt Workspace",
+  "short_name": "LudoMkt",
+  "start_url": "/index.html",
+  "display": "standalone",
+  "background_color": "#0f111a",
+  "theme_color": "#4318FF",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "img/icon-192.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "img/icon-512.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ]
+}
