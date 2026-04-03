@@ -5,17 +5,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>LudoMKT Workspace</title>
     <link rel="shortcut icon" href="data:image/x-icon;," type="image/x-icon"> 
-    
     <link rel="stylesheet" href="style.css">
-    
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
 </head>
 <body>
 
-    <div id="login-screen">
+    <div id="splash-screen">
+        <img src="logo.png" alt="LudoMKT" class="splash-logo">
+    </div>
+
+    <div id="login-screen" style="display: none;">
         <div class="login-card">
-            <h2 class="logo-text">LudoMKT<span>.</span></h2>
-            <p>Sistema Interno e Gestão</p>
+            <img src="logo.png" alt="LudoMKT" class="login-logo">
+            <p>Workspace</p>
             
             <form id="login-form">
                 <div class="input-group">
@@ -35,106 +37,125 @@
         
         <aside class="sidebar">
             <div class="logo">
-                <h2 class="logo-text">LudoMKT<span>.</span></h2>
-                <p>Workspace</p>
+                <img src="logo.png" alt="LudoMKT" class="sidebar-logo">
             </div>
             
             <nav class="menu">
                 <button class="menu-btn active" data-target="home"><span class="material-icons">home</span> Início</button>
-                <button class="menu-btn" data-target="agenda"><span class="material-icons">view_kanban</span> Agenda & Kanban</button>
+                <button class="menu-btn" data-target="agenda"><span class="material-icons">view_kanban</span> Agenda & Atividades</button>
                 <button class="menu-btn" data-target="social"><span class="material-icons">share</span> Redes Sociais</button>
-                <button class="menu-btn" data-target="tools"><span class="material-icons">brush</span> Canva & Wpp</button>
-                <button class="menu-btn" data-target="ai"><span class="material-icons">smart_toy</span> Gemini IA</button>
-                <button class="menu-btn" data-target="music"><span class="material-icons">headphones</span> Spotify</button>
+                <button class="menu-btn" data-target="tools"><span class="material-icons">brush</span> Canva Workspace</button>
+                <button class="menu-btn" data-target="ai"><span class="material-icons">smart_toy</span> IA Nativa</button>
+                <button class="menu-btn" data-target="music"><span class="material-icons">headphones</span> LudoPlay</button>
             </nav>
 
             <div class="bottom-actions">
-                <button class="menu-btn admin-btn" data-target="admin"><span class="material-icons">admin_panel_settings</span> Painel Admin</button>
+                <button class="menu-btn admin-btn" data-target="admin"><span class="material-icons">admin_panel_settings</span> Configurações</button>
             </div>
         </aside>
 
         <main class="content">
-            
             <section id="home" class="tab-content active">
-                <div class="header-top">
-                    <h1>Visão Geral</h1>
-                </div>
-                <div class="card">
-                    <h2>Bem-vindo à LudoMKT!</h2>
-                    <p>Utilize o menu lateral para navegar entre suas ferramentas de trabalho, agenda e inteligência artificial.</p>
-                </div>
+                <div class="header-top"><h1>Visão Geral</h1></div>
+                <div class="card"><p>Área de widgets da LudoMKT.</p></div>
             </section>
 
             <section id="agenda" class="tab-content">
-                <div class="header-top">
-                    <h1>Agenda e Atividades</h1>
+                <div class="header-top agenda-header">
+                    <h1>Gestão de Atividades</h1>
+                    <button class="btn-primary btn-nova-tarefa" onclick="abrirModal()"><span class="material-icons">add</span> Nova Atividade</button>
                 </div>
-                <div class="kanban-board">
-                    <div class="kanban-column">
-                        <h3>Pendente</h3>
-                        <div class="kanban-card">Criar post Instagram</div>
-                        <div class="kanban-card">Reunião de Briefing</div>
+
+                <div class="view-controls">
+                    <button class="view-btn active" onclick="mudarVisao('kanban')"><span class="material-icons">view_week</span> Kanban</button>
+                    <button class="view-btn" onclick="mudarVisao('lista')"><span class="material-icons">format_list_bulleted</span> Lista de Cards</button>
+                    <button class="view-btn" onclick="mudarVisao('calendario')"><span class="material-icons">calendar_month</span> Calendário</button>
+                </div>
+
+                <div id="visao-kanban" class="agenda-view active">
+                    <div class="kanban-board">
+                        <div class="kanban-column">
+                            <h3>Pendente <span class="badge">1</span></h3>
+                            <div class="kanban-card neon-card prioridade-urgente" onclick="abrirModal()">
+                                <div class="card-badges"><span class="badge-prioridade">Urgente</span></div>
+                                <h4>Criar post Instagram</h4>
+                                <p>Responsável: João</p>
+                                <div class="card-footer">
+                                    <span class="material-icons icon-link">link</span>
+                                    <span class="material-icons icon-alert">notifications_active</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="kanban-column">
+                            <h3>Análise <span class="badge">0</span></h3>
+                        </div>
+                        <div class="kanban-column">
+                            <h3>Concluído <span class="badge">0</span></h3>
+                        </div>
                     </div>
-                    <div class="kanban-column">
-                        <h3>Em Andamento</h3>
-                        <div class="kanban-card">Design Landing Page</div>
-                    </div>
-                    <div class="kanban-column">
-                        <h3>Concluído</h3>
-                        <div class="kanban-card">Aprovação de logo</div>
-                    </div>
+                </div>
+
+                <div id="visao-lista" class="agenda-view" style="display: none;">
+                    <div class="card"><p>Modo lista detalhada aparecerá aqui.</p></div>
+                </div>
+
+                <div id="visao-calendario" class="agenda-view" style="display: none;">
+                    <div class="card"><p>Grade do calendário do mês aparecerá aqui.</p></div>
                 </div>
             </section>
-
-            <section id="social" class="tab-content">
-                <div class="header-top"><h1>Redes Sociais</h1></div>
-                <div class="card"><p>Integrações de links rápidos e métricas virão aqui.</p></div>
-            </section>
-
-           <section id="tools" class="tab-content">
-                <div class="header-top"><h1>Ferramentas de Criação</h1></div>
-                <div class="card" style="text-align: center; padding: 40px;">
-                    <span class="material-icons" style="font-size: 48px; color: var(--accent); margin-bottom: 15px;">brush</span>
-                    <h3>Canva Workspace</h3>
-                    <p style="color: var(--text-muted); margin-bottom: 20px;">Por políticas de segurança da plataforma, acesse o editor em uma nova guia.</p>
-                    <a href="https://www.canva.com/" target="_blank" class="btn-primary" style="display: inline-block; text-decoration: none; width: auto; padding: 12px 24px;">Abrir Canva <span class="material-icons" style="font-size: 16px; vertical-align: middle;">open_in_new</span></a>
-                </div>
-            </section>
-
-           <section id="ai" class="tab-content">
-                <div class="header-top"><h1>Assistente IA</h1></div>
-                <div class="card" style="text-align: center; padding: 40px;">
-                    <span class="material-icons" style="font-size: 48px; color: var(--accent); margin-bottom: 15px;">smart_toy</span>
-                    <h3>Google Gemini</h3>
-                    <p style="color: var(--text-muted); margin-bottom: 20px;">Acesse o chat do Gemini para pesquisas rápidas e brainstorms em uma nova guia de forma segura.</p>
-                    <a href="https://gemini.google.com/" target="_blank" class="btn-primary" style="display: inline-block; text-decoration: none; width: auto; padding: 12px 24px;">Abrir Gemini <span class="material-icons" style="font-size: 16px; vertical-align: middle;">open_in_new</span></a>
-                </div>
-            </section>
-
-            <section id="ai" class="tab-content">
-                <div class="header-top"><h1>Assistente IA</h1></div>
-               <div class="card" style="text-align: center; padding: 40px;">
-    <span class="material-icons" style="font-size: 48px; color: var(--accent); margin-bottom: 15px;">smart_toy</span>
-    <h3>Google Gemini</h3>
-    <a href="https://gemini.google.com/" target="_blank" class="btn-primary" style="display: inline-block; text-decoration: none; width: auto; padding: 12px 24px;">Abrir Gemini</a>
-</div>
 
             <section id="music" class="tab-content">
-                <div class="header-top"><h1>Foco e Música</h1></div>
+                <div class="header-top"><h1>LudoPlay</h1></div>
+                <div class="input-group" style="margin-bottom: 20px;">
+                    <span class="material-icons">link</span>
+                    <input type="text" placeholder="Cole o link da sua Playlist do Spotify aqui e aperte Enter">
+                </div>
                 <div class="card" style="padding: 0; overflow: hidden; border-radius: 15px;">
-                    <iframe style="border-radius:12px" src="https://open.spotify.com/embed/playlist/37i9dQZF1DXcBWIGoYBM5M?utm_source=generator&theme=0" width="100%" height="352" frameBorder="0" allowfullscreen="" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>
+                    <iframe style="border-radius:12px" src="https://open.spotify.com/embed/playlist/37i9dQZF1DXcBWIGoYBM5M" width="100%" height="352" frameBorder="0" allowfullscreen="" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>
                 </div>
             </section>
-
-            <section id="admin" class="tab-content">
-                <div class="header-top"><h1>Gestão e Cadastros</h1></div>
-                <div class="card"><p>Área restrita para administradores da LudoMKT.</p></div>
-            </section>
-
         </main>
     </div>
 
-    <script type="module" src="firebase.js"></script>
+    <div id="task-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Detalhes da Atividade</h2>
+                <button class="close-btn" onclick="fecharModal()"><span class="material-icons">close</span></button>
+            </div>
+            <form id="task-form">
+                <input type="text" placeholder="Título da Atividade" class="modal-input" required>
+                
+                <div class="modal-row">
+                    <select class="modal-input">
+                        <option value="">Responsável</option>
+                        <option value="joao">João</option>
+                        <option value="maria">Maria</option>
+                    </select>
+                    <select class="modal-input">
+                        <option value="ordinario">Ordinário</option>
+                        <option value="urgente">Urgente</option>
+                        <option value="extraordinario">Extraordinário</option>
+                    </select>
+                </div>
+
+                <div class="modal-row">
+                    <input type="date" class="modal-input" title="Data Início">
+                    <input type="date" class="modal-input" title="Data Fim">
+                </div>
+
+                <input type="url" placeholder="Link de Referência (Canva, Docs, etc)" class="modal-input">
+                <textarea placeholder="Descrição ou Feedback da análise..." class="modal-input" rows="4"></textarea>
+
+                <div class="modal-actions">
+                    <button type="button" class="btn-secundary">Excluir</button>
+                    <button type="button" class="btn-primary" style="background: #ffaa00;">Enviar p/ Análise</button>
+                    <button type="submit" class="btn-primary">Salvar Atividade</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script src="app.js"></script>
 </body>
 </html>
