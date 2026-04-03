@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+    <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js'></script>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -68,9 +69,17 @@
                 </div>
             </section>
 
-            <section id="planner" class="tab-content">
-                <div class="header-top"><h1>Meu Planner Inteligente</h1></div>
-                <div class="card"><p>Calendário UX entrará aqui após instalarmos a biblioteca FullCalendar.</p></div>
+           <section id="planner" class="tab-content">
+                <div class="header-top agenda-header">
+                    <h1>Meu Planner Inteligente</h1>
+                    <button class="btn-primary" style="background: #00C4CC; width: auto; padding: 10px 20px;" onclick="abrirModal()">
+                        <span class="material-icons" style="vertical-align: middle;">add_alert</span> Novo Lembrete
+                    </button>
+                </div>
+                
+                <div class="card" style="padding: 20px; min-height: 500px; background: var(--bg-card);">
+                    <div id='calendar'></div>
+                </div>
             </section>
 
             <section id="beneficios" class="tab-content">
@@ -129,7 +138,7 @@
                     <select class="modal-input"><option value="joao">João</option><option value="maria">Maria</option></select>
                     <select class="modal-input"><option value="urgente">Urgente</option><option value="ordinario">Ordinário</option></select>
                 </div>
-                <input type="text" placeholder="Datas (Ex: 10/05, 12/05)" class="modal-input">
+               <input type="date" class="modal-input" title="Data da Atividade" required>
                 <div class="modal-actions"><button type="submit" class="btn-primary">Salvar</button></div>
             </form>
         </div>
