@@ -142,3 +142,108 @@ document.addEventListener("DOMContentLoaded", () => {
     window.fecharModal = function() {
         document.getElementById('task-modal').style.display = 'none';
     }
+
+import { db } from './firebase.js';
+import { collection, addDoc, onSnapshot, query, orderBy, doc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+document.addEventListener("DOMContentLoaded", () => {
+    
+    // --- REFERÊNCIAS ---
+    const btnEntrar = document.getElementById('btn-entrar');
+    const taskForm = document.getElementById('task-form');
+    const kanbanColumns = {
+        'pendente': document.querySelector('#visao-kanban .kanban-column:nth-child(1)'),
+        'analise': document.querySelector('#visao-kanban .kanban-column:nth-child(2)'),
+        'concluido': document.querySelector('#visao-kanban .kanban-column:nth-child(3)')
+    };
+
+    // --- LOGIN SIMULADO ---
+    btnEntrar?.addEventListener('click', () => {
+        document.getElementById('login-screen').style.display = 'none';
+        document.getElementById('app-container').style.display = 'flex';
+    });
+
+    // --- SALVAR TAREFA NO FIREBASE ---
+    taskForm?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const novaTarefa = {
+            titulo: taskForm.querySelector('input[type="text"]').value,
+            responsavel: taskForm.querySelectorAll('select')[0].value,
+            prioridade: taskForm.querySelectorAll('select')[1].value,
+            dataInicio: taskForm.querySelectorAll('input[type="date"]')[0].value,
+            dataFim: taskForm.querySelectorAll('input[type="date"]')[1].value,
+            link: taskForm.querySelector('input[type="url"]').value,
+            descricao: taskForm.querySelector('textarea').value,
+            status: 'pendente', // Toda tarefa nasce pendente
+            criadoEm: new Date().getTime()
+        };
+
+        try {
+            await addDoc(collection(db, "atividades"), novaTarefa);
+            fecharModal();
+            taskForm.reset();
+            alert("Atividade salva com sucesso!");
+        } catch (error) {
+            console.error("Erro ao salvar:", error);
+        }
+    });
+
+    // --- LER TAREFAS EM TEMPO REAL (MÁGICA DO KANBAN) ---
+    const q = query(collection(db, "atividades"), orderBy("criadoEm", "desc"));
+    
+    onSnapshot(q, (snapshot) => {
+        // Limpar colunas antes de renderizar
+        Object.values(kanbanColumns).forEach(col => {
+            const container = col.querySelector('.cards-container') || col;
+            // Mantém apenas o título da coluna (H3)
+            const titulo = col.querySelector('h3');
+            col.innerHTML = '';
+            col.appendChild(titulo);
+        });
+
+        snapshot.forEach((doc) => {
+            const tarefa = doc.data();
+            const id = doc.id;
+            renderizarCard(id, tarefa);
+        });
+    });
+
+    function renderizarCard(id, data) {
+        const card = document.createElement('div');
+        card.className = `kanban-card neon-card prioridade-${data.prioridade}`;
+        card.innerHTML = `
+            <div class="card-badges"><span class="badge-prioridade">${data.prioridade}</span></div>
+            <h4>${data.titulo}</h4>
+            <p>Resp: ${data.responsavel || 'Ninguém'}</p>
+            <div class="card-footer">
+                ${data.link ? `<span class="material-icons icon-link" onclick="window.open('${data.link}', '_blank')">link</span>` : ''}
+                <span class="material-icons" style="color: #888; cursor:pointer" onclick="editarTarefa('${id}')">edit</span>
+            </div>
+        `;
+        
+        // Coloca o card na coluna certa baseada no status
+        if(kanbanColumns[data.status]) {
+            kanbanColumns[data.status].appendChild(card);
+        }
+    }
+
+    // Funções de Modal que agora precisam estar no escopo do módulo
+    window.abrirModal = () => document.getElementById('task-modal').style.display = 'flex';
+    window.fecharModal = () => document.getElementById('task-modal').style.display = 'none';
+    
+    window.mudarVisao = function(visaoId) {
+        document.querySelectorAll('.view-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.agenda-view').forEach(v => v.style.display = 'none');
+        document.getElementById('visao-' + visaoId).style.display = 'block';
+    };
+
+    // Splash Screen
+    setTimeout(() => {
+        const splash = document.getElementById('splash-screen');
+        if(splash) {
+            splash.style.opacity = '0';
+            setTimeout(() => splash.style.display = 'none', 800);
+        }
+    }, 2000);
+});
