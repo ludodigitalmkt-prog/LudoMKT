@@ -1,83 +1,43 @@
 // ==========================================
 // 1. IMPORTS DO FIREBASE
 // ==========================================
-import { db, auth } from './firebase.js'; // Importando auth agora
+import { db, auth } from './firebase.js';
 import { collection, addDoc, onSnapshot, query, orderBy, doc, updateDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
-// Suas funções globais (toggleIA, abrirModal, mudarVisao) continuam aqui...
-window.toggleIA = function() { /* ... */ };
+// ==========================================
+// 2. FUNÇÕES GLOBAIS (Modais, Abas e IA)
+// ==========================================
+window.toggleIA = function() {
+    const chat = document.getElementById('ludotech-chat');
+    if (chat) {
+        if(chat.classList.contains('chat-hidden')) {
+            chat.classList.remove('chat-hidden');
+            chat.classList.add('chat-active');
+        } else {
+            chat.classList.remove('chat-active');
+            chat.classList.add('chat-hidden');
+        }
+    }
+};
+
 window.abrirModal = () => document.getElementById('task-modal').style.display = 'flex';
 window.fecharModal = () => document.getElementById('task-modal').style.display = 'none';
-window.mudarVisao = function(visaoId) { /* ... */ };
 
+window.mudarVisao = function(visaoId) {
+    document.querySelectorAll('.view-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.agenda-view').forEach(v => v.style.display = 'none');
+    if(event) event.currentTarget.classList.add('active');
+    const target = document.getElementById('visao-' + visaoId);
+    if(target) target.style.display = 'block';
+};
+
+// ==========================================
+// 3. LÓGICA PRINCIPAL (Ao carregar a tela)
+// ==========================================
 document.addEventListener("DOMContentLoaded", () => {
     
-    // --- LOGIN REAL COM FIREBASE ---
-    const btnEntrar = document.getElementById('btn-entrar');
-    btnEntrar?.addEventListener('click', async () => {
-        const email = document.getElementById('email').value;
-        const senha = document.getElementById('password').value;
-        
-        try {
-            // Tenta logar de verdade no Firebase
-            const userCredential = await signInWithEmailAndPassword(auth, email, senha);
-            const user = userCredential.user;
-            
-            // Sucesso! Muda a tela e mostra a IA
-            document.getElementById('login-screen').style.display = 'none';
-            document.getElementById('app-container').style.display = 'flex';
-            document.getElementById('ludotech-widget').style.display = 'block'; // Mostra a IA
-            
-            console.log("Logado como:", user.email);
-            // Futuramente: Aqui leremos as permissões do usuário para esconder/mostrar abas
-            
-        } catch (error) {
-            console.error("Erro no login:", error.code);
-            alert("E-mail ou senha incorretos! (Ou usuário não existe)");
-        }
-    });
-
-    // --- CADASTRO DE RH (CRIAR COLABORADOR) ---
-    const formRH = document.getElementById('form-rh');
-    formRH?.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        
-        const nome = document.getElementById('rh-nome').value;
-        const email = document.getElementById('rh-email').value;
-        const senha = document.getElementById('rh-senha').value;
-        
-        // Pega todos os checkboxes marcados para salvar as permissões
-        const checkboxes = formRH.querySelectorAll('input[type="checkbox"]:checked');
-        const permissoes = Array.from(checkboxes).map(cb => cb.value);
-
-        try {
-            // 1. Cria a conta no sistema de Autenticação do Firebase
-            const userCredential = await createUserWithEmailAndPassword(auth, email, senha);
-            const novoUsuario = userCredential.user;
-
-            // 2. Salva o perfil e permissões no Banco de Dados
-            await setDoc(doc(db, "usuarios", novoUsuario.uid), {
-                nome: nome,
-                email: email,
-                permissoes: permissoes,
-                criadoEm: new Date().getTime()
-            });
-
-            alert(`Colaborador ${nome} cadastrado com sucesso!`);
-            formRH.reset();
-            
-        } catch (error) {
-            console.error("Erro ao criar usuário:", error);
-            if(error.code === 'auth/email-already-in-use') alert("Esse e-mail já está cadastrado.");
-            else if(error.code === 'auth/weak-password') alert("A senha deve ter pelo menos 6 caracteres.");
-            else alert("Erro ao cadastrar. Verifique o console.");
-        }
-    });
-
-    // ... restante do seu código do Kanban e Splash Screen continuam aqui ...
-    
-    // --- SPLASH SCREEN E LOGIN ---
+    // --- SPLASH SCREEN ---
     setTimeout(() => {
         const splash = document.getElementById('splash-screen');
         const login = document.getElementById('login-screen');
@@ -90,56 +50,95 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }, 2000);
 
+    // --- LOGIN REAL COM FIREBASE ---
     const btnEntrar = document.getElementById('btn-entrar');
-    btnEntrar?.addEventListener('click', () => {
+    btnEntrar?.addEventListener('click', async () => {
         const email = document.getElementById('email').value;
         const senha = document.getElementById('password').value;
-        if(email !== "" && senha !== "") {
+        
+        try {
+            const userCredential = await signInWithEmailAndPassword(auth, email, senha);
+            
+            // Sucesso! Muda a tela
             document.getElementById('login-screen').style.display = 'none';
             document.getElementById('app-container').style.display = 'flex';
-        } else {
-            alert("Por favor, preencha e-mail e senha para acessar.");
+            
+            // Mostra a IA flutuante
+            const widgetIA = document.getElementById('ludotech-widget');
+            if(widgetIA) widgetIA.style.display = 'block'; 
+            
+        } catch (error) {
+            console.error("Erro no login:", error.code);
+            alert("E-mail ou senha incorretos!");
         }
     });
 
-    // --- NAVEGAÇÃO DO MENU LATERAL (Sem erros) ---
+    // --- NAVEGAÇÃO DO MENU LATERAL ---
     const buttons = document.querySelectorAll(".menu-btn[data-target]");
     buttons.forEach(button => {
         button.addEventListener("click", () => {
             const targetId = button.getAttribute("data-target");
             const targetElement = document.getElementById(targetId);
             
-            // Só muda de aba se a seção correspondente existir no HTML
             if(targetElement) {
                 buttons.forEach(btn => btn.classList.remove("active"));
                 document.querySelectorAll(".tab-content").forEach(tab => tab.classList.remove("active"));
                 
                 button.classList.add("active");
                 targetElement.classList.add("active");
-            } else {
-                console.warn(`Em construção: A aba ${targetId} ainda não está no HTML.`);
             }
         });
     });
 
-    // --- FIREBASE: SALVAR TAREFA ---
+    // --- CADASTRO DE RH (CRIAR COLABORADOR) ---
+    const formRH = document.getElementById('form-rh');
+    formRH?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const nome = document.getElementById('rh-nome').value;
+        const email = document.getElementById('rh-email').value;
+        const senha = document.getElementById('rh-senha').value;
+        
+        const checkboxes = formRH.querySelectorAll('input[type="checkbox"]:checked');
+        const permissoes = Array.from(checkboxes).map(cb => cb.value);
+
+        try {
+            const userCredential = await createUserWithEmailAndPassword(auth, email, senha);
+            const novoUsuario = userCredential.user;
+
+            await setDoc(doc(db, "usuarios", novoUsuario.uid), {
+                nome: nome,
+                email: email,
+                permissoes: permissoes,
+                criadoEm: new Date().getTime()
+            });
+
+            alert(`Colaborador ${nome} cadastrado com sucesso!`);
+            formRH.reset();
+        } catch (error) {
+            console.error("Erro ao criar usuário:", error);
+            if(error.code === 'auth/email-already-in-use') alert("Esse e-mail já está cadastrado.");
+            else if(error.code === 'auth/weak-password') alert("A senha deve ter pelo menos 6 caracteres.");
+            else alert("Erro ao cadastrar. Verifique o console.");
+        }
+    });
+
+    // --- FIREBASE: SALVAR TAREFA NA AGENDA ---
     const taskForm = document.getElementById('task-form');
-    
     taskForm?.addEventListener('submit', async (e) => {
         e.preventDefault();
         
-        // Pegando os valores do formulário
         const inputsText = taskForm.querySelectorAll('input[type="text"]');
         const selects = taskForm.querySelectorAll('select');
         
         const novaTarefa = {
             titulo: inputsText[0].value,
-            datas: inputsText[1].value, // Pega o campo de múltiplas datas
+            datas: inputsText[1].value, 
             responsavel: selects[0].value,
             prioridade: selects[1].value,
             link: taskForm.querySelector('input[type="url"]').value,
             descricao: taskForm.querySelector('textarea').value,
-            status: 'pendente', // Nasce na primeira coluna
+            status: 'pendente',
             criadoEm: new Date().getTime()
         };
 
@@ -148,8 +147,8 @@ document.addEventListener("DOMContentLoaded", () => {
             fecharModal();
             taskForm.reset();
         } catch (error) {
-            console.error("Erro ao salvar:", error);
-            alert("Libere as permissões no console do Firebase primeiro!");
+            console.error("Erro ao salvar tarefa:", error);
+            alert("Aviso: Banco de dados com regras fechadas ou erro de conexão.");
         }
     });
 
@@ -163,7 +162,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const q = query(collection(db, "atividades"), orderBy("criadoEm", "desc"));
     
     onSnapshot(q, (snapshot) => {
-        // Limpa as colunas antes de atualizar os cards
         if(kanbanColumns.pendente) kanbanColumns.pendente.innerHTML = '';
         if(kanbanColumns.analise) kanbanColumns.analise.innerHTML = '';
         if(kanbanColumns.concluido) kanbanColumns.concluido.innerHTML = '';
@@ -179,7 +177,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const card = document.createElement('div');
         card.className = `kanban-card neon-card prioridade-${data.prioridade}`;
         card.setAttribute('draggable', 'true');
-        card.dataset.id = id; // Salva o ID do Firebase no card para usar ao arrastar
+        card.dataset.id = id; 
 
         card.innerHTML = `
             <div class="card-badges"><span class="badge-prioridade">${data.prioridade}</span></div>
@@ -188,11 +186,10 @@ document.addEventListener("DOMContentLoaded", () => {
             <p style="font-size: 11px; color: #aaa; margin-top: 5px;">📅 ${data.datas || 'Sem data'}</p>
             <div class="card-footer">
                 ${data.link ? `<span class="material-icons icon-link" onclick="window.open('${data.link}', '_blank')">link</span>` : '<span></span>'}
-                <span class="material-icons" style="color: #888; cursor:pointer" onclick="alert('Função de edição em breve!')">edit</span>
+                <span class="material-icons" style="color: #888; cursor:pointer">edit</span>
             </div>
         `;
         
-        // Eventos de arrastar individuais do card
         card.addEventListener('dragstart', () => {
             card.classList.add('dragging');
             card.style.opacity = '0.5';
@@ -203,14 +200,12 @@ document.addEventListener("DOMContentLoaded", () => {
             card.style.opacity = '1';
         });
         
-        // Joga o card na coluna certa
         const statusTarget = kanbanColumns[data.status] || kanbanColumns['pendente'];
         if(statusTarget) statusTarget.appendChild(card);
     }
 
-    // --- ARRASTAR E SOLTAR (DRAG AND DROP INTEGRADO AO FIREBASE) ---
+    // --- ARRASTAR E SOLTAR (DRAG AND DROP) ---
     const columns = document.querySelectorAll('.kanban-column');
-    
     columns.forEach(column => {
         column.addEventListener('dragover', e => {
             e.preventDefault();
@@ -221,15 +216,11 @@ document.addEventListener("DOMContentLoaded", () => {
             const draggable = document.querySelector('.dragging');
             
             if (draggable) {
-                if (afterElement == null) {
-                    containerCards.appendChild(draggable);
-                } else {
-                    containerCards.insertBefore(draggable, afterElement);
-                }
+                if (afterElement == null) containerCards.appendChild(draggable);
+                else containerCards.insertBefore(draggable, afterElement);
             }
         });
 
-        // Quando o card for solto (drop), atualiza no banco de dados!
         column.addEventListener('drop', async (e) => {
             const draggable = document.querySelector('.dragging');
             if(draggable) {
@@ -240,7 +231,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 if (columnTitle.includes('análise')) novoStatus = 'analise';
                 if (columnTitle.includes('concluído')) novoStatus = 'concluido';
 
-                // Atualiza a nuvem
                 const taskRef = doc(db, "atividades", taskId);
                 await updateDoc(taskRef, { status: novoStatus });
             }
@@ -252,15 +242,12 @@ document.addEventListener("DOMContentLoaded", () => {
         return draggableElements.reduce((closest, child) => {
             const box = child.getBoundingClientRect();
             const offset = y - box.top - box.height / 2;
-            if (offset < 0 && offset > closest.offset) {
-                return { offset: offset, element: child };
-            } else {
-                return closest;
-            }
+            if (offset < 0 && offset > closest.offset) return { offset: offset, element: child };
+            else return closest;
         }, { offset: Number.NEGATIVE_INFINITY }).element;
     }
 
-    // --- REGISTRO DO PWA (APP CELULAR) ---
+    // --- REGISTRO DO PWA ---
     if ("serviceWorker" in navigator) {
         window.addEventListener("load", function() {
             navigator.serviceWorker.register("sw.js")
