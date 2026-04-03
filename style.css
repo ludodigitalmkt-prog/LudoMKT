@@ -325,3 +325,26 @@ body {
 }
 .chat-footer input { flex-grow: 1; background: var(--bg-body); border: none; padding: 10px; border-radius: 20px; color: #fff; outline: none; }
 .chat-footer button { background: var(--accent); border: none; width: 40px; height: 40px; border-radius: 50%; color: #fff; cursor: pointer; display:flex; justify-content:center; align-items:center; }
+
+/* --- CORREÇÃO: ESCONDER IA NO LOGIN --- */
+#ludotech-widget {
+    position: fixed; bottom: 30px; right: 30px; z-index: 9000;
+    display: none; /* Garante que nasce escondida */
+}
+
+/* --- CORES DAS COLUNAS DO KANBAN --- */
+/* Pendente (Vermelho) */
+#visao-kanban .kanban-column:nth-child(1) {
+    border-top: 4px solid #ff3366;
+    background: linear-gradient(to bottom, rgba(255, 51, 102, 0.05), transparent);
+}
+/* Análise/Andamento (Amarelo) */
+#visao-kanban .kanban-column:nth-child(2) {
+    border-top: 4px solid #ffaa00;
+    background: linear-gradient(to bottom, rgba(255, 170, 0, 0.05), transparent);
+}
+/* Concluído (Verde) */
+#visao-kanban .kanban-column:nth-child(3) {
+    border-top: 4px solid #00ff88;
+    background: linear-gradient(to bottom, rgba(0, 255, 136, 0.05), transparent);
+}
