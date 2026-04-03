@@ -154,9 +154,38 @@
             </section>
 
             <section id="music" class="tab-content"><div class="header-top"><h1>LudoPlay</h1></div><div class="card"><p>Música aqui.</p></div></section>
-            <section id="admin" class="tab-content"><div class="header-top"><h1>Ajustes do Sistema</h1></div><div class="card"><p>Painel de design e cores virá aqui.</p></div></section>
-        </main>
-    </div>
+            <section id="admin" class="tab-content">
+                <div class="header-top"><h1>Ajustes do Sistema (Admin)</h1></div>
+                
+                <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+                    <div class="card" style="flex: 1; min-width: 300px;">
+                        <h3 style="margin-bottom: 15px; color: var(--accent);">Identidade Visual</h3>
+                        
+                        <label style="display:block; margin-bottom: 5px; color: var(--text-muted);">Logo Principal (Menu e Login):</label>
+                        <input type="file" id="upload-logo-main" class="modal-input" accept="image/png, image/jpeg">
+                        
+                        <label style="display:block; margin-top: 15px; margin-bottom: 5px; color: var(--text-muted);">Logo Splash Screen (Animação):</label>
+                        <input type="file" id="upload-logo-splash" class="modal-input" accept="image/png, image/jpeg">
+                        
+                        <label style="display:block; margin-top: 15px; margin-bottom: 5px; color: var(--text-muted);">Avatar LudoTech (IA):</label>
+                        <input type="file" id="upload-logo-ia" class="modal-input" accept="image/png, image/jpeg">
+                        
+                        <button class="btn-primary" style="margin-top: 20px;">Salvar Imagens</button>
+                    </div>
+
+                    <div class="card" style="flex: 1; min-width: 300px;">
+                        <h3 style="margin-bottom: 15px; color: var(--accent);">Links Externos</h3>
+                        
+                        <label style="display:block; margin-bottom: 5px; color: var(--text-muted);">Link do Canva Workspace:</label>
+                        <input type="url" id="link-canva" class="modal-input" placeholder="https://canva.com/...">
+                        
+                        <label style="display:block; margin-top: 15px; margin-bottom: 5px; color: var(--text-muted);">Link do Instagram:</label>
+                        <input type="url" id="link-insta" class="modal-input" placeholder="https://instagram.com/...">
+                        
+                        <button class="btn-primary" style="margin-top: 20px;">Atualizar Botões</button>
+                    </div>
+                </div>
+            </section>
 
     <div id="ludotech-widget">
         <div id="ludotech-chat" class="chat-hidden">
