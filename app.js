@@ -10,7 +10,7 @@ document.addEventListener("DOMContentLoaded", () => {
     btnEntrar.addEventListener('click', () => {
         const email = document.getElementById('email').value;
         const senha = document.getElementById('password').value;
-
+        
         // Validação simples para teste visual
         if(email !== "" && senha !== "") {
             loginScreen.style.display = 'none';
@@ -104,3 +104,41 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 });
+
+// ==========================================
+    // 5. ANIMAÇÃO DE CARREGAMENTO (SPLASH SCREEN)
+    // ==========================================
+    setTimeout(() => {
+        const splash = document.getElementById('splash-screen');
+        const login = document.getElementById('login-screen');
+        
+        // Esmaece a splash screen
+        splash.style.opacity = '0';
+        
+        // Após 800ms (tempo da transição), esconde ela e mostra o login
+        setTimeout(() => {
+            splash.style.display = 'none';
+            login.style.display = 'flex';
+        }, 800);
+    }, 2000); // Fica na tela por 2 segundos
+
+    // ==========================================
+    // 6. CONTROLE DE VISÕES DA AGENDA E MODAL
+    // ==========================================
+    window.mudarVisao = function(visaoId) {
+        // Remove active dos botões e esconde visões
+        document.querySelectorAll('.view-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.agenda-view').forEach(v => v.style.display = 'none');
+        
+        // Ativa o clicado
+        event.currentTarget.classList.add('active');
+        document.getElementById('visao-' + visaoId).style.display = 'block';
+    }
+
+    window.abrirModal = function() {
+        document.getElementById('task-modal').style.display = 'flex';
+    }
+
+    window.fecharModal = function() {
+        document.getElementById('task-modal').style.display = 'none';
+    }
