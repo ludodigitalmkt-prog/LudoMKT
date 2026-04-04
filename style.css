@@ -1,45 +1,35 @@
 @property --rotate { syntax: "<angle>"; initial-value: 132deg; inherits: false; }
 
 :root {
-    --bg-body: #0a0c10; 
-    --bg-sidebar: #12151c;
-    --bg-card: #1a1e29;
-    --text-main: #ffffff;
-    --text-muted: #8b949e;
-    --accent: #6c5ce7; 
-    --accent-hover: #5a4bcf;
-    --border: #30363d;
-    --shadow: 0 8px 24px rgba(0,0,0,0.4);
+    --bg-body: #0a0c10; --bg-sidebar: #12151c; --bg-card: #1a1e29;
+    --text-main: #ffffff; --text-muted: #8b949e;
+    --accent: #6c5ce7; --accent-hover: #5a4bcf;
+    --border: #30363d; --shadow: 0 8px 24px rgba(0,0,0,0.4);
 }
 
-* { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Roboto, Helvetica, sans-serif; }
+* { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
 body { background-color: var(--bg-body); color: var(--text-main); height: 100vh; display: flex; overflow: hidden; }
 
-/* TELA DE SPLASH */
-#splash-screen { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: var(--bg-body); display: flex; justify-content: center; align-items: center; z-index: 9999; transition: opacity 0.8s ease; }
-.splash-logo { width: 150px; animation: zoomInOut 2s ease forwards; }
+/* TELAS INICIAIS */
+#splash-screen { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: var(--bg-body); display: flex; justify-content: center; align-items: center; z-index: 9999; transition: opacity 0.8s; }
+.splash-logo { width: 150px; animation: zoomInOut 2s forwards; }
 @keyframes zoomInOut { 0% { transform: scale(0.5); opacity: 0; } 50% { transform: scale(1.2); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
 
-/* --- LOGIN UIVERSE --- */
 #login-screen { width: 100vw; height: 100vh; display: flex; align-items: center; justify-content: center; background: radial-gradient(circle at center, #1a1e29 0%, #0a0c10 100%); position: absolute; z-index: 1000; }
-.form { display: flex; flex-direction: column; gap: 10px; padding: 2em; background-color: #171717; border-radius: 25px; transition: .4s ease-in-out; border: 1px solid var(--border); box-shadow: var(--shadow);}
+.form { display: flex; flex-direction: column; gap: 10px; padding: 2em; background-color: #171717; border-radius: 25px; transition: .4s; border: 1px solid var(--border); box-shadow: var(--shadow);}
 .form:hover { transform: scale(1.02); border: 1px solid var(--accent); }
 #heading { text-align: center; margin-bottom: 1.5em; color: white; font-size: 1.5em; font-weight: bold;}
-.field { display: flex; align-items: center; justify-content: center; gap: 0.5em; border-radius: 25px; padding: 0.8em; border: none; outline: none; color: white; background-color: #171717; box-shadow: inset 2px 5px 10px rgb(5, 5, 5); }
-.input-icon { height: 1.3em; width: 1.3em; fill: var(--text-muted); }
+.field { display: flex; align-items: center; gap: 0.5em; border-radius: 25px; padding: 0.8em; background-color: #171717; box-shadow: inset 2px 5px 10px rgb(5, 5, 5); }
 .input-field { background: none; border: none; outline: none; width: 100%; color: #d3d3d3; font-size: 16px;}
-.form .btn { display: flex; justify-content: center; flex-direction: row; margin-top: 2em; }
-.button1 { padding: 0.8em 2em; border-radius: 12px; border: none; outline: none; transition: .4s ease-in-out; background-color: var(--accent); color: white; cursor: pointer; font-weight: bold; width: 100%; font-size: 16px;}
-.button1:hover { background-color: var(--accent-hover); color: white; transform: scale(1.05);}
+.button1 { padding: 0.8em 2em; border-radius: 12px; border: none; background-color: var(--accent); color: white; cursor: pointer; font-weight: bold; width: 100%; margin-top:20px; transition:0.3s;}
+.button1:hover { background-color: var(--accent-hover); transform: scale(1.05);}
 
-/* --- BOTÃO UIVERSE SPACIOUS74 --- */
+/* BOTÕES UIVERSE */
 .button-uiverse { cursor: pointer; border-radius: 12px; border: none; padding: 2px; background: radial-gradient(circle 80px at 80% -10%, #6c5ce7, #181b1b); position: relative; }
-.button-uiverse::after { content: ""; position: absolute; width: 65%; height: 60%; border-radius: 120px; top: 0; right: 0; box-shadow: 0 0 20px rgba(108, 92, 231, 0.4); z-index: -1; }
 .blob1 { position: absolute; width: 70px; height: 100%; border-radius: 16px; bottom: 0; left: 0; background: radial-gradient(circle 60px at 0% 100%, #ff3366, #6c5ce7, transparent); box-shadow: -10px 10px 30px rgba(108, 92, 231, 0.3); }
 .inner { padding: 12px 20px; border-radius: 10px; color: #fff; z-index: 3; position: relative; background: radial-gradient(circle 80px at 80% -50%, #2a2d3e, #0f1111); display: flex; align-items: center; gap: 8px; font-weight: bold;}
-.inner::before { content: ""; width: 100%; height: 100%; left: 0; top: 0; border-radius: 14px; background: radial-gradient(circle 60px at 0% 100%, rgba(108, 92, 231, 0.1), transparent); position: absolute; }
 
-/* WORKSPACE BÁSICO */
+/* WORKSPACE E KANBAN */
 #app-container { width: 100vw; height: 100vh; }
 .sidebar { width: 280px; background-color: var(--bg-sidebar); border-right: 1px solid var(--border); padding: 24px; display: flex; flex-direction: column; }
 .sidebar .logo { margin-bottom: 40px; text-align: center;}
@@ -53,23 +43,24 @@ body { background-color: var(--bg-body); color: var(--text-main); height: 100vh;
 .tab-content.active { display: block; }
 .header-top { margin-bottom: 30px; }
 .card { background: var(--bg-card); border-radius: 16px; padding: 30px; box-shadow: var(--shadow); border: 1px solid var(--border); }
+.btn-secundary { background: transparent; border: 1px solid var(--border); color: #fff; padding: 10px 15px; border-radius: 8px; cursor: pointer;}
 
-/* --- KANBAN E MAGIC CARD (MYTHRILL) --- */
 .agenda-header { display: flex; justify-content: space-between; align-items: center; }
 .kanban-board { display: flex; gap: 20px; height: 70vh; }
 .kanban-column { flex: 1; background: var(--bg-sidebar); border-radius: 12px; padding: 20px; border: 1px solid var(--border); overflow-y:auto;}
 #coluna-vermelha { border-top: 4px solid #ff3366 !important; }
 #coluna-amarela { border-top: 4px solid #ffaa00 !important; }
 #coluna-verde { border-top: 4px solid #00ff88 !important; }
-
-/* Aplicação do Magic Card adaptada para não quebrar a tela */
-.kanban-card { background: #191c29; padding: 15px; border-radius: 8px; margin-bottom: 15px; position: relative; cursor: pointer; display: flex; flex-direction: column; color: #fff; text-align: left; z-index: 1;}
-.kanban-card:hover { transition: color 1s; }
-.kanban-card::before { content: ""; width: 104%; height: 104%; border-radius: 10px; background-image: linear-gradient(var(--rotate), #5ddcff, #3c67e3 43%, #4e00c2); position: absolute; z-index: -1; top: -2%; left: -2%; animation: spin 3s linear infinite; opacity: 0; transition: opacity 0.3s;}
+.kanban-card { background: #191c29; padding: 15px; border-radius: 8px; margin-bottom: 15px; position: relative; cursor: pointer; display: flex; flex-direction: column; color: #fff; z-index: 1;}
+.kanban-card::before { content: ""; width: 104%; height: 104%; border-radius: 10px; background-image: linear-gradient(var(--rotate), #5ddcff, #3c67e3 43%, #4e00c2); position: absolute; z-index: -1; top: -2%; left: -2%; animation: spin 3s linear infinite; opacity: 0; transition: 0.3s;}
 .kanban-card:hover::before { opacity: 1; }
 @keyframes spin { 0% { --rotate: 0deg; } 100% { --rotate: 360deg; } }
 
-/* MODAL */
+/* CHAT IA & MODAL */
+.chat-hidden { opacity: 0; pointer-events: none; transform: translateY(20px); }
+.chat-active { opacity: 1; pointer-events: all; transform: translateY(0); }
+.msg-user { background: var(--accent); color: white; padding: 10px; border-radius: 10px 10px 0 10px; align-self: flex-end; max-width: 80%; font-size:14px; }
+.msg-ia { background: var(--bg-sidebar); color: var(--text-muted); padding: 10px; border-radius: 10px 10px 10px 0; align-self: flex-start; max-width: 80%; font-size:14px;}
 .modal-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.7); backdrop-filter: blur(5px); display: flex; justify-content: center; align-items: center; z-index: 2000; }
 .modal-content { background: var(--bg-card); width: 100%; max-width: 600px; padding: 30px; border-radius: 20px; border: 1px solid var(--border); box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
 .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
@@ -78,11 +69,16 @@ body { background-color: var(--bg-body); color: var(--text-main); height: 100vh;
 .modal-row { display: flex; gap: 15px; }
 .modal-actions { display: flex; justify-content: flex-end; margin-top: 10px; }
 
-/* FULLCALENDAR DARK MODE */
+/* FULLCALENDAR */
 .fc { color: var(--text-main); }
 .fc-theme-standard .fc-scrollgrid, .fc-theme-standard td, .fc-theme-standard th { border-color: var(--border) !important; }
 .fc-col-header-cell { background-color: var(--bg-sidebar); padding: 10px 0 !important; }
 .fc .fc-button-primary { background-color: var(--accent); border-color: var(--accent); text-transform: capitalize; }
-.fc-event { cursor: pointer; border: none; padding: 4px; font-size: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.4); border-radius: 4px;}
+.fc-event { cursor: pointer; border: none; padding: 4px; font-size: 12px; border-radius: 4px;}
 
+/* LUDOPLAY ADAPTADO */
+.ludoplay-container { display: grid; grid-template-columns: 60% 40%; gap: 20px; }
+.ludoplay-right { background: rgba(16, 21, 61, 0.5); border-radius: 15px; padding: 20px; box-shadow: var(--shadow); display:flex; justify-content:center; align-items:center; }
+.swiper-slide { width: 300px; position: relative; }
+.slide-overlay { position: absolute; bottom:0; width: 100%; background: linear-gradient(to top, rgba(38,21,149,0.9), transparent); padding: 20px; border-radius: 15px; }
 @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
