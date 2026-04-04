@@ -1,4 +1,4 @@
-import { db, auth, storage, secondaryAuth } from './firebase.js'; // Importamos o secondaryAuth
+import { db, auth, storage, secondaryAuth } from './firebase.js';
 import { collection, addDoc, onSnapshot, query, orderBy, doc, updateDoc, setDoc, getDocs, getDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 import { ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js";
@@ -7,6 +7,16 @@ import { ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/fireba
 let userLogged = null;
 let currentColabId = null;
 let todasAtividades = {};
+let tarefasPendentesAnterior = -1; // Variável para o sistema de notificações
+
+// REGISTRAR O APP (PWA)
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js').then(() => {
+            console.log('App LudoMKT pronto para instalação!');
+        });
+    });
+}
 
 // --- FUNÇÕES DE INTERFACE ---
 window.toggleIA = () => {
@@ -18,7 +28,8 @@ window.toggleIA = () => {
 window.abrirModal = () => { 
     document.getElementById('task-id').value = ""; 
     document.getElementById('task-form').reset(); 
-    document.getElementById('btn-excluir-tarefa').style.display = 'none'; // Esconde botão excluir
+    const btnDel = document.getElementById('btn-excluir-tarefa');
+    if(btnDel) btnDel.style.display = 'none';
     document.getElementById('task-modal').style.display = 'flex'; 
 };
 window.fecharModal = () => document.getElementById('task-modal').style.display = 'none';
@@ -33,16 +44,16 @@ window.editarTarefa = function(id) {
     document.getElementById('task-datas').value = t.datas || ''; 
     document.getElementById('task-desc').value = t.descricao || '';
     
-    // Mostra botão de exclusão
     const btnDel = document.getElementById('btn-excluir-tarefa');
-    btnDel.style.display = 'inline-block';
-    btnDel.onclick = async () => {
-        if(confirm("Tem certeza que deseja excluir esta tarefa?")) {
-            await deleteDoc(doc(db, "atividades", id));
-            fecharModal();
-        }
-    };
-
+    if(btnDel) {
+        btnDel.style.display = 'inline-block';
+        btnDel.onclick = async () => {
+            if(confirm("Tem certeza que deseja excluir esta tarefa?")) {
+                await deleteDoc(doc(db, "atividades", id));
+                fecharModal();
+            }
+        };
+    }
     document.getElementById('task-modal').style.display = 'flex';
 };
 
@@ -52,7 +63,6 @@ window.mudarVisaoAgenda = (v) => {
     if(v === 'calendario' && window.calendarioGeral) setTimeout(() => window.calendarioGeral.render(), 100);
 };
 
-// --- LOGO ENGINE ---
 async function carregarLogos() {
     try {
         const snap = await getDoc(doc(db, 'config', 'visual'));
@@ -62,10 +72,9 @@ async function carregarLogos() {
             if(d.logoLogin) document.getElementById('logo-login').src = d.logoLogin;
             if(d.logoMenu) document.getElementById('logo-menu').src = d.logoMenu;
         }
-    } catch(e) { console.log("Logos não configuradas."); }
+    } catch(e) {}
 }
 
-// --- PERMISSÕES E MENU ---
 function aplicarPermissoes(permissoes) {
     const nav = document.getElementById('main-nav');
     const links = {
@@ -99,7 +108,6 @@ function aplicarPermissoes(permissoes) {
     });
 }
 
-// --- RH E EXCLUSÃO ---
 async function carregarColaboradores() {
     const sel = document.getElementById('task-responsaveis');
     const container = document.getElementById('lista-colaboradores-cards');
@@ -126,16 +134,17 @@ window.abrirPastaColaborador = async (id, data) => {
     currentColabId = id;
     document.getElementById('modal-rh-nome').innerText = "Pasta: " + data.nome;
     
-    // Botão de excluir o funcionário
-    document.getElementById('btn-excluir-colaborador').onclick = async () => {
-        if(confirm("ATENÇÃO: Deseja EXCLUIR este colaborador do sistema? Isso não pode ser desfeito.")) {
-            await deleteDoc(doc(db, "usuarios", id));
-            fecharModalRH();
-            carregarColaboradores();
-            alert("Colaborador removido do sistema.");
-        }
-    };
-
+    const btnExcluirColab = document.getElementById('btn-excluir-colaborador');
+    if(btnExcluirColab) {
+        btnExcluirColab.onclick = async () => {
+            if(confirm("ATENÇÃO: Deseja EXCLUIR este colaborador do sistema? Isso não pode ser desfeito.")) {
+                await deleteDoc(doc(db, "usuarios", id));
+                fecharModalRH();
+                carregarColaboradores();
+                alert("Colaborador removido do sistema.");
+            }
+        };
+    }
     document.getElementById('modal-colaborador').style.display = 'flex';
     monitorarHistorico(id);
 };
@@ -157,7 +166,6 @@ function monitorarHistorico(id) {
     });
 }
 
-// --- MONITOR DE BENEFÍCIOS DINÂMICOS DO USUÁRIO LOGADO ---
 function monitorarBeneficiosPendentes() {
     if(!userLogged) return;
     const q = query(collection(db, `usuarios/${userLogged.uid}/beneficiosPendentes`));
@@ -186,19 +194,14 @@ function monitorarBeneficiosPendentes() {
             `;
             grid.appendChild(card);
 
-            // Lógica de resgate e sumir
             document.getElementById(`btn-receber-${benId}`).onclick = async () => {
                 if(ben.qrCode && document.getElementById(`qr-area-${benId}`).style.display === 'none') {
-                    // Primeiro clique: Mostra o QR Code e muda o texto do botão
                     document.getElementById(`qr-area-${benId}`).style.display = 'block';
                     document.getElementById(`btn-receber-${benId}`).innerText = "Confirmar Recebimento";
                     document.getElementById(`btn-receber-${benId}`).style.background = "#ff3366";
                 } else {
-                    // Segundo clique (ou se não tem QR): Confirma e exclui
                     if(confirm("Confirmar o resgate deste valor?")) {
-                        // Deleta dos pendentes
                         await deleteDoc(doc(db, `usuarios/${userLogged.uid}/beneficiosPendentes`, benId));
-                        // Salva no histórico como recebido
                         await addDoc(collection(db, `usuarios/${userLogged.uid}/historico`), {
                             tipo: `Resgate: ${ben.tipo}`, valor: ben.valor, desc: "Valor recebido pelo colaborador.", data: new Date().getTime()
                         });
@@ -216,7 +219,6 @@ document.addEventListener("DOMContentLoaded", () => {
     setTimeout(() => { const s = document.getElementById('splash-screen'); if(s) { s.style.opacity = '0'; setTimeout(()=> s.style.display='none', 800); } }, 2000);
     carregarLogos();
 
-    // LOGIN
     const btnEntrar = document.getElementById('btn-entrar');
     if (btnEntrar) {
         btnEntrar.addEventListener('click', async (e) => {
@@ -249,8 +251,13 @@ document.addEventListener("DOMContentLoaded", () => {
                 document.getElementById('ludotech-widget').style.display = 'block'; 
                 
                 carregarColaboradores();
-                monitorarBeneficiosPendentes(); // Escuta os benefícios dinâmicos do usuário
+                monitorarBeneficiosPendentes();
                 
+                // PEDIR PERMISSÃO PARA NOTIFICAÇÕES (PWA)
+                if ('Notification' in window && Notification.permission !== 'granted' && Notification.permission !== 'denied') {
+                    Notification.requestPermission();
+                }
+
                 const conf = await getDoc(doc(db, 'config', 'music'));
                 if(conf.exists() && document.getElementById('spotify-iframe')) document.getElementById('spotify-iframe').src = conf.data().url;
             } catch(e) {}
@@ -260,18 +267,13 @@ document.addEventListener("DOMContentLoaded", () => {
     const btnSair = document.getElementById('btn-sair');
     if(btnSair) { btnSair.addEventListener('click', async () => { await signOut(auth); window.location.reload(); }); }
 
-    // ==========================================
-    // CADASTRAR COLABORADOR BLINDADO (SECONDARY AUTH)
-    // ==========================================
     document.getElementById('form-rh-completo')?.addEventListener('submit', async (e) => {
         e.preventDefault();
         const permissoes = {};
         document.querySelectorAll('#permissoes-cadastro input').forEach(i => permissoes[i.value] = i.checked);
         
         try {
-            // USANDO A INSTÂNCIA SECUNDÁRIA PARA NÃO DESLOGAR O GESTOR!
             const res = await createUserWithEmailAndPassword(secondaryAuth, document.getElementById('rh-email').value, document.getElementById('rh-senha').value);
-            
             await setDoc(doc(db, "usuarios", res.user.uid), {
                 nome: document.getElementById('rh-nome').value,
                 cargo: document.getElementById('rh-cargo').value,
@@ -280,28 +282,22 @@ document.addEventListener("DOMContentLoaded", () => {
                 permissoes: permissoes,
                 criadoEm: new Date().getTime()
             });
-            
-            // Desloga apenas a instância secundária silenciosamente
             await signOut(secondaryAuth);
-            
             alert("Colaborador cadastrado na equipe com sucesso!");
             e.target.reset();
             carregarColaboradores();
         } catch(err) { alert("Erro ao cadastrar: " + err.message); }
     });
 
-    // LANÇAMENTO DE BENEFÍCIOS (QR CODE) E HISTÓRICO
     document.getElementById('btn-lancar-rh')?.addEventListener('click', async () => {
         const tipo = document.getElementById('rh-tipo-evento').value;
         const valor = document.getElementById('rh-valor-evento').value;
         const qrCode = document.getElementById('rh-link-qrcode').value;
         const desc = document.getElementById('rh-desc-evento').value;
         
-        // 1. Salva no Histórico do Gestor para controle
         const ev = { tipo, valor, desc, data: new Date().getTime() };
         await addDoc(collection(db, `usuarios/${currentColabId}/historico`), ev);
         
-        // 2. Cria o Benefício Dinâmico na tela do Colaborador (Para ele resgatar)
         await addDoc(collection(db, `usuarios/${currentColabId}/beneficiosPendentes`), {
             tipo, valor, desc, qrCode, criadoEm: new Date().getTime()
         });
@@ -312,7 +308,6 @@ document.addEventListener("DOMContentLoaded", () => {
         document.getElementById('rh-desc-evento').value = "";
     });
 
-    // UPLOAD DE LOGOS E SPOTIFY
     document.getElementById('btn-save-logos')?.addEventListener('click', async () => {
         const files = { logoIntro: document.getElementById('up-logo-intro').files[0], logoLogin: document.getElementById('up-logo-login').files[0], logoMenu: document.getElementById('up-logo-menu').files[0] };
         const urls = {};
@@ -326,13 +321,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
     document.getElementById('btn-save-spotify')?.addEventListener('click', async () => {
         const url = document.getElementById('config-spotify-url').value;
-        const embedUrl = url.replace("https://open.spotify.com/", "https://open.spotify.com/embed/"); // Adaptação de Embed
+        const embedUrl = url.replace("https://open.spotify.com/", "https://open.spotify.com/embed/");
         await setDoc(doc(db, 'config', 'music'), { url: embedUrl });
         alert("Playlist atualizada!");
         const iframe = document.getElementById('spotify-iframe'); if(iframe) iframe.src = embedUrl;
     });
 
-    // IMPRESSÃO DE COMPROVANTE
     document.getElementById('btn-gerar-folha')?.addEventListener('click', async () => {
         const snap = await getDocs(query(collection(db, `usuarios/${currentColabId}/historico`), orderBy("data", "desc")));
         let html = `<div style="font-family:sans-serif; border:2px solid #000; padding:30px;"><h1 style="text-align:center">COMPROVANTE DE HISTÓRICO - LUDOMKT</h1><hr><p><strong>Colaborador:</strong> ${document.getElementById('modal-rh-nome').innerText.replace('Pasta: ', '')}</p><p><strong>Data de Emissão:</strong> ${new Date().toLocaleDateString()}</p><table width="100%" border="1" style="border-collapse:collapse; margin:20px 0; text-align:left;"><thead><tr style="background:#eee;"><th>Data</th><th>Evento</th><th>Descrição</th><th>Valor (R$)</th></tr></thead><tbody>`;
@@ -341,9 +335,6 @@ document.addEventListener("DOMContentLoaded", () => {
         document.getElementById('print-area').innerHTML = html; window.print();
     });
 
-    // ===============================================
-    // AGENDA COM MÚLTIPLAS DATAS E COLABORADORES
-    // ===============================================
     document.getElementById('task-form')?.addEventListener('submit', async (e) => {
         e.preventDefault();
         const idEdicao = document.getElementById('task-id').value;
@@ -351,10 +342,9 @@ document.addEventListener("DOMContentLoaded", () => {
         const resp = Array.from(sel.selectedOptions).map(o => o.value).join(', ');
         const st = document.getElementById('task-status').value;
         
-        // Pega as datas separadas por vírgula
         const datasStr = document.getElementById('task-datas').value;
         const datasArr = datasStr.split(',').map(d => d.trim()).filter(d => d !== '');
-        if (datasArr.length === 0) datasArr.push(''); // Garante pelo menos um card
+        if (datasArr.length === 0) datasArr.push('');
 
         let t = {
             titulo: document.getElementById('task-titulo').value, responsaveis: resp, status: st,
@@ -362,15 +352,12 @@ document.addEventListener("DOMContentLoaded", () => {
         };
 
         if (idEdicao !== "") {
-            // Edição salva apenas a primeira data para não bugar o card existente
             t.datas = datasArr[0] || '';
             if(st === 'concluido' && todasAtividades[idEdicao].status !== 'concluido') t.concluidoPor = userLogged.nome;
             await updateDoc(doc(db, "atividades", idEdicao), t);
         } else {
-            // Criação com múltiplas datas (cria um card para cada data selecionada)
             t.criadoEm = new Date().getTime(); t.criadoPor = userLogged ? userLogged.nome : 'Sistema';
             if(st === 'concluido') t.concluidoPor = userLogged.nome;
-            
             for(let d of datasArr) {
                 let taskCopy = { ...t, datas: d };
                 await addDoc(collection(db, "atividades"), taskCopy);
@@ -410,6 +397,18 @@ document.addEventListener("DOMContentLoaded", () => {
             document.getElementById('resumo-pendentes').innerText = cPend; document.getElementById('resumo-andamento').innerText = cAnd; document.getElementById('resumo-concluidas').innerText = cConc;
             const badge = document.getElementById('badge-tarefas'); if(badge) { badge.innerText = cPend; badge.style.display = cPend > 0 ? 'inline-block' : 'none'; }
         }
+        
+        // DISPARO DE NOTIFICAÇÃO (PWA)
+        if (cPend > 0 && cPend > tarefasPendentesAnterior && tarefasPendentesAnterior !== -1) {
+            if ('Notification' in window && Notification.permission === 'granted') {
+                new Notification('LudoMKT Workspace', {
+                    body: `Atenção! Existem ${cPend} tarefas pendentes.`,
+                    icon: 'logo.png'
+                });
+            }
+        }
+        tarefasPendentesAnterior = cPend;
+
         if (window.calendarioGeral) { window.calendarioGeral.removeAllEvents(); window.calendarioGeral.addEventSource(evG); }
         if (window.calendarioIndividual) { window.calendarioIndividual.removeAllEvents(); window.calendarioIndividual.addEventSource(evI); }
     });
@@ -426,7 +425,7 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     });
 
-    // CHATBOT GROQ (Llama 3 Estável)
+    // CHATBOT GROQ
     document.getElementById('send-ia')?.addEventListener('click', async () => {
         const inp = document.getElementById('chat-input');
         const cb = document.getElementById('chat-messages');
