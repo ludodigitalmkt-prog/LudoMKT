@@ -2,14 +2,19 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>LudoMKT Workspace</title>
+    
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0a0c10">
+    <link rel="apple-touch-icon" href="logo.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    
     <link rel="stylesheet" href="style.css">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@10/swiper-bundle.min.css">
     <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js'></script>
-    <script src="https://cdn.jsdelivr.net/npm/swiper@10/swiper-bundle.min.js"></script>
 </head>
 <body>
 
@@ -28,8 +33,7 @@
     <div id="app-container" style="display: none;">
         <aside class="sidebar">
             <div class="logo"><img src="logo.png" id="logo-menu" class="sidebar-logo img-logo-dinamica"></div>
-            <nav class="menu" id="main-nav">
-                </nav>
+            <nav class="menu" id="main-nav"></nav>
             <div class="bottom-actions"><button class="menu-btn" id="btn-sair" style="color: #ff3366;"><span class="material-icons">logout</span> Sair</button></div>
         </aside>
 
@@ -79,7 +83,6 @@
                             </div>
                             <input type="email" id="rh-email" class="modal-input" placeholder="E-mail de Acesso" required>
                             <input type="password" id="rh-senha" class="modal-input" placeholder="Senha Provisória" required>
-                            
                             <h4 style="margin-top:15px; margin-bottom:5px; color:var(--text-muted);">Módulos Liberados:</h4>
                             <div class="permissions-grid" id="permissoes-cadastro">
                                 <label><input type="checkbox" value="agenda" checked> Agenda Geral</label>
@@ -131,8 +134,7 @@
             <section id="beneficios" class="tab-content">
                 <div class="header-top"><h1>Meus Benefícios Pendentes</h1></div>
                 <p style="color:var(--text-muted); margin-bottom: 20px;">Aqui aparecem os benefícios, vales ou pagamentos liberados pelo RH para você receber.</p>
-                <div id="meus-beneficios-grid" class="dashboard-grid">
-                    </div>
+                <div id="meus-beneficios-grid" class="dashboard-grid"></div>
             </section>
         </main>
     </div>
@@ -157,7 +159,7 @@
             <div class="modal-header"><h2 id="modal-rh-nome">Pasta do Colaborador</h2><button class="close-btn" onclick="fecharModalRH()"><span class="material-icons">close</span></button></div>
             <div class="rh-layout" style="grid-template-columns: 1fr 1fr;">
                 <div class="rh-actions">
-                    <h3 style="margin-bottom:15px; color:#00ff88;">Atribuir Novo Benefício / Pagamento</h3>
+                    <h3 style="margin-bottom:15px; color:#00ff88;">Atribuir Novo Benefício</h3>
                     <select id="rh-tipo-evento" class="modal-input">
                         <option value="Vale Alimentação 🍕">Vale Alimentação 🍕</option>
                         <option value="Vale Transporte 🚌">Vale Transporte 🚌</option>
@@ -169,17 +171,12 @@
                     <input type="url" id="rh-link-qrcode" class="modal-input" placeholder="Link da Imagem do QR Code PIX (Opcional)">
                     <textarea id="rh-desc-evento" class="modal-input" placeholder="Descreva o motivo do pagamento..." rows="2"></textarea>
                     <button class="button1" id="btn-lancar-rh" style="background:#00ff88; color:#000;">Liberar para o Colaborador</button>
-                    
                     <hr style="border:0; border-top:1px solid var(--border); margin: 25px 0;">
-                    
                     <h3 style="margin-bottom:15px; color:#ff3366;">Ações Administrativas</h3>
                     <button class="btn-secundary" id="btn-gerar-folha" style="width:100%; margin-bottom:10px;">Imprimir Histórico (PDF)</button>
                     <button class="button1" id="btn-excluir-colaborador" style="background:transparent; border:1px solid #ff3366; color:#ff3366;">Excluir Colaborador</button>
                 </div>
-                <div class="rh-history">
-                    <h3 style="margin-bottom:15px;">Linha do Tempo</h3>
-                    <div id="historico-rh-lista" class="history-list"></div>
-                </div>
+                <div class="rh-history"><h3 style="margin-bottom:15px;">Linha do Tempo</h3><div id="historico-rh-lista" class="history-list"></div></div>
             </div>
         </div>
     </div>
@@ -192,11 +189,7 @@
                 <input type="text" id="task-titulo" class="modal-input" placeholder="Título da Tarefa" required>
                 <div class="modal-row">
                     <select id="task-responsaveis" class="modal-input" multiple title="Segure CTRL para selecionar vários" required></select>
-                    <select id="task-status" class="modal-input">
-                        <option value="pendente">Status: Pendente</option>
-                        <option value="analise">Status: Em Andamento</option>
-                        <option value="concluido">Status: Concluído</option>
-                    </select>
+                    <select id="task-status" class="modal-input"><option value="pendente">Status: Pendente</option><option value="analise">Status: Em Andamento</option><option value="concluido">Status: Concluído</option></select>
                 </div>
                 <div class="modal-row">
                     <select id="task-prioridade" class="modal-input"><option value="ordinario">Prioridade: Ordinário</option><option value="urgente">Prioridade: Urgente</option></select>
@@ -212,7 +205,6 @@
     </div>
 
     <div id="print-area" style="display:none;"></div>
-
     <script type="module" src="app.js"></script>
 </body>
 </html>
