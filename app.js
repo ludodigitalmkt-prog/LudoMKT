@@ -153,9 +153,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const email = document.getElementById('email').value;
             const senha = document.getElementById('password').value;
 
-            if(!email || !senha) {
-                return alert("Por favor, preencha o e-mail e a senha!");
-            }
+            if(!email || !senha) return alert("Por favor, preencha o e-mail e a senha!");
 
             try {
                 btnEntrar.innerText = "Aguarde...";
@@ -163,11 +161,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 // O onAuthStateChanged vai redirecionar automaticamente
             } catch (err) {
                 btnEntrar.innerText = "Acessar Sistema";
-                console.error("Erro exato do Firebase:", err.code);
                 if (err.code === 'auth/invalid-credential' || err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password') {
                     alert("Acesso Negado: E-mail não cadastrado ou senha incorreta!");
-                } else if (err.code === 'auth/invalid-email') {
-                    alert("O formato do e-mail está inválido.");
                 } else {
                     alert("Erro no login: " + err.message);
                 }
@@ -178,27 +173,41 @@ document.addEventListener("DOMContentLoaded", () => {
     onAuthStateChanged(auth, async (user) => {
         if(user) {
             try {
+                // SOLUÇÃO DO LOGIN TRAVADO:
                 const d = await getDoc(doc(db, "usuarios", user.uid));
+                let data = {};
+                
                 if(d.exists()) {
-                    const data = d.data();
-                    userLogged = { uid: user.uid, ...data };
-                    aplicarPermissoes(data.permissoes);
-                    const saldoVr = document.getElementById('saldo-vr');
-                    if(saldoVr) saldoVr.innerText = userLogged.vr_saldo || "0,00";
-                    
-                    document.getElementById('login-screen').style.display = 'none';
-                    document.getElementById('app-container').style.display = 'flex';
-                    document.getElementById('ludotech-widget').style.display = 'block'; 
-                    
-                    carregarColaboradores();
-                    
-                    // Carrega Spotify
-                    const conf = await getDoc(doc(db, 'config', 'music'));
-                    if(conf.exists() && document.getElementById('spotify-iframe')) {
-                        document.getElementById('spotify-iframe').src = conf.data().url;
-                    }
+                    data = d.data();
+                } else {
+                    // Se o usuário foi criado manualmente no Auth (não tem BD), forçamos permissão Admin!
+                    data = {
+                        nome: "Gestão (Admin)",
+                        isAdmin: true,
+                        permissoes: { home: true, agenda: true, planner: true, beneficios: true, music: true, rh: true, admin: true }
+                    };
                 }
-            } catch(e) { console.error("Erro ao carregar dados do usuário", e); }
+
+                userLogged = { uid: user.uid, ...data };
+                aplicarPermissoes(data.permissoes);
+                const saldoVr = document.getElementById('saldo-vr');
+                if(saldoVr) saldoVr.innerText = userLogged.vr_saldo || "0,00";
+                
+                document.getElementById('login-screen').style.display = 'none';
+                document.getElementById('app-container').style.display = 'flex';
+                document.getElementById('ludotech-widget').style.display = 'block'; 
+                
+                carregarColaboradores();
+                
+                const conf = await getDoc(doc(db, 'config', 'music'));
+                if(conf.exists() && document.getElementById('spotify-iframe')) {
+                    document.getElementById('spotify-iframe').src = conf.data().url;
+                }
+            } catch(e) { 
+                console.error("Erro ao carregar dados", e); 
+                const btnEntrar = document.getElementById('btn-entrar');
+                if(btnEntrar) btnEntrar.innerText = "Acessar Sistema";
+            }
         }
     });
 
@@ -245,7 +254,6 @@ document.addEventListener("DOMContentLoaded", () => {
         };
         await addDoc(collection(db, `usuarios/${currentColabId}/historico`), ev);
         
-        // Atualiza saldo
         if(tipo === 'Vale Alimentação' && valor) {
             const docRef = doc(db, 'usuarios', currentColabId);
             const colabAtual = await getDoc(docRef);
@@ -407,7 +415,7 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     });
 
-    // CHATBOT GROQ
+    // CHATBOT GROQ (Corrigido para o Modelo 8b Estável)
     document.getElementById('send-ia')?.addEventListener('click', async () => {
         const inp = document.getElementById('chat-input');
         const cb = document.getElementById('chat-messages');
@@ -423,14 +431,14 @@ document.addEventListener("DOMContentLoaded", () => {
         cb.scrollTop = cb.scrollHeight;
 
         // COLE A SUA CHAVE AQUI
-        const API_KEY = "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"; 
+        const API_KEY = "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"; 
 
         try {
             const respostaRaw = await fetch('https://api.groq.com/openai/v1/chat/completions', { 
                 method: "POST", 
                 headers: { "Content-Type": "application/json", "Authorization": `Bearer ${API_KEY}` }, 
                 body: JSON.stringify({ 
-                    "model": "llama-3.1-8b-instant", 
+                    "model": "llama3-8b-8192", // <- Usando o modelo mais estável
                     "messages": [
                         { "role": "system", "content": "Você é a LudoTech, IA da LudoMKT." }, 
                         { "role": "user", "content": m }
