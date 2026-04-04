@@ -230,18 +230,61 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     // 6. CHATBOT IA GROQ
     document.getElementById('send-ia')?.addEventListener('click', async () => {
-        const inp = document.getElementById('chat-input'), cb = document.getElementById('chat-messages'), m = inp.value;
+        const inp = document.getElementById('chat-input');
+        const cb = document.getElementById('chat-messages');
+        const m = inp.value.trim();
+        
         if(!m) return;
-        cb.innerHTML += `<div class="msg-user">${m}</div>`; inp.value = "";
-        cb.innerHTML += `<div class="msg-ia" id="loading-ia">Pensando...</div>`; cb.scrollTop = cb.scrollHeight;
+        
+        cb.innerHTML += `<div class="msg-user">${m}</div>`; 
+        inp.value = "";
+        
+        // Criamos o elemento de loading com um ID limpo para podermos remover depois
+        const loadingId = 'loading-' + Date.now();
+        cb.innerHTML += `<div class="msg-ia" id="${loadingId}">Pensando...</div>`; 
+        cb.scrollTop = cb.scrollHeight;
 
-        const API_KEY = "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"; // Cole a chave gsk_ aqui
+        // COLOQUE SUA NOVA CHAVE AQUI 👇
+        const API_KEY = "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"; 
 
         try {
-            const r = await fetch('https://api.groq.com/openai/v1/chat/completions', { method: "POST", headers: { "Content-Type": "application/json", "Authorization": `Bearer ${API_KEY}` }, body: JSON.stringify({ model: "llama3-70b-8192", messages: [{ role: "system", content: "Você é a LudoTech." }, { role: "user", content: m }] }) });
-            const d = await r.json(); document.getElementById('loading-ia').remove();
-            cb.innerHTML += `<div class="msg-ia">${d.choices[0].message.content.replace(/\n/g, '<br>')}</div>`; cb.scrollTop = cb.scrollHeight;
-        } catch(e) { document.getElementById('loading-ia').remove(); cb.innerHTML += `<div class="msg-ia" style="color:red;">Erro de conexão IA.</div>`; }
+            const respostaRaw = await fetch('https://api.groq.com/openai/v1/chat/completions', { 
+                method: "POST", 
+                headers: { 
+                    "Content-Type": "application/json", 
+                    "Authorization": `Bearer ${API_KEY}` 
+                }, 
+                body: JSON.stringify({ 
+                    "model": "llama3-70b-8192", 
+                    "messages": [
+                        { "role": "system", "content": "Você é a LudoTech, uma IA útil e simpática." }, 
+                        { "role": "user", "content": m }
+                    ] 
+                }) 
+            });
+            
+            if (!respostaRaw.ok) {
+                // Se a Groq der erro (como 400 ou 401), já avisamos na hora
+                throw new Error("Erro da API: " + respostaRaw.status);
+            }
+
+            const d = await respostaRaw.json(); 
+            
+            // Removemos o aviso de "Pensando..." com segurança
+            const loadingElement = document.getElementById(loadingId);
+            if(loadingElement) loadingElement.remove();
+            
+            cb.innerHTML += `<div class="msg-ia">${d.choices[0].message.content.replace(/\n/g, '<br>')}</div>`; 
+            cb.scrollTop = cb.scrollHeight;
+            
+        } catch(e) { 
+            console.error("Erro na LudoTech:", e);
+            const loadingElement = document.getElementById(loadingId);
+            if(loadingElement) loadingElement.remove();
+            
+            cb.innerHTML += `<div class="msg-ia" style="color:#ff3366; font-size:12px;">Falha de comunicação com a IA. Tente novamente mais tarde.</div>`; 
+            cb.scrollTop = cb.scrollHeight;
+        }
     });
 
     // 7. INICIALIZAR CALENDÁRIOS E LUDOPLAY
