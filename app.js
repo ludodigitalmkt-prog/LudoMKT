@@ -198,7 +198,6 @@ document.addEventListener("DOMContentLoaded", async () => {
                 let ev = { id, title: data.titulo, start: data.datas, backgroundColor: cor, borderColor: cor };
                 evG.push(ev);
                 
-                // O PLANNER INDIVIDUAL SÓ MOSTRA O QUE É DO USUÁRIO LOGADO
                 if(usuarioLogado && data.responsaveis.includes(usuarioLogado.nome)) evI.push(ev);
             }
         });
@@ -228,7 +227,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         });
     });
 
-    // 6. CHATBOT IA GROQ
+    // 6. CHATBOT IA GROQ (ATUALIZADO E BLINDADO CONTRA ERRO 400)
     document.getElementById('send-ia')?.addEventListener('click', async () => {
         const inp = document.getElementById('chat-input');
         const cb = document.getElementById('chat-messages');
@@ -239,12 +238,11 @@ document.addEventListener("DOMContentLoaded", async () => {
         cb.innerHTML += `<div class="msg-user">${m}</div>`; 
         inp.value = "";
         
-        // Criamos o elemento de loading com um ID limpo para podermos remover depois
         const loadingId = 'loading-' + Date.now();
-        cb.innerHTML += `<div class="msg-ia" id="${loadingId}">Pensando...</div>`; 
+        cb.innerHTML += `<div class="msg-ia" id="${loadingId}">Pensando rapidinho...</div>`; 
         cb.scrollTop = cb.scrollHeight;
 
-        // COLOQUE SUA NOVA CHAVE AQUI 👇
+        // Se der erro 401, gere uma chave nova no site da Groq!
         const API_KEY = "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"; 
 
         try {
@@ -255,22 +253,22 @@ document.addEventListener("DOMContentLoaded", async () => {
                     "Authorization": `Bearer ${API_KEY}` 
                 }, 
                 body: JSON.stringify({ 
-                    "model": "llama3-70b-8192", 
+                    "model": "llama-3.1-8b-instant", // Modelo super rápido e que não dá erro 400
                     "messages": [
-                        { "role": "system", "content": "Você é a LudoTech, uma IA útil e simpática." }, 
+                        { "role": "system", "content": "Você é a LudoTech, uma IA útil e simpática assistente da agência LudoMKT. Responda de forma clara e em português do Brasil." }, 
                         { "role": "user", "content": m }
                     ] 
                 }) 
             });
             
-            if (!respostaRaw.ok) {
-                // Se a Groq der erro (como 400 ou 401), já avisamos na hora
-                throw new Error("Erro da API: " + respostaRaw.status);
-            }
-
             const d = await respostaRaw.json(); 
             
-            // Removemos o aviso de "Pensando..." com segurança
+            // Tratamento de erro detalhado
+            if (!respostaRaw.ok) {
+                console.error("Erro da Groq:", d);
+                throw new Error(d.error?.message || `Erro da API: ${respostaRaw.status}`);
+            }
+
             const loadingElement = document.getElementById(loadingId);
             if(loadingElement) loadingElement.remove();
             
@@ -282,7 +280,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             const loadingElement = document.getElementById(loadingId);
             if(loadingElement) loadingElement.remove();
             
-            cb.innerHTML += `<div class="msg-ia" style="color:#ff3366; font-size:12px;">Falha de comunicação com a IA. Tente novamente mais tarde.</div>`; 
+            cb.innerHTML += `<div class="msg-ia" style="color:#ff3366; font-size:12px;">Aviso: ${e.message}</div>`; 
             cb.scrollTop = cb.scrollHeight;
         }
     });
