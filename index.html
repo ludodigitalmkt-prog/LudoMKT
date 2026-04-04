@@ -4,6 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>LudoMKT Workspace</title>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@10/swiper-bundle.min.css">
+    <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js'></script>
+    <script src="https://cdn.jsdelivr.net/npm/swiper@10/swiper-bundle.min.js"></script>
     <link rel="shortcut icon" href="data:image/x-icon;," type="image/x-icon"> 
     <link rel="stylesheet" href="style.css">
     <link rel="manifest" href="manifest.json">
@@ -156,30 +161,22 @@
 
     <div id="task-modal" class="modal-overlay" style="display: none;">
         <div class="modal-content">
-            <div class="modal-header"><h2>Nova Atividade</h2><button class="close-btn" onclick="fecharModal()"><span class="material-icons">close</span></button></div>
+            <div class="modal-header"><h2>Atividade</h2><button class="close-btn" onclick="fecharModal()"><span class="material-icons">close</span></button></div>
             <form id="task-form">
-                <input type="text" placeholder="Título da Atividade" class="modal-input" id="task-titulo" required>
+                <input type="hidden" id="task-id"> <input type="text" placeholder="Título da Atividade" class="modal-input" id="task-titulo" required>
                 
                 <div class="modal-row">
-                    <select class="modal-input" id="task-responsaveis" multiple title="Segure CTRL para selecionar vários colaboradores" required>
-                        <option value="" disabled>Carregando equipe...</option>
-                    </select>
-
+                    <select class="modal-input" id="task-responsaveis" multiple title="Segure CTRL para selecionar vários" required></select>
                     <select class="modal-input" id="task-status">
                         <option value="pendente">Status: Pendente</option>
                         <option value="analise">Status: Em Andamento</option>
                         <option value="concluido">Status: Concluído</option>
                     </select>
                 </div>
-                
                 <div class="modal-row">
-                    <select class="modal-input" id="task-prioridade">
-                        <option value="ordinario">Ordinário</option>
-                        <option value="urgente">Urgente</option>
-                    </select>
-                    <input type="text" placeholder="Datas (Ex: 2026-05-10, 2026-05-15)" class="modal-input" id="task-datas" title="Use formato YYYY-MM-DD separado por vírgula">
+                    <select class="modal-input" id="task-prioridade"><option value="ordinario">Ordinário</option><option value="urgente">Urgente</option></select>
+                    <input type="text" placeholder="Datas (Ex: 2026-05-10)" class="modal-input" id="task-datas">
                 </div>
-                
                 <textarea placeholder="Descrição..." class="modal-input" id="task-desc" rows="3"></textarea>
                 <div class="modal-actions">
                     <button type="submit" class="button-uiverse"><div class="blob1"></div><div class="inner">Salvar Atividade</div></button>
