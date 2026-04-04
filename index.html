@@ -3,48 +3,32 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LudoMKT Workspace v3</title>
+    <title>LudoMKT Workspace</title>
     <link rel="stylesheet" href="style.css">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@10/swiper-bundle.min.css">
     <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js'></script>
-    <script src="https://cdn.jsdelivr.net/npm/swiper@10/swiper-bundle.min.js"></script>
 </head>
 <body>
 
-    <div id="splash-screen">
-        <img src="logo.png" alt="LudoMKT" id="logo-intro" class="splash-logo">
-    </div>
+    <div id="splash-screen"><img src="logo.png" id="logo-intro" class="splash-logo"></div>
 
     <div id="login-screen">
-        <div class="login-container">
-            <form class="form" id="login-form">
-                <img src="logo.png" id="logo-login" class="login-visual-logo">
-                <p id="heading">Acesso Interno</p>
-                <div class="field">
-                    <span class="material-icons">email</span>
-                    <input type="email" id="email" class="input-field" placeholder="E-mail" required>
-                </div>
-                <div class="field">
-                    <span class="material-icons">lock</span>
-                    <input type="password" id="password" class="input-field" placeholder="Senha" required>
-                </div>
-                <button type="button" class="button1" id="btn-entrar">Acessar Sistema</button>
-            </form>
-        </div>
+        <form class="form" id="login-form">
+            <img src="logo.png" id="logo-login" class="login-visual-logo">
+            <p id="heading">Acesso Interno</p>
+            <div class="field"><span class="material-icons">email</span><input type="email" id="email" class="input-field" placeholder="E-mail" required></div>
+            <div class="field"><span class="material-icons">lock</span><input type="password" id="password" class="input-field" placeholder="Senha" required></div>
+            <button type="button" class="button1" id="btn-entrar">Acessar Sistema</button>
+        </form>
     </div>
 
     <div id="app-container" style="display: none;">
         <aside class="sidebar">
-            <div class="logo">
-                <img src="logo.png" id="logo-menu" class="sidebar-logo">
-            </div>
+            <div class="logo"><img src="logo.png" id="logo-menu" class="sidebar-logo"></div>
             <nav class="menu" id="main-nav">
                 </nav>
-            <div class="bottom-actions">
-                <button class="menu-btn" id="btn-sair"><span class="material-icons">logout</span> Sair</button>
-            </div>
+            <div class="bottom-actions"><button class="menu-btn" id="btn-sair"><span class="material-icons">logout</span> Sair</button></div>
         </aside>
 
         <main class="content">
@@ -60,12 +44,10 @@
             <section id="agenda" class="tab-content">
                 <div class="header-top agenda-header">
                     <h1>Agenda Colaborativa</h1>
-                    <div class="header-actions">
+                    <div>
                         <button class="btn-secundary" onclick="mudarVisaoAgenda('kanban')">Trello</button>
                         <button class="btn-secundary" onclick="mudarVisaoAgenda('calendario')">Calendário</button>
-                        <button class="button-uiverse" onclick="abrirModal()">
-                            <div class="blob1"></div><div class="inner">Nova Atividade</div>
-                        </button>
+                        <button class="button1" style="width:auto; display:inline-block; padding:8px 15px;" onclick="abrirModal()">Novo</button>
                     </div>
                 </div>
                 <div id="visao-kanban" class="agenda-view active">
@@ -78,131 +60,56 @@
                 <div id="visao-calendario" class="agenda-view" style="display:none;"><div class="card"><div id='calendar-geral'></div></div></div>
             </section>
 
-            <section id="planner" class="tab-content">
-                <div class="header-top"><h1>Meu Planner Individual</h1></div>
-                <div class="card"><div id='calendar-individual'></div></div>
-            </section>
+            <section id="planner" class="tab-content"><div class="header-top"><h1>Meu Planner</h1></div><div class="card"><div id='calendar-individual'></div></div></section>
 
             <section id="rh" class="tab-content">
-                <div class="header-top"><h1>Gestão de Talentos (RH)</h1></div>
+                <div class="header-top"><h1>Gestão de Equipe</h1></div>
                 <div class="rh-layout">
-                    <div class="card rh-form-card">
-                        <h3>Cadastrar Colaborador</h3>
+                    <div class="card">
+                        <h3>Novo Colaborador</h3>
                         <form id="form-rh-completo">
-                            <input type="text" id="rh-nome" class="modal-input" placeholder="Nome Completo" required>
-                            <div class="modal-row">
-                                <input type="text" id="rh-cargo" class="modal-input" placeholder="Cargo">
-                                <input type="text" id="rh-setor" class="modal-input" placeholder="Setor">
-                            </div>
-                            <input type="email" id="rh-email" class="modal-input" placeholder="E-mail de Acesso" required>
-                            <input type="password" id="rh-senha" class="modal-input" placeholder="Senha Provisória" required>
-                            
-                            <h4 class="perm-title">Permissões de Acesso</h4>
+                            <input type="text" id="rh-nome" class="modal-input" placeholder="Nome" required>
+                            <input type="text" id="rh-cargo" class="modal-input" placeholder="Cargo">
+                            <input type="email" id="rh-email" class="modal-input" placeholder="E-mail" required>
+                            <input type="password" id="rh-senha" class="modal-input" placeholder="Senha" required>
                             <div class="permissions-grid" id="permissoes-cadastro">
                                 <label><input type="checkbox" value="agenda" checked> Agenda</label>
                                 <label><input type="checkbox" value="planner" checked> Planner</label>
-                                <label><input type="checkbox" value="beneficios" checked> Benefícios</label>
-                                <label><input type="checkbox" value="music" checked> Music</label>
-                                <label><input type="checkbox" value="rh"> Portal RH</label>
+                                <label><input type="checkbox" value="rh"> RH</label>
                                 <label><input type="checkbox" value="admin"> Config</label>
                             </div>
                             <button type="submit" class="button1">Salvar</button>
                         </form>
                     </div>
-                    <div class="card rh-list-card">
-                        <h3>Equipe</h3>
-                        <div id="lista-colaboradores-cards" class="colaboradores-grid"></div>
-                    </div>
-                </div>
-            </section>
-
-            <section id="music" class="tab-content">
-                <div class="header-top"><h1>LudoMusic</h1></div>
-                <div id="spotify-container" class="card spotify-card">
-                    <iframe id="spotify-iframe" src="" width="100%" height="100%" frameBorder="0" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>
+                    <div class="card"><h3>Equipe</h3><div id="lista-colaboradores-cards" class="colaboradores-grid"></div></div>
                 </div>
             </section>
 
             <section id="admin" class="tab-content">
                 <div class="header-top"><h1>Configurações</h1></div>
-                <div class="config-grid">
-                    <div class="card">
-                        <h3>Logos</h3>
-                        <div class="config-item"><label>Intro:</label><input type="file" id="up-logo-intro" class="modal-input"></div>
-                        <div class="config-item"><label>Login:</label><input type="file" id="up-logo-login" class="modal-input"></div>
-                        <div class="config-item"><label>Menu:</label><input type="file" id="up-logo-menu" class="modal-input"></div>
-                        <button class="btn-secundary" id="btn-save-logos">Salvar Logos</button>
-                    </div>
-                    <div class="card">
-                        <h3>Links & Spotify</h3>
-                        <input type="url" id="config-spotify-url" class="modal-input" placeholder="Link Spotify">
-                        <button class="btn-secundary" id="btn-save-spotify">Atualizar</button>
-                    </div>
+                <div class="card">
+                    <h3>Logos</h3>
+                    <input type="file" id="up-logo-intro" class="modal-input">
+                    <button class="button1" id="btn-save-logos">Salvar Logos</button>
                 </div>
-            </section>
-
-            <section id="beneficios" class="tab-content">
-                <div class="header-top"><h1>Meus Benefícios</h1></div>
-                <div id="meus-beneficios-grid" class="beneficios-view-grid"></div>
             </section>
         </main>
     </div>
 
-    <div id="ludotech-widget" style="display:none;">
-        <div id="ludotech-chat" class="chat-hidden">
-            <div class="chat-header"><strong>LudoTech IA</strong><button onclick="toggleIA()"><span class="material-icons">close</span></button></div>
-            <div class="chat-body" id="chat-messages"></div>
-            <div class="chat-footer">
-                <input type="text" id="chat-input" placeholder="No que posso ajudar?">
-                <button id="send-ia"><span class="material-icons">send</span></button>
-            </div>
-        </div>
-        <button id="ludotech-btn" onclick="toggleIA()"><span class="material-icons">smart_toy</span></button>
-    </div>
-
     <div id="modal-colaborador" class="modal-overlay" style="display:none;">
         <div class="modal-content large">
-            <div class="modal-header"><h2 id="modal-rh-nome">Pasta</h2><button class="close-btn" onclick="fecharModalRH()"><span class="material-icons">close</span></button></div>
+            <div class="modal-header"><h2 id="modal-rh-nome">Pasta</h2><button onclick="fecharModalRH()">Fechar</button></div>
             <div class="rh-details-grid">
                 <div class="rh-actions">
-                    <h3>Lançar Evento</h3>
-                    <select id="rh-tipo-evento" class="modal-input">
-                        <option value="vale-alimentacao">Vale Alimentação</option>
-                        <option value="bonus">Bônus</option>
-                        <option value="plano-saude">Plano de Saúde</option>
-                    </select>
-                    <input type="number" id="rh-valor-evento" class="modal-input" placeholder="R$">
-                    <textarea id="rh-desc-evento" class="modal-input" placeholder="Obs"></textarea>
+                    <select id="rh-tipo-evento" class="modal-input"><option value="vale">Vale</option><option value="bonus">Bônus</option></select>
+                    <input type="number" id="rh-valor-evento" class="modal-input" placeholder="Valor">
                     <button class="button1" id="btn-lancar-rh">Lançar</button>
-                    <button class="btn-secundary" id="btn-gerar-folha">Imprimir</button>
                 </div>
-                <div class="rh-history"><h3>Histórico</h3><div id="historico-rh-lista" class="history-list"></div></div>
+                <div class="rh-history"><div id="historico-rh-lista"></div></div>
             </div>
         </div>
     </div>
 
-    <div id="task-modal" class="modal-overlay" style="display:none;">
-        <div class="modal-content">
-            <div class="modal-header"><h2>Tarefa</h2><button class="close-btn" onclick="fecharModal()"><span class="material-icons">close</span></button></div>
-            <form id="task-form">
-                <input type="hidden" id="task-id">
-                <input type="text" id="task-titulo" class="modal-input" placeholder="Título" required>
-                <div class="modal-row">
-                    <select id="task-responsaveis" class="modal-input" multiple></select>
-                    <select id="task-status" class="modal-input">
-                        <option value="pendente">Pendente</option>
-                        <option value="analise">Em Andamento</option>
-                        <option value="concluido">Concluído</option>
-                    </select>
-                </div>
-                <input type="text" id="task-datas" class="modal-input" placeholder="Datas">
-                <textarea id="task-desc" class="modal-input" placeholder="Descrição"></textarea>
-                <button type="submit" class="button1">Salvar</button>
-            </form>
-        </div>
-    </div>
-
-    <div id="print-area" style="display:none;"></div>
     <script type="module" src="app.js"></script>
 </body>
 </html>
