@@ -3,8 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LudoMKT Workspace</title>
-    <link rel="shortcut icon" href="data:image/x-icon;," type="image/x-icon"> 
+    <title>LudoMKT Workspace v3</title>
     <link rel="stylesheet" href="style.css">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -14,50 +13,48 @@
 </head>
 <body>
 
-    <div id="splash-screen"><img src="logo.png" alt="LudoMKT" class="splash-logo img-logo-dinamica"></div>
+    <div id="splash-screen"><img src="logo.png" alt="LudoMKT" id="logo-intro" class="splash-logo"></div>
+
     <div id="login-screen">
         <form class="form" id="login-form">
-            <img src="logo.png" alt="LudoMKT" class="img-logo-dinamica" style="max-width: 150px; margin: 0 auto 20px auto; display: block;">
-            <p id="heading">LudoMKT Login</p>
-            <div class="field"><span class="material-icons" style="color:var(--text-muted);">email</span><input autocomplete="off" placeholder="E-mail Corporativo" class="input-field" type="email" id="email" required></div>
-            <div class="field"><span class="material-icons" style="color:var(--text-muted);">lock</span><input placeholder="Senha" class="input-field" type="password" id="password" required></div>
-            <div class="btn"><button type="button" class="button1" id="btn-entrar">Acessar</button></div>
+            <img src="logo.png" id="logo-login" class="login-visual-logo" style="max-width:150px; margin:0 auto 20px; display:block;">
+            <p id="heading">Acesso Interno</p>
+            <div class="field"><span class="material-icons">email</span><input type="email" id="email" class="input-field" placeholder="E-mail" required></div>
+            <div class="field"><span class="material-icons">lock</span><input type="password" id="password" class="input-field" placeholder="Senha" required></div>
+            <button type="button" class="button1" id="btn-entrar">Acessar Sistema</button>
         </form>
     </div>
 
     <div id="app-container" style="display: none;">
         <aside class="sidebar">
-            <div class="logo"><img src="logo.png" alt="LudoMKT" class="sidebar-logo img-logo-dinamica"></div>
-            <nav class="menu">
+            <div class="logo"><img src="logo.png" id="logo-menu" class="sidebar-logo"></div>
+            <nav class="menu" id="main-nav">
                 <button class="menu-btn active" data-target="home"><span class="material-icons">home</span> Início</button>
-                <button class="menu-btn" data-target="agenda"><span class="material-icons">view_kanban</span> Agenda Geral <span id="badge-tarefas" style="background:#ff3366; color:white; border-radius:50%; padding:2px 6px; font-size:10px; margin-left:auto; display:none;">0</span></button>
-                <button class="menu-btn" data-target="planner"><span class="material-icons">event_note</span> Meu Planner</button>
-                <button class="menu-btn" data-target="beneficios"><span class="material-icons">star</span> Benefícios</button>
-                <button class="menu-btn" data-target="music"><span class="material-icons">headphones</span> LudoPlay</button>
-                <button class="menu-btn" data-target="ferramentas"><span class="material-icons">apps</span> Links Úteis</button>
-                <button class="menu-btn admin-only" data-target="rh" style="display:none; color:#00ff88;"><span class="material-icons">groups</span> RH & Equipe</button>
-                <button class="menu-btn admin-only" data-target="admin" style="display:none; color:#00ff88;"><span class="material-icons">settings</span> Configurações</button>
             </nav>
-            <div class="bottom-actions"><button class="menu-btn" id="btn-sair" style="color: #ff3366;"><span class="material-icons">logout</span> Sair</button></div>
+            <div class="bottom-actions">
+                <button class="menu-btn" id="btn-sair" style="color: #ff3366;"><span class="material-icons">logout</span> Sair</button>
+            </div>
         </aside>
 
         <main class="content">
             <section id="home" class="tab-content active">
-                <div class="header-top"><h1>Visão Geral do Mês</h1></div>
-                <div style="display: flex; gap: 20px; flex-wrap: wrap; margin-bottom: 20px;">
-                    <div class="card" style="flex:1; border-left: 4px solid #00ff88;"><h3 style="color:var(--text-muted); font-size:14px;">Concluídas</h3><p style="font-size:30px; font-weight:bold; color:#00ff88;" id="resumo-concluidas">0</p></div>
-                    <div class="card" style="flex:1; border-left: 4px solid #ffaa00;"><h3 style="color:var(--text-muted); font-size:14px;">Em Andamento</h3><p style="font-size:30px; font-weight:bold; color:#ffaa00;" id="resumo-andamento">0</p></div>
-                    <div class="card" style="flex:1; border-left: 4px solid #ff3366;"><h3 style="color:var(--text-muted); font-size:14px;">Pendentes</h3><p style="font-size:30px; font-weight:bold; color:#ff3366;" id="resumo-pendentes">0</p></div>
+                <div class="header-top"><h1>Painel de Controle</h1></div>
+                <div class="dashboard-grid" id="resumo-atividades">
+                    <div class="card stat-card"><h3 style="color:#00ff88">Concluídas</h3><p id="resumo-concluidas">0</p></div>
+                    <div class="card stat-card"><h3 style="color:#ffaa00">Em Aberto</h3><p id="resumo-andamento">0</p></div>
+                    <div class="card stat-card"><h3 style="color:#ff3366">Pendentes</h3><p id="resumo-pendentes">0</p></div>
                 </div>
             </section>
-            
+
             <section id="agenda" class="tab-content">
                 <div class="header-top agenda-header">
-                    <h1>Agenda Geral</h1>
-                    <div style="display:flex; gap:10px;">
-                        <button class="btn-secundary" onclick="mudarVisaoAgenda('kanban')"><span class="material-icons">view_week</span> Trello</button>
-                        <button class="btn-secundary" onclick="mudarVisaoAgenda('calendario')"><span class="material-icons">calendar_month</span> Calendário</button>
-                        <button class="button-uiverse" onclick="abrirModal()"><div class="blob1"></div><div class="inner"><span class="material-icons" style="font-size:16px;">add</span> Nova Atividade</div></button>
+                    <h1>Agenda Colaborativa</h1>
+                    <div class="header-actions">
+                        <button class="btn-secundary" onclick="mudarVisaoAgenda('kanban')">Trello</button>
+                        <button class="btn-secundary" onclick="mudarVisaoAgenda('calendario')">Calendário</button>
+                        <button class="button-uiverse" onclick="abrirModal()">
+                            <div class="blob1"></div><div class="inner">Nova Atividade</div>
+                        </button>
                     </div>
                 </div>
                 <div id="visao-kanban" class="agenda-view active">
@@ -67,132 +64,170 @@
                         <div class="kanban-column" id="coluna-verde"><h3>Concluído</h3><div class="cards-container" id="col-concluido"></div></div>
                     </div>
                 </div>
-                <div id="visao-calendario" class="agenda-view" style="display: none;"><div class="card" style="padding: 20px; min-height: 500px; background: var(--bg-card);"><div id='calendar-geral'></div></div></div>
+                <div id="visao-calendario" class="agenda-view" style="display:none;"><div class="card"><div id='calendar-geral'></div></div></div>
             </section>
 
-            <section id="planner" class="tab-content"><div class="header-top"><h1>Meu Planner Individual</h1></div><div class="card" style="padding: 20px; min-height: 500px; background: var(--bg-card);"><div id='calendar-individual'></div></div></section>
-            
-            <section id="beneficios" class="tab-content">
-                <div class="header-top"><h1>Meus Benefícios</h1></div>
-                <div style="display: flex; gap: 20px;">
-                    <div class="card" style="border-left:4px solid #00ff88; width:300px;"><h3 style="color:#00ff88;">Gympass / Academia</h3><p style="margin-top:10px; font-size:14px; color:var(--text-muted);">Acesso livre nas redes credenciadas.</p></div>
-                    <div class="card" id="card-vr" style="border-left:4px solid #ffaa00; width:300px;">
-                        <h3 style="color:#ffaa00;">Vale Alimentação</h3>
-                        <p style="margin-top:10px; font-size:14px; color:var(--text-muted);">Saldo: <strong style="font-size:20px; color:#fff;">R$ <span id="saldo-vr">0,00</span></strong></p>
-                        <button id="btn-sacar-vr" class="btn-secundary" style="margin-top:15px; width:100%; border-color:#ffaa00; color:#ffaa00;">Sacar via QR Code</button>
-                    </div>
-                </div>
-            </section>
-
-            <section id="ferramentas" class="tab-content">
-                <div class="header-top"><h1>Links Úteis</h1></div>
-                <div style="display: flex; gap: 20px;">
-                    <div class="card" style="text-align: center; width: 200px;"><span class="material-icons" style="font-size: 40px; color:#00C4CC;">brush</span><h3>Canva</h3><a href="#" id="btn-link-canva" target="_blank" class="button1" style="display:block; text-decoration:none; margin-top:10px;">Abrir Canva</a></div>
-                    <div class="card" style="text-align: center; width: 200px;"><span class="material-icons" style="font-size: 40px; color:#E1306C;">photo_camera</span><h3>Instagram</h3><a href="#" id="btn-link-insta" target="_blank" class="button1" style="display:block; text-decoration:none; background:#E1306C; margin-top:10px;">Abrir Insta</a></div>
-                </div>
+            <section id="planner" class="tab-content">
+                <div class="header-top"><h1>Meu Planner Individual</h1></div>
+                <div class="card"><div id='calendar-individual'></div></div>
             </section>
 
             <section id="rh" class="tab-content">
-                <div class="header-top"><h1>RH: Gestão de Equipe</h1></div>
-                <div style="display: flex; gap: 20px; flex-wrap: wrap;">
-                    <div class="card" style="flex:1; min-width: 300px;">
-                        <h3 style="color:var(--accent); margin-bottom:15px;">Novo Colaborador</h3>
-                        <form id="form-rh">
+                <div class="header-top"><h1>Gestão de Talentos (RH)</h1></div>
+                <div class="rh-layout">
+                    <div class="card rh-form-card">
+                        <h3>Novo Colaborador</h3>
+                        <form id="form-rh-completo">
                             <input type="text" id="rh-nome" class="modal-input" placeholder="Nome Completo" required>
-                            <input type="email" id="rh-email" class="modal-input" placeholder="E-mail corporativo" required>
-                            <input type="password" id="rh-senha" class="modal-input" placeholder="Senha" required>
-                            <input type="number" id="rh-vr" class="modal-input" placeholder="Vale Alimentação Inicial (Ex: 500)" required>
-                            <label style="display:flex; align-items:center; gap:10px; margin-bottom:10px;"><input type="checkbox" id="rh-is-admin"> É Administrador? (Acesso total)</label>
-                            <button type="submit" class="button-uiverse" style="width:100%;"><div class="blob1"></div><div class="inner">Cadastrar</div></button>
+                            <div class="modal-row">
+                                <input type="text" id="rh-cargo" class="modal-input" placeholder="Cargo">
+                                <input type="text" id="rh-setor" class="modal-input" placeholder="Setor">
+                            </div>
+                            <div class="modal-row">
+                                <input type="text" id="rh-unidade" class="modal-input" placeholder="Unidade">
+                                <input type="text" id="rh-contato" class="modal-input" placeholder="Contato/WhatsApp">
+                            </div>
+                            <input type="email" id="rh-email" class="modal-input" placeholder="E-mail de Acesso" required>
+                            <input type="password" id="rh-senha" class="modal-input" placeholder="Senha Provisória" required>
+                            
+                            <h4 style="margin:10px 0; color:var(--accent)">Permissões de Acesso</h4>
+                            <div class="permissions-grid" id="permissões-cadastro">
+                                <label><input type="checkbox" value="agenda" checked> Agenda</label>
+                                <label><input type="checkbox" value="planner" checked> Planner</label>
+                                <label><input type="checkbox" value="beneficios" checked> Benefícios</label>
+                                <label><input type="checkbox" value="music" checked> LudoMusic</label>
+                                <label><input type="checkbox" value="ferramentas" checked> Links</label>
+                                <label><input type="checkbox" value="rh"> Portal RH</label>
+                                <label><input type="checkbox" value="admin"> Configurações</label>
+                            </div>
+                            <button type="submit" class="button1">Salvar Colaborador</button>
                         </form>
                     </div>
-                    <div class="card" style="flex:1; min-width: 300px;">
-                        <h3 style="color:#00ff88; margin-bottom:15px;">Atualizar Benefícios (Mensal)</h3>
-                        <form id="form-rh-update">
-                            <select id="rh-update-user" class="modal-input" required><option value="" disabled selected>Carregando Equipe...</option></select>
-                            <input type="number" id="rh-update-vr" class="modal-input" placeholder="Novo Saldo do Vale Alimentação" required>
-                            <button type="submit" class="button1" style="background:#00ff88; color:#000; margin-top:0;">Atualizar Saldo</button>
-                        </form>
-                    </div>
-                </div>
-            </section>
 
-            <section id="admin" class="tab-content">
-                <div class="header-top"><h1>Configurações do Sistema</h1></div>
-                <div style="display: flex; gap: 20px; flex-wrap: wrap;">
-                    <div class="card" style="flex: 1; min-width: 300px;">
-                        <h3 style="margin-bottom: 15px; color: var(--accent);">Identidade Visual (Upload)</h3>
-                        <label style="color: var(--text-muted); font-size:12px;">Logo Principal:</label>
-                        <input type="file" id="upload-logo-main" class="modal-input" accept="image/png, image/jpeg">
-                        <label style="color: var(--text-muted); font-size:12px;">Avatar da IA:</label>
-                        <input type="file" id="upload-logo-ia" class="modal-input" accept="image/png, image/jpeg">
-                        <button class="button1" id="btn-salvar-logos" style="margin-top:5px;">Subir e Salvar Imagens</button>
-                    </div>
-                    <div class="card" style="flex: 1; min-width: 300px;">
-                        <h3 style="margin-bottom: 15px; color: var(--accent);">Design e Links</h3>
-                        <label style="color: var(--text-muted); font-size:12px;">Cor Principal (Neon):</label>
-                        <input type="color" id="config-cor" class="modal-input" style="height:50px; padding:5px;">
-                        <input type="url" id="config-canva" class="modal-input" placeholder="Link do Canva">
-                        <input type="url" id="config-insta" class="modal-input" placeholder="Link do Instagram">
-                        <button class="button1" id="btn-salvar-design" style="margin-top:5px;">Aplicar Alterações</button>
+                    <div class="card rh-list-card">
+                        <h3>Equipe Cadastrada</h3>
+                        <div id="lista-colaboradores-cards" class="colaboradores-grid"></div>
                     </div>
                 </div>
             </section>
 
             <section id="music" class="tab-content">
-                <div class="header-top"><h1>LudoPlay</h1></div>
-                <div class="ludoplay-container">
-                    <div class="ludoplay-left"><div class="slider-container"><h2 style="margin-bottom:15px;">Destaques</h2><div class="swiper"><div class="swiper-wrapper">
-                        <div class="swiper-slide"><img src="https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=500&q=80" style="border-radius:15px;"><div class="slide-overlay"><h3>Midnight Moods</h3></div></div>
-                        <div class="swiper-slide"><img src="https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=500&q=80" style="border-radius:15px;"><div class="slide-overlay"><h3>Party Starters</h3></div></div>
-                    </div></div></div></div>
-                    <div class="ludoplay-right"><div class="music-player">
-                        <div class="album-cover"><img src="https://github.com/ecemgo/mini-samples-great-tricks/assets/13468728/398875d0-9b9e-494a-8906-210aa3f777e0" id="rotatingImage" style="border-radius:50%; width:150px; height:150px;"></div>
-                        <h2 style="margin-top:15px;">Redemption</h2><p style="color:var(--text-muted);">Besomorph</p>
-                        <audio id="song"><source src="https://github.com/ecemgo/mini-samples-great-tricks/raw/main/song-list/Besomorph-Coopex-Redemption.mp3" type="audio/mpeg" /></audio>
-                        <input type="range" value="0" id="progress" style="width:100%; margin: 15px 0;">
-                        <div class="controls" style="display:flex; justify-content:center;">
-                            <button class="play-pause-btn" style="background:var(--accent); border:none; color:white; font-size:30px; width:60px; height:60px; border-radius:50%; cursor:pointer;"><i class="fa-solid fa-play" id="controlIcon"></i></button>
-                        </div>
-                    </div></div>
+                <div class="header-top"><h1>LudoMusic</h1></div>
+                <div id="spotify-container" class="card" style="padding:0; overflow:hidden; border:none; height:600px;">
+                    <iframe id="spotify-iframe" style="border-radius:12px" src="" width="100%" height="100%" frameBorder="0" allowfullscreen="" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>
                 </div>
+            </section>
+
+            <section id="admin" class="tab-content">
+                <div class="header-top"><h1>Configurações do Ecossistema</h1></div>
+                <div class="config-grid">
+                    <div class="card">
+                        <h3>Identidade Visual</h3>
+                        <div class="config-item">
+                            <label>Logo Intro/Splash:</label>
+                            <input type="file" id="up-logo-intro" class="modal-input" accept="image/*">
+                        </div>
+                        <div class="config-item">
+                            <label>Logo Login:</label>
+                            <input type="file" id="up-logo-login" class="modal-input" accept="image/*">
+                        </div>
+                        <div class="config-item">
+                            <label>Logo Menu/Widget:</label>
+                            <input type="file" id="up-logo-menu" class="modal-input" accept="image/*">
+                        </div>
+                        <button class="btn-secundary" id="btn-save-logos">Salvar Logos</button>
+                    </div>
+
+                    <div class="card">
+                        <h3>Redes Sociais & Links</h3>
+                        <div id="social-links-admin"></div>
+                        <hr style="border:0; border-top:1px solid var(--border); margin:15px 0;">
+                        <input type="text" id="new-social-name" class="modal-input" placeholder="Nome (Ex: Instagram)">
+                        <input type="url" id="new-social-url" class="modal-input" placeholder="Link Completo">
+                        <button class="btn-secundary" id="btn-add-social">Adicionar Rede</button>
+                    </div>
+
+                    <div class="card">
+                        <h3>Integração Music</h3>
+                        <label>Link da Playlist/Álbum Spotify:</label>
+                        <input type="url" id="config-spotify-url" class="modal-input" placeholder="https://open.spotify.com/playlist/...">
+                        <button class="btn-secundary" id="btn-save-spotify">Atualizar Spotify</button>
+                    </div>
+                </div>
+            </section>
+
+            <section id="beneficios" class="tab-content">
+                <div class="header-top"><h1>Meus Benefícios & Vales</h1></div>
+                <div id="meus-beneficios-grid" class="beneficios-view-grid"></div>
             </section>
         </main>
     </div>
 
-    <div id="ludotech-widget" style="display: none; position: fixed; bottom: 30px; right: 30px; z-index: 9000;">
-        <div id="ludotech-chat" class="chat-hidden" style="position: absolute; bottom: 80px; right: 0; width: 350px; height: 400px; background: var(--bg-card); border-radius: 20px; border: 1px solid var(--border); transition: 0.3s; padding:15px; display:flex; flex-direction:column;">
-            <div style="display:flex; justify-content:space-between; border-bottom:1px solid var(--border); padding-bottom:10px;">
-                <h3 style="color:var(--accent); display:flex; align-items:center; gap:10px;"><img src="logo.png" class="img-avatar-ia" style="width:30px; border-radius:50%;"> LudoTech IA</h3>
-                <button onclick="toggleIA()" style="background:none; border:none; color:#fff; cursor:pointer;"><i class="fa-solid fa-xmark"></i></button>
+    <div id="ludotech-widget" style="display:none;">
+        <div id="ludotech-chat" class="chat-hidden">
+            <div class="chat-header">
+                <strong>LudoTech IA</strong>
+                <button onclick="toggleIA()"><span class="material-icons">close</span></button>
             </div>
-            <div class="chat-body" id="chat-messages" style="flex-grow:1; overflow-y:auto; padding:10px 0; display:flex; flex-direction:column; gap:10px;"></div>
-            <div class="chat-footer" style="display:flex; gap:10px; border-top:1px solid var(--border); padding-top:10px;">
-                <input type="text" id="chat-input" placeholder="Pergunte à IA..." style="flex-grow:1; border-radius:15px; padding:10px; border:none; background:var(--bg-body); color:white; outline:none;">
-                <button id="send-ia" style="background:var(--accent); color:white; border:none; border-radius:50%; width:40px; cursor:pointer;"><i class="fa-solid fa-paper-plane"></i></button>
+            <div class="chat-body" id="chat-messages"></div>
+            <div class="chat-footer">
+                <input type="text" id="chat-input" placeholder="No que posso ajudar?">
+                <button id="send-ia"><span class="material-icons">send</span></button>
             </div>
         </div>
-        <button id="ludotech-btn" onclick="toggleIA()" style="width: 60px; height: 60px; border-radius: 50%; background: var(--accent); color: white; border: none; cursor: pointer; box-shadow: 0 10px 25px rgba(0,0,0, 0.5);"><span class="material-icons">smart_toy</span></button>
+        <button id="ludotech-btn" onclick="toggleIA()"><span class="material-icons">smart_toy</span></button>
     </div>
 
-    <div id="task-modal" class="modal-overlay" style="display: none;">
+    <div id="modal-colaborador" class="modal-overlay" style="display:none;">
+        <div class="modal-content large">
+            <div class="modal-header"><h2 id="modal-rh-nome">Pasta do Colaborador</h2><button class="close-btn" onclick="fecharModalRH()"><span class="material-icons">close</span></button></div>
+            <div class="rh-details-grid">
+                <div class="rh-actions">
+                    <h3>Lançar Evento</h3>
+                    <select id="rh-tipo-evento" class="modal-input">
+                        <option value="vale-alimentacao">Vale Alimentação 🍕</option>
+                        <option value="vale-transporte">Vale Transporte 🚌</option>
+                        <option value="plano-saude">Plano de Saúde 🏥</option>
+                        <option value="gym">Gym/Wellhub 🏋️</option>
+                        <option value="bonus">Bônus/Premiação 💰</option>
+                        <option value="gift">Gift Card 🎁</option>
+                        <option value="bem-estar">Bem-Estar 🧘</option>
+                    </select>
+                    <input type="number" id="rh-valor-evento" class="modal-input" placeholder="Valor (R$)">
+                    <textarea id="rh-desc-evento" class="modal-input" placeholder="Observação/Descrição"></textarea>
+                    <button class="button1" id="btn-lancar-rh">Lançar no Histórico</button>
+                    <button class="btn-secundary" style="margin-top:10px" id="btn-gerar-folha">Gerar Comprovante PDF</button>
+                </div>
+                <div class="rh-history">
+                    <h3>Histórico Completo</h3>
+                    <div id="historico-rh-lista" class="history-list"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="task-modal" class="modal-overlay" style="display:none;">
         <div class="modal-content">
-            <div class="modal-header"><h2>Atividade</h2><button class="close-btn" onclick="fecharModal()"><span class="material-icons">close</span></button></div>
+            <div class="modal-header"><h2>Gestão de Tarefa</h2><button class="close-btn" onclick="fecharModal()"><span class="material-icons">close</span></button></div>
             <form id="task-form">
-                <input type="hidden" id="task-id"> <input type="text" placeholder="Título da Atividade" class="modal-input" id="task-titulo" required>
+                <input type="hidden" id="task-id">
+                <input type="text" id="task-titulo" class="modal-input" placeholder="Título" required>
                 <div class="modal-row">
-                    <select class="modal-input" id="task-responsaveis" multiple title="Segure CTRL para selecionar vários" required></select>
-                    <select class="modal-input" id="task-status"><option value="pendente">Pendente</option><option value="analise">Em Andamento</option><option value="concluido">Concluído</option></select>
+                    <select id="task-responsaveis" class="modal-input" multiple></select>
+                    <select id="task-status" class="modal-input">
+                        <option value="pendente">Pendente</option>
+                        <option value="analise">Em Andamento</option>
+                        <option value="concluido">Concluído</option>
+                    </select>
                 </div>
-                <div class="modal-row">
-                    <select class="modal-input" id="task-prioridade"><option value="ordinario">Ordinário</option><option value="urgente">Urgente</option></select>
-                    <input type="text" placeholder="Datas (Ex: 2026-05-10)" class="modal-input" id="task-datas">
-                </div>
-                <textarea placeholder="Descrição..." class="modal-input" id="task-desc" rows="3"></textarea>
-                <div class="modal-actions"><button type="submit" class="button-uiverse"><div class="blob1"></div><div class="inner">Salvar Registro</div></button></div>
+                <input type="text" id="task-datas" class="modal-input" placeholder="Datas (Ex: 10/05/2026)">
+                <textarea id="task-desc" class="modal-input" placeholder="Descrição detalhada"></textarea>
+                <button type="submit" class="button-uiverse"><div class="blob1"></div><div class="inner">Salvar Registro</div></button>
             </form>
         </div>
     </div>
+
+    <div id="print-area" style="display:none;"></div>
 
     <script type="module" src="app.js"></script>
 </body>
