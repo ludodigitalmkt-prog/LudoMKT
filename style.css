@@ -10,7 +10,6 @@
 * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
 body { background-color: var(--bg-body); color: var(--text-main); height: 100vh; display: flex; overflow: hidden; }
 
-/* TELAS INICIAIS */
 #splash-screen { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: var(--bg-body); display: flex; justify-content: center; align-items: center; z-index: 9999; transition: opacity 0.8s; }
 .splash-logo { width: 150px; animation: zoomInOut 2s forwards; }
 @keyframes zoomInOut { 0% { transform: scale(0.5); opacity: 0; } 50% { transform: scale(1.2); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
@@ -24,12 +23,10 @@ body { background-color: var(--bg-body); color: var(--text-main); height: 100vh;
 .button1 { padding: 0.8em 2em; border-radius: 12px; border: none; background-color: var(--accent); color: white; cursor: pointer; font-weight: bold; width: 100%; margin-top:20px; transition:0.3s;}
 .button1:hover { filter: brightness(1.2); transform: scale(1.05);}
 
-/* BOTÕES UIVERSE */
 .button-uiverse { cursor: pointer; border-radius: 12px; border: none; padding: 2px; background: radial-gradient(circle 80px at 80% -10%, var(--accent), #181b1b); position: relative; }
 .blob1 { position: absolute; width: 70px; height: 100%; border-radius: 16px; bottom: 0; left: 0; background: radial-gradient(circle 60px at 0% 100%, #ff3366, var(--accent), transparent); box-shadow: -10px 10px 30px rgba(108, 92, 231, 0.3); }
 .inner { padding: 12px 20px; border-radius: 10px; color: #fff; z-index: 3; position: relative; background: radial-gradient(circle 80px at 80% -50%, #2a2d3e, #0f1111); display: flex; align-items: center; gap: 8px; font-weight: bold;}
 
-/* WORKSPACE */
 #app-container { width: 100vw; height: 100vh; }
 .sidebar { width: 280px; background-color: var(--bg-sidebar); border-right: 1px solid var(--border); padding: 24px; display: flex; flex-direction: column; }
 .sidebar .logo { margin-bottom: 40px; text-align: center;}
@@ -46,7 +43,6 @@ body { background-color: var(--bg-body); color: var(--text-main); height: 100vh;
 .btn-secundary { background: transparent; border: 1px solid var(--border); color: #fff; padding: 10px 15px; border-radius: 8px; cursor: pointer;}
 .btn-secundary:hover { background: var(--border); }
 
-/* KANBAN E CARDS */
 .agenda-header { display: flex; justify-content: space-between; align-items: center; }
 .kanban-board { display: flex; gap: 20px; height: 70vh; }
 .kanban-column { flex: 1; background: var(--bg-sidebar); border-radius: 12px; padding: 20px; border: 1px solid var(--border); overflow-y:auto;}
@@ -57,9 +53,8 @@ body { background-color: var(--bg-body); color: var(--text-main); height: 100vh;
 .kanban-card::before { content: ""; width: 104%; height: 104%; border-radius: 10px; background-image: linear-gradient(var(--rotate), #5ddcff, var(--accent) 43%, #4e00c2); position: absolute; z-index: -1; top: -2%; left: -2%; animation: spin 3s linear infinite; opacity: 0; transition: 0.3s;}
 .kanban-card:hover::before { opacity: 1; }
 @keyframes spin { 0% { --rotate: 0deg; } 100% { --rotate: 360deg; } }
-.task-log { font-size: 10px; color: #777; margin-top: 10px; border-top: 1px solid var(--border); padding-top: 5px; }
+.task-log { font-size: 10px; color: #aaa; margin-top: 10px; border-top: 1px solid var(--border); padding-top: 5px; }
 
-/* CHAT IA & MODAL */
 .chat-hidden { opacity: 0; pointer-events: none; transform: translateY(20px); }
 .chat-active { opacity: 1; pointer-events: all; transform: translateY(0); }
 .msg-user { background: var(--accent); color: white; padding: 10px; border-radius: 10px 10px 0 10px; align-self: flex-end; max-width: 80%; font-size:14px; }
@@ -72,17 +67,14 @@ body { background-color: var(--bg-body); color: var(--text-main); height: 100vh;
 .modal-input:focus { border-color: var(--accent); }
 .modal-row { display: flex; gap: 15px; }
 
-/* FULLCALENDAR */
 .fc { color: var(--text-main); }
 .fc-theme-standard .fc-scrollgrid, .fc-theme-standard td, .fc-theme-standard th { border-color: var(--border) !important; }
 .fc-col-header-cell { background-color: var(--bg-sidebar); padding: 10px 0 !important; }
 .fc .fc-button-primary { background-color: var(--accent); border-color: var(--accent); text-transform: capitalize; }
 .fc-event { cursor: pointer; border: none; padding: 4px; font-size: 12px; border-radius: 4px;}
 
-/* LUDOPLAY */
 .ludoplay-container { display: grid; grid-template-columns: 60% 40%; gap: 20px; }
 .ludoplay-right { background: rgba(16, 21, 61, 0.5); border-radius: 15px; padding: 20px; box-shadow: var(--shadow); display:flex; justify-content:center; align-items:center; }
 .swiper-slide { width: 300px; position: relative; }
 .slide-overlay { position: absolute; bottom:0; width: 100%; background: linear-gradient(to top, rgba(38,21,149,0.9), transparent); padding: 20px; border-radius: 15px; }
-
 @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
