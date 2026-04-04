@@ -5,7 +5,7 @@
   "display": "standalone",
   "background_color": "#0a0c10",
   "theme_color": "#6c5ce7",
-  "orientation": "portrait",
+  "description": "Portal de Gestão e Workspace LudoMKT",
   "icons": [
     {
       "src": "logo.png",
