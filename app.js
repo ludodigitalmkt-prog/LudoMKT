@@ -161,32 +161,31 @@ document.getElementById('btn-gerar-folha')?.addEventListener('click', async () =
 });
 
 // --- LÓGICA PRINCIPAL ---
-document.addEventListener("DOMContentLoaded", () => {
-    
-    setTimeout(() => { document.getElementById('splash-screen').style.opacity = '0'; setTimeout(()=> document.getElementById('splash-screen').style.display='none', 800); }, 2000);
-    carregarLogos();
+// LOGIN (Blindado e com logs para rastreio)
+    const btnEntrar = document.getElementById('btn-entrar');
+    if (btnEntrar) {
+        btnEntrar.addEventListener('click', async (e) => {
+            e.preventDefault(); // Impede a página de recarregar sozinha
+            console.log("1. Botão de login foi clicado!"); 
+            
+            const email = document.getElementById('email').value;
+            const senha = document.getElementById('password').value;
 
-    // LOGIN
-    document.getElementById('btn-entrar').onclick = async (e) => {
-        e.preventDefault(); // Evita que a página recarregue sem querer
-        const email = document.getElementById('email').value;
-        const senha = document.getElementById('password').value;
-        
-        if(!email || !senha) return alert("Preencha e-mail e senha!");
-
-        try { 
-            await signInWithEmailAndPassword(auth, email, senha); 
-        } catch (err) { 
-            console.error("Motivo do bloqueio:", err.code);
-            if (err.code === 'auth/invalid-credential' || err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password') {
-                alert("Acesso Negado: E-mail não cadastrado ou senha incorreta!");
-            } else if (err.code === 'auth/invalid-email') {
-                alert("O formato do e-mail está inválido.");
-            } else {
-                alert("Erro no login: " + err.message);
+            if(!email || !senha) {
+                return alert("Por favor, preencha o e-mail e a senha!");
             }
-        }
-    };
+
+            try {
+                console.log("2. Tentando autenticar no Firebase...");
+                await signInWithEmailAndPassword(auth, email, senha);
+                console.log("3. Sucesso! Redirecionando...");
+                // O redirecionamento acontece automaticamente no bloco onAuthStateChanged
+            } catch (err) {
+                console.error("Erro exato do Firebase:", err.code);
+                alert("Acesso Negado: Verifique se o e-mail e a senha estão corretos. (" + err.code + ")");
+            }
+        });
+    }
 
     onAuthStateChanged(auth, async (user) => {
         if(user) {
