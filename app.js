@@ -38,15 +38,17 @@ window.mudarVisaoAgenda = (v) => {
     if(v === 'calendario' && window.calendarioGeral) setTimeout(() => window.calendarioGeral.render(), 100);
 };
 
-// --- LOGO ENGINE (CADASTRO DE LOGOS) ---
+// --- LOGO ENGINE ---
 async function carregarLogos() {
-    const snap = await getDoc(doc(db, 'config', 'visual'));
-    if(snap.exists()) {
-        const d = snap.data();
-        if(d.logoIntro) document.getElementById('logo-intro').src = d.logoIntro;
-        if(d.logoLogin) document.getElementById('logo-login').src = d.logoLogin;
-        if(d.logoMenu) document.getElementById('logo-menu').src = d.logoMenu;
-    }
+    try {
+        const snap = await getDoc(doc(db, 'config', 'visual'));
+        if(snap.exists()) {
+            const d = snap.data();
+            if(d.logoIntro) document.getElementById('logo-intro').src = d.logoIntro;
+            if(d.logoLogin) document.getElementById('logo-login').src = d.logoLogin;
+            if(d.logoMenu) document.getElementById('logo-menu').src = d.logoMenu;
+        }
+    } catch(e) { console.log("Logos não configuradas ainda."); }
 }
 
 // --- PERMISSÕES ENGINE ---
@@ -62,6 +64,7 @@ function aplicarPermissoes(permissoes) {
         admin: { icon: 'settings', label: 'Configurações' }
     };
 
+    if(!nav) return;
     nav.innerHTML = "";
     Object.keys(links).forEach(key => {
         if(!permissoes || permissoes[key] !== false) { 
@@ -89,22 +92,20 @@ async function carregarColaboradores() {
     if(sel) sel.innerHTML = "";
     if(container) container.innerHTML = "";
     
-    const qs = await getDocs(collection(db, "usuarios"));
-    qs.forEach(d => {
-        const u = d.data();
-        
-        // Povoa Select da Agenda
-        if(sel) sel.innerHTML += `<option value="${u.nome}">${u.nome}</option>`;
-        
-        // Povoa Lista do RH
-        if(container) {
-            const card = document.createElement('div');
-            card.className = "colab-card";
-            card.innerHTML = `<strong>${u.nome}</strong><br><small style="color:var(--text-muted);">${u.cargo || 'Membro da Equipe'}</small>`;
-            card.onclick = () => abrirPastaColaborador(d.id, u);
-            container.appendChild(card);
-        }
-    });
+    try {
+        const qs = await getDocs(collection(db, "usuarios"));
+        qs.forEach(d => {
+            const u = d.data();
+            if(sel) sel.innerHTML += `<option value="${u.nome}">${u.nome}</option>`;
+            if(container) {
+                const card = document.createElement('div');
+                card.className = "colab-card";
+                card.innerHTML = `<strong>${u.nome}</strong><br><small style="color:var(--text-muted);">${u.cargo || 'Membro da Equipe'}</small>`;
+                card.onclick = () => abrirPastaColaborador(d.id, u);
+                container.appendChild(card);
+            }
+        });
+    } catch(e) { console.log("Erro ao carregar equipe", e); }
 }
 
 window.abrirPastaColaborador = async (id, data) => {
@@ -118,6 +119,7 @@ function monitorarHistorico(id) {
     const q = query(collection(db, `usuarios/${id}/historico`), orderBy("data", "desc"));
     onSnapshot(q, (snap) => {
         const list = document.getElementById('historico-rh-lista');
+        if(!list) return;
         list.innerHTML = "";
         snap.forEach(d => {
             const ev = d.data();
@@ -130,44 +132,24 @@ function monitorarHistorico(id) {
     });
 }
 
-// --- IMPRESSÃO DE COMPROVANTE ---
-document.getElementById('btn-gerar-folha')?.addEventListener('click', async () => {
-    const snap = await getDocs(query(collection(db, `usuarios/${currentColabId}/historico`), orderBy("data", "desc")));
-    let html = `
-        <div style="font-family:sans-serif; border:2px solid #000; padding:30px;">
-            <h1 style="text-align:center">COMPROVANTE DE HISTÓRICO - LUDOMKT</h1>
-            <hr>
-            <p><strong>Colaborador:</strong> ${document.getElementById('modal-rh-nome').innerText.replace('Pasta: ', '')}</p>
-            <p><strong>Data de Emissão:</strong> ${new Date().toLocaleDateString()}</p>
-            <table width="100%" border="1" style="border-collapse:collapse; margin:20px 0; text-align:left;">
-                <thead><tr style="background:#eee;"><th>Data</th><th>Evento</th><th>Descrição</th><th>Valor (R$)</th></tr></thead>
-                <tbody>`;
-    
-    snap.forEach(d => {
-        const e = d.data();
-        html += `<tr><td>${new Date(e.data).toLocaleDateString()}</td><td>${e.tipo}</td><td>${e.desc}</td><td>R$ ${e.valor || '0,00'}</td></tr>`;
-    });
-
-    html += `</tbody></table>
-            <div style="margin-top:50px; display:flex; justify-content:space-between;">
-                <div style="border-top:1px solid #000; width:200px; text-align:center">Assinatura Gestor</div>
-                <div style="border-top:1px solid #000; width:200px; text-align:center">Assinatura Colaborador</div>
-            </div>
-        </div>`;
-    
-    const printArea = document.getElementById('print-area');
-    printArea.innerHTML = html;
-    window.print();
-});
-
 // --- LÓGICA PRINCIPAL ---
-// LOGIN (Blindado e com logs para rastreio)
+document.addEventListener("DOMContentLoaded", () => {
+    
+    setTimeout(() => { 
+        const splash = document.getElementById('splash-screen');
+        if(splash) {
+            splash.style.opacity = '0'; 
+            setTimeout(()=> splash.style.display='none', 800); 
+        }
+    }, 2000);
+    
+    carregarLogos();
+
+    // BLINDAGEM DO LOGIN
     const btnEntrar = document.getElementById('btn-entrar');
     if (btnEntrar) {
         btnEntrar.addEventListener('click', async (e) => {
-            e.preventDefault(); // Impede a página de recarregar sozinha
-            console.log("1. Botão de login foi clicado!"); 
-            
+            e.preventDefault(); 
             const email = document.getElementById('email').value;
             const senha = document.getElementById('password').value;
 
@@ -176,42 +158,59 @@ document.getElementById('btn-gerar-folha')?.addEventListener('click', async () =
             }
 
             try {
-                console.log("2. Tentando autenticar no Firebase...");
+                btnEntrar.innerText = "Aguarde...";
                 await signInWithEmailAndPassword(auth, email, senha);
-                console.log("3. Sucesso! Redirecionando...");
-                // O redirecionamento acontece automaticamente no bloco onAuthStateChanged
+                // O onAuthStateChanged vai redirecionar automaticamente
             } catch (err) {
+                btnEntrar.innerText = "Acessar Sistema";
                 console.error("Erro exato do Firebase:", err.code);
-                alert("Acesso Negado: Verifique se o e-mail e a senha estão corretos. (" + err.code + ")");
+                if (err.code === 'auth/invalid-credential' || err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password') {
+                    alert("Acesso Negado: E-mail não cadastrado ou senha incorreta!");
+                } else if (err.code === 'auth/invalid-email') {
+                    alert("O formato do e-mail está inválido.");
+                } else {
+                    alert("Erro no login: " + err.message);
+                }
             }
         });
     }
 
     onAuthStateChanged(auth, async (user) => {
         if(user) {
-            const d = await getDoc(doc(db, "usuarios", user.uid));
-            if(d.exists()) {
-                const data = d.data();
-                userLogged = { uid: user.uid, ...data };
-                aplicarPermissoes(data.permissoes);
-                document.getElementById('saldo-vr').innerText = userLogged.vr_saldo || "0,00";
-                
-                document.getElementById('login-screen').style.display = 'none';
-                document.getElementById('app-container').style.display = 'flex';
-                document.getElementById('ludotech-widget').style.display = 'block'; // MOSTRA A IA
-                
-                carregarColaboradores();
-                
-                // Carrega Spotify
-                const conf = await getDoc(doc(db, 'config', 'music'));
-                if(conf.exists()) document.getElementById('spotify-iframe').src = conf.data().url;
-            }
+            try {
+                const d = await getDoc(doc(db, "usuarios", user.uid));
+                if(d.exists()) {
+                    const data = d.data();
+                    userLogged = { uid: user.uid, ...data };
+                    aplicarPermissoes(data.permissoes);
+                    const saldoVr = document.getElementById('saldo-vr');
+                    if(saldoVr) saldoVr.innerText = userLogged.vr_saldo || "0,00";
+                    
+                    document.getElementById('login-screen').style.display = 'none';
+                    document.getElementById('app-container').style.display = 'flex';
+                    document.getElementById('ludotech-widget').style.display = 'block'; 
+                    
+                    carregarColaboradores();
+                    
+                    // Carrega Spotify
+                    const conf = await getDoc(doc(db, 'config', 'music'));
+                    if(conf.exists() && document.getElementById('spotify-iframe')) {
+                        document.getElementById('spotify-iframe').src = conf.data().url;
+                    }
+                }
+            } catch(e) { console.error("Erro ao carregar dados do usuário", e); }
         }
     });
 
-    document.getElementById('btn-sair').onclick = () => { signOut(auth); window.location.reload(); };
+    const btnSair = document.getElementById('btn-sair');
+    if(btnSair) {
+        btnSair.addEventListener('click', async () => { 
+            await signOut(auth); 
+            window.location.reload(); 
+        });
+    }
 
-    // CADASTRO COLABORADOR COM PERMISSÕES
+    // CADASTRO COLABORADOR
     document.getElementById('form-rh-completo')?.addEventListener('submit', async (e) => {
         e.preventDefault();
         const permissoes = {};
@@ -246,7 +245,7 @@ document.getElementById('btn-gerar-folha')?.addEventListener('click', async () =
         };
         await addDoc(collection(db, `usuarios/${currentColabId}/historico`), ev);
         
-        // Se for lançamento de Vale Alimentação, atualiza o saldo na conta do colaborador
+        // Atualiza saldo
         if(tipo === 'Vale Alimentação' && valor) {
             const docRef = doc(db, 'usuarios', currentColabId);
             const colabAtual = await getDoc(docRef);
@@ -254,7 +253,7 @@ document.getElementById('btn-gerar-folha')?.addEventListener('click', async () =
             await updateDoc(docRef, { vr_saldo: saldoAtual + Number(valor) });
         }
         
-        alert("Evento registrado no histórico do colaborador!");
+        alert("Evento registrado no histórico!");
         document.getElementById('rh-valor-evento').value = "";
         document.getElementById('rh-desc-evento').value = "";
     });
@@ -276,7 +275,7 @@ document.getElementById('btn-gerar-folha')?.addEventListener('click', async () =
         }
         if(Object.keys(urls).length > 0) {
             await setDoc(doc(db, 'config', 'visual'), urls, {merge:true});
-            alert("Logos salvas no servidor da LudoMKT!");
+            alert("Logos salvas no servidor!");
             carregarLogos();
         }
     });
@@ -285,11 +284,12 @@ document.getElementById('btn-gerar-folha')?.addEventListener('click', async () =
         const url = document.getElementById('config-spotify-url').value;
         const embedUrl = url.replace("https://open.spotify.com/", "https://open.spotify.com/embed/");
         await setDoc(doc(db, 'config', 'music'), { url: embedUrl });
-        alert("Playlist atualizada na LudoMusic!");
-        document.getElementById('spotify-iframe').src = embedUrl;
+        alert("Playlist atualizada!");
+        const iframe = document.getElementById('spotify-iframe');
+        if(iframe) iframe.src = embedUrl;
     });
 
-    // SAQUE DO VR (QR CODE)
+    // SAQUE VR
     document.getElementById('btn-sacar-vr')?.addEventListener('click', async () => {
         if(!userLogged || !userLogged.vr_saldo || userLogged.vr_saldo <= 0) return alert('Você não tem saldo disponível!');
         try {
@@ -300,9 +300,37 @@ document.getElementById('btn-gerar-folha')?.addEventListener('click', async () =
         } catch (e) { alert("Erro ao processar o saque."); }
     });
 
-    // ===============================================
-    // AGENDA E RELATÓRIOS 
-    // ===============================================
+    // IMPRESSÃO DE COMPROVANTE
+    document.getElementById('btn-gerar-folha')?.addEventListener('click', async () => {
+        const snap = await getDocs(query(collection(db, `usuarios/${currentColabId}/historico`), orderBy("data", "desc")));
+        let html = `
+            <div style="font-family:sans-serif; border:2px solid #000; padding:30px;">
+                <h1 style="text-align:center">COMPROVANTE DE HISTÓRICO - LUDOMKT</h1>
+                <hr>
+                <p><strong>Colaborador:</strong> ${document.getElementById('modal-rh-nome').innerText.replace('Pasta: ', '')}</p>
+                <p><strong>Data de Emissão:</strong> ${new Date().toLocaleDateString()}</p>
+                <table width="100%" border="1" style="border-collapse:collapse; margin:20px 0; text-align:left;">
+                    <thead><tr style="background:#eee;"><th>Data</th><th>Evento</th><th>Descrição</th><th>Valor (R$)</th></tr></thead>
+                    <tbody>`;
+        
+        snap.forEach(d => {
+            const e = d.data();
+            html += `<tr><td>${new Date(e.data).toLocaleDateString()}</td><td>${e.tipo}</td><td>${e.desc}</td><td>R$ ${e.valor || '0,00'}</td></tr>`;
+        });
+
+        html += `</tbody></table>
+                <div style="margin-top:50px; display:flex; justify-content:space-between;">
+                    <div style="border-top:1px solid #000; width:200px; text-align:center">Assinatura Gestor</div>
+                    <div style="border-top:1px solid #000; width:200px; text-align:center">Assinatura Colaborador</div>
+                </div>
+            </div>`;
+        
+        const printArea = document.getElementById('print-area');
+        printArea.innerHTML = html;
+        window.print();
+    });
+
+    // AGENDA E KANBAN
     document.getElementById('task-form')?.addEventListener('submit', async (e) => {
         e.preventDefault();
         const idEdicao = document.getElementById('task-id').value;
@@ -379,9 +407,7 @@ document.getElementById('btn-gerar-folha')?.addEventListener('click', async () =
         });
     });
 
-    // ===============================================
-    // CHATBOT IA GROQ (CÉREBRO RESTAURADO)
-    // ===============================================
+    // CHATBOT GROQ
     document.getElementById('send-ia')?.addEventListener('click', async () => {
         const inp = document.getElementById('chat-input');
         const cb = document.getElementById('chat-messages');
@@ -396,8 +422,8 @@ document.getElementById('btn-gerar-folha')?.addEventListener('click', async () =
         cb.innerHTML += `<div class="msg-ia" id="${loadingId}">Processando...</div>`; 
         cb.scrollTop = cb.scrollHeight;
 
-        // ⚠️ SUA CHAVE AQUI 
-        const API_KEY = "COLOQUE_SUA_CHAVE_AQUI"; 
+        // COLE A SUA CHAVE AQUI
+        const API_KEY = "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"; 
 
         try {
             const respostaRaw = await fetch('https://api.groq.com/openai/v1/chat/completions', { 
