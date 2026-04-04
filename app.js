@@ -2,28 +2,24 @@ import { db, auth } from './firebase.js';
 import { collection, addDoc, onSnapshot, query, orderBy, doc, updateDoc, setDoc, getDocs, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
-// VARIÁVEIS GLOBAIS
 let usuarioLogado = null; 
-let todasAtividades = {}; // Guarda as tarefas para podermos editar
+let todasAtividades = {}; 
 
-// FUNÇÕES DE TELA
 window.toggleIA = function() {
     const chat = document.getElementById('ludotech-chat');
     if (chat) chat.classList.toggle('chat-hidden');
 };
 
 window.abrirModal = () => {
-    document.getElementById('task-id').value = ""; // Limpa ID (Nova tarefa)
+    document.getElementById('task-id').value = ""; 
     document.getElementById('task-form').reset();
     document.getElementById('task-modal').style.display = 'flex';
 };
-
 window.fecharModal = () => document.getElementById('task-modal').style.display = 'none';
 
 window.editarTarefa = function(id) {
     const tarefa = todasAtividades[id];
     if(!tarefa) return;
-    
     document.getElementById('task-id').value = id;
     document.getElementById('task-titulo').value = tarefa.titulo;
     document.getElementById('task-status').value = tarefa.status;
@@ -47,23 +43,27 @@ document.addEventListener("DOMContentLoaded", () => {
         if(splash) { splash.style.opacity = '0'; setTimeout(() => splash.style.display = 'none', 800); }
     }, 2000);
 
-    // MUDANÇA DE ESTADO (Verifica quem logou para carregar Benefícios e Planner)
+    // ===============================================
+    // A MÁGICA DO LOGIN: MOSTRAR A IA (CORRIGIDO)
+    // ===============================================
     onAuthStateChanged(auth, async (user) => {
         if (user) {
-            const docRef = doc(db, "usuarios", user.uid);
-            const docSnap = await getDoc(docRef);
+            const docSnap = await getDoc(doc(db, "usuarios", user.uid));
             if (docSnap.exists()) {
                 usuarioLogado = docSnap.data();
-                // Atualiza tela de Benefícios
-                document.getElementById('saldo-vr').innerText = usuarioLogado.vr_saldo || "0,00";
+                const saldoEl = document.getElementById('saldo-vr');
+                if(saldoEl) saldoEl.innerText = usuarioLogado.vr_saldo || "0,00";
             }
             document.getElementById('login-screen').style.display = 'none';
             document.getElementById('app-container').style.display = 'flex';
+            
+            // AQUI FAZ A BOLINHA DA IA APARECER:
+            document.getElementById('ludotech-widget').style.display = 'block'; 
+            
             carregarUsuariosNoSelect();
         }
     });
 
-    // LOGIN & SAIR
     document.getElementById('btn-entrar')?.addEventListener('click', async () => {
         const email = document.getElementById('email').value;
         const senha = document.getElementById('password').value;
@@ -73,10 +73,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
     document.getElementById('btn-sair')?.addEventListener('click', async () => {
         await signOut(auth);
-        window.location.reload(); // Recarrega a página para limpar os dados
+        window.location.reload(); 
     });
 
-    // MENU
     const buttons = document.querySelectorAll(".menu-btn[data-target]");
     buttons.forEach(button => {
         button.addEventListener("click", () => {
@@ -87,10 +86,24 @@ document.addEventListener("DOMContentLoaded", () => {
                 document.querySelectorAll(".tab-content").forEach(tab => tab.classList.remove("active"));
                 button.classList.add("active");
                 targetElement.classList.add("active");
-
                 if(targetId === 'planner' && window.calendarioIndividual) setTimeout(() => window.calendarioIndividual.render(), 100);
             }
         });
+    });
+
+    document.getElementById('form-rh')?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const nome = document.getElementById('rh-nome').value;
+        const email = document.getElementById('rh-email').value;
+        const senha = document.getElementById('rh-senha').value;
+        const vr = document.getElementById('rh-vr').value;
+        try {
+            const userCredential = await createUserWithEmailAndPassword(auth, email, senha);
+            await setDoc(doc(db, "usuarios", userCredential.user.uid), { nome, email, vr_saldo: vr, criadoEm: new Date().getTime() });
+            alert("Colaborador salvo com sucesso!");
+            document.getElementById('form-rh').reset();
+            carregarUsuariosNoSelect();
+        } catch (error) { alert("Erro: " + error.message); }
     });
 
     async function carregarUsuariosNoSelect() {
@@ -106,7 +119,6 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    // SALVAR OU EDITAR TAREFA
     document.getElementById('task-form')?.addEventListener('submit', async (e) => {
         e.preventDefault();
         const idEdicao = document.getElementById('task-id').value;
@@ -123,19 +135,18 @@ document.addEventListener("DOMContentLoaded", () => {
         };
 
         try {
-            if (idEdicao !== "") {
-                // É UMA EDIÇÃO
-                await updateDoc(doc(db, "atividades", idEdicao), baseTarefa);
-            } else {
-                // É NOVA
+            if (idEdicao !== "") await updateDoc(doc(db, "atividades", idEdicao), baseTarefa);
+            else {
                 baseTarefa.criadoEm = new Date().getTime();
                 await addDoc(collection(db, "atividades"), baseTarefa);
             }
             fecharModal();
-        } catch (error) { alert("Erro ao salvar!"); }
+        } catch (error) { alert("Aviso: Falha ao salvar (Regras de permissão do Firebase podem estar bloqueando)."); }
     });
 
-   // CHATBOT GROQ (LLAMA 3) INTEGRADO
+    // ===============================================
+    // IA GROQ COM LLAMA 3
+    // ===============================================
     const btnSendIa = document.getElementById('send-ia');
     btnSendIa?.addEventListener('click', async () => {
         const input = document.getElementById('chat-input');
@@ -143,77 +154,54 @@ document.addEventListener("DOMContentLoaded", () => {
         const msgUser = input.value;
         if(msgUser === "") return;
 
-        // Mostra a msg do usuário
         chatBody.innerHTML += `<div class="msg-user">${msgUser}</div>`;
         input.value = "";
-        chatBody.innerHTML += `<div class="msg-ia" id="loading-ia">Pensando rapidinho...</div>`;
+        chatBody.innerHTML += `<div class="msg-ia" id="loading-ia">Pensando...</div>`;
         chatBody.scrollTop = chatBody.scrollHeight;
 
-        // ========================================================
-        // ⚠️ ATENÇÃO: COLOQUE SUA CHAVE DE API DA GROQ AQUI ⚠️
         const API_KEY = "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"; 
-        // ========================================================
 
         try {
-            // O Groq usa a mesma estrutura do ChatGPT, o que facilita muito!
             const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
                 method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${API_KEY}`
-                },
+                headers: { "Content-Type": "application/json", "Authorization": `Bearer ${API_KEY}` },
                 body: JSON.stringify({
-                    model: "llama3-70b-8192", // Modelo super inteligente e rápido
+                    model: "llama3-70b-8192", 
                     messages: [
-                        { role: "system", content: "Você é a LudoTech, uma assistente virtual simpática e especialista em marketing da agência LudoMKT. Ajude os colaboradores com ideias criativas, curtas e diretas. Responda sempre em português do Brasil." },
+                        { role: "system", content: "Você é a LudoTech, uma assistente de marketing. Ajude com ideias criativas." },
                         { role: "user", content: msgUser }
                     ]
                 })
             });
-            
             const data = await response.json();
-            
-            if (data.error) {
-                throw new Error(data.error.message);
-            }
-            
-            const respostaIA = data.choices[0].message.content;
-            
             document.getElementById('loading-ia').remove();
-            chatBody.innerHTML += `<div class="msg-ia">${respostaIA.replace(/\n/g, '<br>')}</div>`;
+            chatBody.innerHTML += `<div class="msg-ia">${data.choices[0].message.content.replace(/\n/g, '<br>')}</div>`;
             chatBody.scrollTop = chatBody.scrollHeight;
-            
         } catch(error) {
             document.getElementById('loading-ia').remove();
-            console.error(error);
-            chatBody.innerHTML += `<div class="msg-ia" style="color: #ff3366;">Erro: Verifique sua chave API da Groq.</div>`;
-            chatBody.scrollTop = chatBody.scrollHeight;
+            chatBody.innerHTML += `<div class="msg-ia" style="color: #ff3366;">Erro ao conectar com a IA.</div>`;
         }
     });
 
-    // INICIALIZAR CALENDÁRIOS
     if (typeof FullCalendar !== 'undefined') {
-        const configCalendario = {
+        const configCal = {
             initialView: 'dayGridMonth', locale: 'pt-br',
             headerToolbar: { left: 'prev,next', center: 'title', right: 'dayGridMonth' },
             editable: true, droppable: true,
-            eventClick: function(info) { editarTarefa(info.event.id); }, // Clicar abre a edição
+            eventClick: function(info) { editarTarefa(info.event.id); },
             eventDrop: async function(info) {
                 try { await updateDoc(doc(db, "atividades", info.event.id), { datas: info.event.start.toISOString().split('T')[0] }); } 
                 catch (error) { info.revert(); }
             }
         };
         const calGeralEl = document.getElementById('calendar-geral');
-        if(calGeralEl) window.calendarioGeral = new FullCalendar.Calendar(calGeralEl, configCalendario);
-        
+        if(calGeralEl) window.calendarioGeral = new FullCalendar.Calendar(calGeralEl, configCal);
         const calIndEl = document.getElementById('calendar-individual');
-        if(calIndEl) window.calendarioIndividual = new FullCalendar.Calendar(calIndEl, configCalendario);
+        if(calIndEl) window.calendarioIndividual = new FullCalendar.Calendar(calIndEl, configCal);
     }
 
-    // LER TAREFAS, MONTAR KANBAN, FILTRAR PLANNER INDIVIDUAL
     const kanbanColumns = { 'pendente': document.getElementById('col-pendente'), 'analise': document.getElementById('col-analise'), 'concluido': document.getElementById('col-concluido') };
     const q = query(collection(db, "atividades"), orderBy("criadoEm", "desc"));
-    
     onSnapshot(q, (snapshot) => {
         if(kanbanColumns.pendente) kanbanColumns.pendente.innerHTML = '';
         if(kanbanColumns.analise) kanbanColumns.analise.innerHTML = '';
@@ -226,7 +214,7 @@ document.addEventListener("DOMContentLoaded", () => {
         snapshot.forEach((docSnap) => {
             const data = docSnap.data();
             const id = docSnap.id;
-            todasAtividades[id] = data; // Salva globalmente para edição
+            todasAtividades[id] = data; 
             
             if (data.status === 'pendente') pendentesCount++;
             
@@ -234,7 +222,7 @@ document.addEventListener("DOMContentLoaded", () => {
             card.className = `kanban-card`;
             card.setAttribute('draggable', 'true');
             card.dataset.id = id; 
-            card.onclick = () => editarTarefa(id); // Clicar no card edita
+            card.onclick = () => editarTarefa(id); 
             card.innerHTML = `<div style="font-weight:bold; font-size:18px;">${data.titulo}</div><div style="font-size:12px; color:#ccc;">Resp: ${data.responsaveis || 'Todos'}</div>`;
             
             card.addEventListener('dragstart', () => { card.classList.add('dragging'); card.style.opacity = '0.5'; });
@@ -247,11 +235,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 const eventoData = { id: id, title: data.titulo, start: data.datas, backgroundColor: corDoEvento, borderColor: corDoEvento };
                 
                 eventosGerais.push(eventoData);
-                
-                // FILTRO DO PLANNER INDIVIDUAL: Só entra se tiver o nome do usuário logado
-                if(usuarioLogado && data.responsaveis.includes(usuarioLogado.nome)) {
-                    eventosIndividuais.push(eventoData);
-                }
+                if(usuarioLogado && data.responsaveis.includes(usuarioLogado.nome)) eventosIndividuais.push(eventoData);
             }
         });
 
@@ -262,6 +246,60 @@ document.addEventListener("DOMContentLoaded", () => {
         if (window.calendarioIndividual) { window.calendarioIndividual.removeAllEvents(); window.calendarioIndividual.addEventSource(eventosIndividuais); }
     });
 
-    // PWA
+    document.querySelectorAll('.kanban-column').forEach(column => {
+        column.addEventListener('dragover', e => {
+            e.preventDefault();
+            const containerCards = column.querySelector('.cards-container');
+            const draggable = document.querySelector('.dragging');
+            if (draggable && containerCards) containerCards.appendChild(draggable);
+        });
+
+        column.addEventListener('drop', async (e) => {
+            const draggable = document.querySelector('.dragging');
+            if(draggable) {
+                const columnId = column.id;
+                let novoStatus = 'pendente';
+                if (columnId === 'coluna-amarela') novoStatus = 'analise';
+                if (columnId === 'coluna-verde') novoStatus = 'concluido';
+                try { await updateDoc(doc(db, "atividades", draggable.dataset.id), { status: novoStatus }); } catch (error) {}
+            }
+        });
+    });
+
+    // ===============================================
+    // LÓGICA DO LUDOPLAY (SLIDERS E MÚSICA)
+    // ===============================================
+    if (typeof Swiper !== 'undefined') {
+        new Swiper(".swiper", {
+            effect: "coverflow", grabCursor: true, centeredSlides: true, loop: true, speed: 600, slidesPerView: "auto",
+            coverflowEffect: { rotate: 10, stretch: 120, depth: 200, modifier: 1, slideShadows: false }
+        });
+    }
+
+    const song = document.getElementById("song");
+    const playBtn = document.querySelector(".play-pause-btn");
+    const controlIcon = document.getElementById("controlIcon");
+    const progress = document.getElementById("progress");
+    const rotImg = document.getElementById("rotatingImage");
+    let isPlaying = false;
+    let rotation = 0;
+    let rotInterval;
+
+    if(playBtn && song) {
+        playBtn.addEventListener("click", () => {
+            if(!isPlaying) {
+                song.play(); isPlaying = true;
+                controlIcon.classList.replace("fa-play", "fa-pause");
+                rotInterval = setInterval(() => { rotation += 2; rotImg.style.transform = `rotate(${rotation}deg)`; }, 50);
+            } else {
+                song.pause(); isPlaying = false;
+                controlIcon.classList.replace("fa-pause", "fa-play");
+                clearInterval(rotInterval);
+            }
+        });
+        song.addEventListener("timeupdate", () => { if(progress) progress.value = (song.currentTime / song.duration) * 100 || 0; });
+        progress?.addEventListener("input", (e) => { song.currentTime = (e.target.value / 100) * song.duration; });
+    }
+
     if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(e => console.log(e));
 });
