@@ -1,305 +1,257 @@
-import { db, auth } from './firebase.js';
+import { db, auth, storage } from './firebase.js';
 import { collection, addDoc, onSnapshot, query, orderBy, doc, updateDoc, setDoc, getDocs, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+import { ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js";
 
 let usuarioLogado = null; 
 let todasAtividades = {}; 
 
-window.toggleIA = function() {
-    const chat = document.getElementById('ludotech-chat');
-    if (chat) chat.classList.toggle('chat-hidden');
-};
-
-window.abrirModal = () => {
-    document.getElementById('task-id').value = ""; 
-    document.getElementById('task-form').reset();
-    document.getElementById('task-modal').style.display = 'flex';
-};
+window.toggleIA = () => document.getElementById('ludotech-chat').classList.toggle('chat-hidden');
 window.fecharModal = () => document.getElementById('task-modal').style.display = 'none';
+window.abrirModal = () => { document.getElementById('task-id').value = ""; document.getElementById('task-form').reset(); document.getElementById('task-modal').style.display = 'flex'; };
 
 window.editarTarefa = function(id) {
-    const tarefa = todasAtividades[id];
-    if(!tarefa) return;
-    document.getElementById('task-id').value = id;
-    document.getElementById('task-titulo').value = tarefa.titulo;
-    document.getElementById('task-status').value = tarefa.status;
-    document.getElementById('task-prioridade').value = tarefa.prioridade;
-    document.getElementById('task-datas').value = tarefa.datas || '';
-    document.getElementById('task-desc').value = tarefa.descricao || '';
+    const t = todasAtividades[id]; if(!t) return;
+    document.getElementById('task-id').value = id; document.getElementById('task-titulo').value = t.titulo;
+    document.getElementById('task-status').value = t.status; document.getElementById('task-prioridade').value = t.prioridade;
+    document.getElementById('task-datas').value = t.datas || ''; document.getElementById('task-desc').value = t.descricao || '';
     document.getElementById('task-modal').style.display = 'flex';
 };
-
-window.mudarVisaoAgenda = function(visaoId) {
-    document.getElementById('visao-kanban').style.display = 'none';
-    document.getElementById('visao-calendario').style.display = 'none';
-    document.getElementById('visao-' + visaoId).style.display = 'block';
-    if(visaoId === 'calendario' && window.calendarioGeral) setTimeout(() => window.calendarioGeral.render(), 100);
+window.mudarVisaoAgenda = (id) => {
+    document.getElementById('visao-kanban').style.display = 'none'; document.getElementById('visao-calendario').style.display = 'none';
+    document.getElementById('visao-' + id).style.display = 'block';
+    if(id === 'calendario' && window.calendarioGeral) setTimeout(() => window.calendarioGeral.render(), 100);
 };
 
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
     
-    setTimeout(() => {
-        const splash = document.getElementById('splash-screen');
-        if(splash) { splash.style.opacity = '0'; setTimeout(() => splash.style.display = 'none', 800); }
-    }, 2000);
+    setTimeout(() => { const s = document.getElementById('splash-screen'); if(s) { s.style.opacity='0'; setTimeout(()=>s.style.display='none', 800); } }, 2000);
 
-    // ===============================================
-    // A MÁGICA DO LOGIN: MOSTRAR A IA (CORRIGIDO)
-    // ===============================================
+    // 1. CARREGAR DESIGN DO PAINEL ADMIN
+    async function aplicarConfiguracoes() {
+        const confSnap = await getDoc(doc(db, 'configuracoes', 'geral'));
+        if(confSnap.exists()) {
+            const conf = confSnap.data();
+            if(conf.corPrimaria) document.documentElement.style.setProperty('--accent', conf.corPrimaria);
+            if(conf.logoMain) document.querySelectorAll('.img-logo-dinamica').forEach(img => img.src = conf.logoMain);
+            if(conf.logoIA) document.querySelectorAll('.img-avatar-ia').forEach(img => img.src = conf.logoIA);
+            if(conf.canva && document.getElementById('btn-link-canva')) document.getElementById('btn-link-canva').href = conf.canva;
+            if(conf.insta && document.getElementById('btn-link-insta')) document.getElementById('btn-link-insta').href = conf.insta;
+            
+            document.getElementById('config-cor').value = conf.corPrimaria || "#6c5ce7";
+            document.getElementById('config-canva').value = conf.canva || "";
+            document.getElementById('config-insta').value = conf.insta || "";
+        }
+    }
+    aplicarConfiguracoes();
+
+    // 2. AUTENTICAÇÃO E PERMISSÕES (VERIFICA SE É ADMIN)
     onAuthStateChanged(auth, async (user) => {
         if (user) {
             const docSnap = await getDoc(doc(db, "usuarios", user.uid));
             if (docSnap.exists()) {
-                usuarioLogado = docSnap.data();
-                const saldoEl = document.getElementById('saldo-vr');
-                if(saldoEl) saldoEl.innerText = usuarioLogado.vr_saldo || "0,00";
+                usuarioLogado = { uid: user.uid, ...docSnap.data() };
+                
+                document.getElementById('saldo-vr').innerText = usuarioLogado.vr_saldo || "0,00";
+                
+                // Se for Admin, mostra as abas de Configurações e RH
+                if(usuarioLogado.isAdmin) {
+                    document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'flex');
+                }
             }
             document.getElementById('login-screen').style.display = 'none';
             document.getElementById('app-container').style.display = 'flex';
             
-            // AQUI FAZ A BOLINHA DA IA APARECER:
+            // MOSTRA A BOLINHA DA IA
             document.getElementById('ludotech-widget').style.display = 'block'; 
             
             carregarUsuariosNoSelect();
+            if (window.calendarioIndividual) setTimeout(() => window.calendarioIndividual.render(), 500);
         }
     });
 
     document.getElementById('btn-entrar')?.addEventListener('click', async () => {
-        const email = document.getElementById('email').value;
-        const senha = document.getElementById('password').value;
-        try { await signInWithEmailAndPassword(auth, email, senha); } 
-        catch (error) { alert("E-mail ou senha incorretos!"); }
+        const e = document.getElementById('email').value, s = document.getElementById('password').value;
+        try { await signInWithEmailAndPassword(auth, e, s); } catch (err) { alert("Dados incorretos!"); }
     });
+    document.getElementById('btn-sair')?.addEventListener('click', async () => { await signOut(auth); window.location.reload(); });
 
-    document.getElementById('btn-sair')?.addEventListener('click', async () => {
-        await signOut(auth);
-        window.location.reload(); 
-    });
-
+    // MENU
     const buttons = document.querySelectorAll(".menu-btn[data-target]");
-    buttons.forEach(button => {
-        button.addEventListener("click", () => {
-            const targetId = button.getAttribute("data-target");
-            const targetElement = document.getElementById(targetId);
-            if(targetElement) {
-                buttons.forEach(btn => btn.classList.remove("active"));
-                document.querySelectorAll(".tab-content").forEach(tab => tab.classList.remove("active"));
-                button.classList.add("active");
-                targetElement.classList.add("active");
-                if(targetId === 'planner' && window.calendarioIndividual) setTimeout(() => window.calendarioIndividual.render(), 100);
-            }
-        });
+    buttons.forEach(b => b.addEventListener("click", () => {
+        const t = document.getElementById(b.getAttribute("data-target"));
+        if(t) {
+            buttons.forEach(x => x.classList.remove("active")); document.querySelectorAll(".tab-content").forEach(x => x.classList.remove("active"));
+            b.classList.add("active"); t.classList.add("active");
+            if(b.getAttribute("data-target") === 'planner' && window.calendarioIndividual) setTimeout(() => window.calendarioIndividual.render(), 100);
+        }
+    }));
+
+    // 3. SAQUE VR E ATUALIZAÇÃO RH
+    document.getElementById('btn-sacar-vr')?.addEventListener('click', async () => {
+        if(!usuarioLogado || !usuarioLogado.vr_saldo || usuarioLogado.vr_saldo <= 0) return alert('Você não tem saldo disponível!');
+        try {
+            await updateDoc(doc(db, 'usuarios', usuarioLogado.uid), { vr_saldo: 0 });
+            alert('Saque Gerado! Valor de R$' + usuarioLogado.vr_saldo + ' sacado.');
+            document.getElementById('saldo-vr').innerText = '0,00';
+            usuarioLogado.vr_saldo = 0;
+            document.getElementById('card-vr').style.opacity = '0.5';
+        } catch (e) { alert("Erro ao sacar."); }
     });
 
     document.getElementById('form-rh')?.addEventListener('submit', async (e) => {
         e.preventDefault();
-        const nome = document.getElementById('rh-nome').value;
-        const email = document.getElementById('rh-email').value;
-        const senha = document.getElementById('rh-senha').value;
-        const vr = document.getElementById('rh-vr').value;
+        const nome = document.getElementById('rh-nome').value, email = document.getElementById('rh-email').value, senha = document.getElementById('rh-senha').value, vr = document.getElementById('rh-vr').value, isAdmin = document.getElementById('rh-is-admin').checked;
         try {
-            const userCredential = await createUserWithEmailAndPassword(auth, email, senha);
-            await setDoc(doc(db, "usuarios", userCredential.user.uid), { nome, email, vr_saldo: vr, criadoEm: new Date().getTime() });
-            alert("Colaborador salvo com sucesso!");
-            document.getElementById('form-rh').reset();
-            carregarUsuariosNoSelect();
-        } catch (error) { alert("Erro: " + error.message); }
+            const res = await createUserWithEmailAndPassword(auth, email, senha);
+            await setDoc(doc(db, "usuarios", res.user.uid), { nome, email, vr_saldo: Number(vr), isAdmin, criadoEm: new Date().getTime() });
+            alert("Criado com sucesso!"); document.getElementById('form-rh').reset(); carregarUsuariosNoSelect();
+        } catch (err) { alert("Erro: " + err.message); }
+    });
+
+    document.getElementById('form-rh-update')?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const uid = document.getElementById('rh-update-user').value;
+        const vr = document.getElementById('rh-update-vr').value;
+        if(!uid) return alert('Selecione um colaborador.');
+        await updateDoc(doc(db, "usuarios", uid), { vr_saldo: Number(vr) });
+        alert("Saldo atualizado!"); document.getElementById('form-rh-update').reset();
+    });
+
+    // 4. CONFIGURAÇÕES ADMIN (SALVAR LINKS E UPLOAD DE IMAGENS NO STORAGE)
+    document.getElementById('btn-salvar-design')?.addEventListener('click', async () => {
+        const cor = document.getElementById('config-cor').value, can = document.getElementById('config-canva').value, ins = document.getElementById('config-insta').value;
+        await setDoc(doc(db, 'configuracoes', 'geral'), { corPrimaria: cor, canva: can, insta: ins }, { merge: true });
+        alert('Configurações Salvas!'); aplicarConfiguracoes();
+    });
+
+    document.getElementById('btn-salvar-logos')?.addEventListener('click', async () => {
+        const fMain = document.getElementById('upload-logo-main').files[0];
+        const fIa = document.getElementById('upload-logo-ia').files[0];
+        let d = {};
+        if(fMain) { const r = ref(storage, 'logos/main'); await uploadBytes(r, fMain); d.logoMain = await getDownloadURL(r); }
+        if(fIa) { const r = ref(storage, 'logos/ia'); await uploadBytes(r, fIa); d.logoIA = await getDownloadURL(r); }
+        if(fMain || fIa) { await setDoc(doc(db, 'configuracoes', 'geral'), d, { merge: true }); alert('Logos salvas!'); aplicarConfiguracoes(); }
     });
 
     async function carregarUsuariosNoSelect() {
-        const selectResp = document.getElementById('task-responsaveis');
-        if(!selectResp) return;
-        const querySnapshot = await getDocs(collection(db, "usuarios"));
-        selectResp.innerHTML = '';
-        querySnapshot.forEach((docSnap) => {
-            const option = document.createElement('option');
-            option.value = docSnap.data().nome;
-            option.text = docSnap.data().nome;
-            selectResp.appendChild(option);
+        const sel = document.getElementById('task-responsaveis'); const selUpdate = document.getElementById('rh-update-user');
+        if(!sel) return;
+        const qs = await getDocs(collection(db, "usuarios"));
+        sel.innerHTML = ''; if(selUpdate) selUpdate.innerHTML = '<option value="" disabled selected>Selecione o Colaborador...</option>';
+        qs.forEach((d) => {
+            sel.innerHTML += `<option value="${d.data().nome}">${d.data().nome}</option>`;
+            if(selUpdate) selUpdate.innerHTML += `<option value="${d.id}">${d.data().nome}</option>`;
         });
     }
 
+    // 5. ATIVIDADES, RESUMOS E QUEM CONCLUIU (LOGS)
     document.getElementById('task-form')?.addEventListener('submit', async (e) => {
         e.preventDefault();
         const idEdicao = document.getElementById('task-id').value;
-        const selectResp = document.getElementById('task-responsaveis');
-        const selecionados = Array.from(selectResp.selectedOptions).map(opt => opt.value);
+        const sel = document.getElementById('task-responsaveis');
+        const resp = Array.from(sel.selectedOptions).map(o => o.value).join(', ');
+        const st = document.getElementById('task-status').value;
         
-        const baseTarefa = {
-            titulo: document.getElementById('task-titulo').value,
-            responsaveis: selecionados.join(', '),
-            status: document.getElementById('task-status').value,
-            prioridade: document.getElementById('task-prioridade').value,
-            datas: document.getElementById('task-datas').value,
-            descricao: document.getElementById('task-desc').value,
+        let t = {
+            titulo: document.getElementById('task-titulo').value, responsaveis: resp, status: st,
+            prioridade: document.getElementById('task-prioridade').value, datas: document.getElementById('task-datas').value,
+            descricao: document.getElementById('task-desc').value
         };
 
-        try {
-            if (idEdicao !== "") await updateDoc(doc(db, "atividades", idEdicao), baseTarefa);
-            else {
-                baseTarefa.criadoEm = new Date().getTime();
-                await addDoc(collection(db, "atividades"), baseTarefa);
-            }
-            fecharModal();
-        } catch (error) { alert("Aviso: Falha ao salvar (Regras de permissão do Firebase podem estar bloqueando)."); }
-    });
-
-    // ===============================================
-    // IA GROQ COM LLAMA 3
-    // ===============================================
-    const btnSendIa = document.getElementById('send-ia');
-    btnSendIa?.addEventListener('click', async () => {
-        const input = document.getElementById('chat-input');
-        const chatBody = document.getElementById('chat-messages');
-        const msgUser = input.value;
-        if(msgUser === "") return;
-
-        chatBody.innerHTML += `<div class="msg-user">${msgUser}</div>`;
-        input.value = "";
-        chatBody.innerHTML += `<div class="msg-ia" id="loading-ia">Pensando...</div>`;
-        chatBody.scrollTop = chatBody.scrollHeight;
-
-        const API_KEY = "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"; 
-
-        try {
-            const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-                method: "POST",
-                headers: { "Content-Type": "application/json", "Authorization": `Bearer ${API_KEY}` },
-                body: JSON.stringify({
-                    model: "llama3-70b-8192", 
-                    messages: [
-                        { role: "system", content: "Você é a LudoTech, uma assistente de marketing. Ajude com ideias criativas." },
-                        { role: "user", content: msgUser }
-                    ]
-                })
-            });
-            const data = await response.json();
-            document.getElementById('loading-ia').remove();
-            chatBody.innerHTML += `<div class="msg-ia">${data.choices[0].message.content.replace(/\n/g, '<br>')}</div>`;
-            chatBody.scrollTop = chatBody.scrollHeight;
-        } catch(error) {
-            document.getElementById('loading-ia').remove();
-            chatBody.innerHTML += `<div class="msg-ia" style="color: #ff3366;">Erro ao conectar com a IA.</div>`;
+        if (idEdicao !== "") {
+            if(st === 'concluido' && todasAtividades[idEdicao].status !== 'concluido') t.concluidoPor = usuarioLogado.nome;
+            await updateDoc(doc(db, "atividades", idEdicao), t);
+        } else {
+            t.criadoEm = new Date().getTime();
+            t.criadoPor = usuarioLogado ? usuarioLogado.nome : 'Sistema';
+            if(st === 'concluido') t.concluidoPor = usuarioLogado.nome;
+            await addDoc(collection(db, "atividades"), t);
         }
+        fecharModal();
     });
 
-    if (typeof FullCalendar !== 'undefined') {
-        const configCal = {
-            initialView: 'dayGridMonth', locale: 'pt-br',
-            headerToolbar: { left: 'prev,next', center: 'title', right: 'dayGridMonth' },
-            editable: true, droppable: true,
-            eventClick: function(info) { editarTarefa(info.event.id); },
-            eventDrop: async function(info) {
-                try { await updateDoc(doc(db, "atividades", info.event.id), { datas: info.event.start.toISOString().split('T')[0] }); } 
-                catch (error) { info.revert(); }
-            }
-        };
-        const calGeralEl = document.getElementById('calendar-geral');
-        if(calGeralEl) window.calendarioGeral = new FullCalendar.Calendar(calGeralEl, configCal);
-        const calIndEl = document.getElementById('calendar-individual');
-        if(calIndEl) window.calendarioIndividual = new FullCalendar.Calendar(calIndEl, configCal);
-    }
-
-    const kanbanColumns = { 'pendente': document.getElementById('col-pendente'), 'analise': document.getElementById('col-analise'), 'concluido': document.getElementById('col-concluido') };
-    const q = query(collection(db, "atividades"), orderBy("criadoEm", "desc"));
-    onSnapshot(q, (snapshot) => {
-        if(kanbanColumns.pendente) kanbanColumns.pendente.innerHTML = '';
-        if(kanbanColumns.analise) kanbanColumns.analise.innerHTML = '';
-        if(kanbanColumns.concluido) kanbanColumns.concluido.innerHTML = '';
-
-        let eventosGerais = [];
-        let eventosIndividuais = [];
-        let pendentesCount = 0;
-
-        snapshot.forEach((docSnap) => {
-            const data = docSnap.data();
-            const id = docSnap.id;
-            todasAtividades[id] = data; 
+    const cols = { 'pendente': document.getElementById('col-pendente'), 'analise': document.getElementById('col-analise'), 'concluido': document.getElementById('col-concluido') };
+    onSnapshot(query(collection(db, "atividades"), orderBy("criadoEm", "desc")), (snap) => {
+        if(cols.pendente) Object.values(cols).forEach(c => c.innerHTML = '');
+        let evG = [], evI = [], cPend = 0, cAnd = 0, cConc = 0;
+        
+        snap.forEach((d) => {
+            const data = d.data(); const id = d.id; todasAtividades[id] = data;
             
-            if (data.status === 'pendente') pendentesCount++;
+            if(data.status === 'pendente') cPend++;
+            if(data.status === 'analise') cAnd++;
+            if(data.status === 'concluido') cConc++;
             
-            const card = document.createElement('div');
-            card.className = `kanban-card`;
-            card.setAttribute('draggable', 'true');
-            card.dataset.id = id; 
-            card.onclick = () => editarTarefa(id); 
-            card.innerHTML = `<div style="font-weight:bold; font-size:18px;">${data.titulo}</div><div style="font-size:12px; color:#ccc;">Resp: ${data.responsaveis || 'Todos'}</div>`;
+            const c = document.createElement('div'); c.className = `kanban-card`; c.setAttribute('draggable', 'true'); c.dataset.id = id; 
+            c.onclick = () => editarTarefa(id);
+            let logText = `Criado por ${data.criadoPor || 'Desconhecido'}`;
+            if(data.status === 'concluido') logText = `<span style="color:#00ff88">Concluído por ${data.concluidoPor || 'Desconhecido'}</span>`;
             
-            card.addEventListener('dragstart', () => { card.classList.add('dragging'); card.style.opacity = '0.5'; });
-            card.addEventListener('dragend', () => { card.classList.remove('dragging'); card.style.opacity = '1'; });
-            
-            if(kanbanColumns[data.status]) kanbanColumns[data.status].appendChild(card);
+            c.innerHTML = `<div style="font-weight:bold; font-size:18px;">${data.titulo}</div><div style="font-size:12px; color:#ccc;">Resp: ${data.responsaveis || 'Todos'}</div><div class="task-log">${logText}</div>`;
+            c.addEventListener('dragstart', () => { c.classList.add('dragging'); c.style.opacity = '0.5'; });
+            c.addEventListener('dragend', () => { c.classList.remove('dragging'); c.style.opacity = '1'; });
+            if(cols[data.status]) cols[data.status].appendChild(c);
 
             if (data.datas && data.datas !== '') {
-                let corDoEvento = data.status === 'analise' ? '#ffaa00' : (data.status === 'concluido' ? '#00ff88' : '#ff3366');
-                const eventoData = { id: id, title: data.titulo, start: data.datas, backgroundColor: corDoEvento, borderColor: corDoEvento };
+                let cor = data.status === 'analise' ? '#ffaa00' : (data.status === 'concluido' ? '#00ff88' : '#ff3366');
+                let ev = { id, title: data.titulo, start: data.datas, backgroundColor: cor, borderColor: cor };
+                evG.push(ev);
                 
-                eventosGerais.push(eventoData);
-                if(usuarioLogado && data.responsaveis.includes(usuarioLogado.nome)) eventosIndividuais.push(eventoData);
+                // O PLANNER INDIVIDUAL SÓ MOSTRA O QUE É DO USUÁRIO LOGADO
+                if(usuarioLogado && data.responsaveis.includes(usuarioLogado.nome)) evI.push(ev);
             }
         });
 
+        if(document.getElementById('resumo-pendentes')) {
+            document.getElementById('resumo-pendentes').innerText = cPend;
+            document.getElementById('resumo-andamento').innerText = cAnd;
+            document.getElementById('resumo-concluidas').innerText = cConc;
+        }
+        
         const badge = document.getElementById('badge-tarefas');
-        if(badge) { badge.innerText = pendentesCount; badge.style.display = pendentesCount > 0 ? 'inline-block' : 'none'; }
-
-        if (window.calendarioGeral) { window.calendarioGeral.removeAllEvents(); window.calendarioGeral.addEventSource(eventosGerais); }
-        if (window.calendarioIndividual) { window.calendarioIndividual.removeAllEvents(); window.calendarioIndividual.addEventSource(eventosIndividuais); }
+        if(badge) { badge.innerText = cPend; badge.style.display = cPend > 0 ? 'inline-block' : 'none'; }
+        if (window.calendarioGeral) { window.calendarioGeral.removeAllEvents(); window.calendarioGeral.addEventSource(evG); }
+        if (window.calendarioIndividual) { window.calendarioIndividual.removeAllEvents(); window.calendarioIndividual.addEventSource(evI); }
     });
 
-    document.querySelectorAll('.kanban-column').forEach(column => {
-        column.addEventListener('dragover', e => {
-            e.preventDefault();
-            const containerCards = column.querySelector('.cards-container');
-            const draggable = document.querySelector('.dragging');
-            if (draggable && containerCards) containerCards.appendChild(draggable);
-        });
-
-        column.addEventListener('drop', async (e) => {
-            const draggable = document.querySelector('.dragging');
-            if(draggable) {
-                const columnId = column.id;
-                let novoStatus = 'pendente';
-                if (columnId === 'coluna-amarela') novoStatus = 'analise';
-                if (columnId === 'coluna-verde') novoStatus = 'concluido';
-                try { await updateDoc(doc(db, "atividades", draggable.dataset.id), { status: novoStatus }); } catch (error) {}
+    document.querySelectorAll('.kanban-column').forEach(col => {
+        col.addEventListener('dragover', e => { e.preventDefault(); const c = col.querySelector('.cards-container'); const d = document.querySelector('.dragging'); if (d && c) c.appendChild(d); });
+        col.addEventListener('drop', async (e) => {
+            const d = document.querySelector('.dragging');
+            if(d) {
+                let s = 'pendente'; if (col.id === 'coluna-amarela') s = 'analise'; if (col.id === 'coluna-verde') s = 'concluido';
+                let act = { status: s };
+                if (s === 'concluido') act.concluidoPor = usuarioLogado.nome;
+                try { await updateDoc(doc(db, "atividades", d.dataset.id), act); } catch (err) {}
             }
         });
     });
 
-    // ===============================================
-    // LÓGICA DO LUDOPLAY (SLIDERS E MÚSICA)
-    // ===============================================
-    if (typeof Swiper !== 'undefined') {
-        new Swiper(".swiper", {
-            effect: "coverflow", grabCursor: true, centeredSlides: true, loop: true, speed: 600, slidesPerView: "auto",
-            coverflowEffect: { rotate: 10, stretch: 120, depth: 200, modifier: 1, slideShadows: false }
-        });
+    // 6. CHATBOT IA GROQ
+    document.getElementById('send-ia')?.addEventListener('click', async () => {
+        const inp = document.getElementById('chat-input'), cb = document.getElementById('chat-messages'), m = inp.value;
+        if(!m) return;
+        cb.innerHTML += `<div class="msg-user">${m}</div>`; inp.value = "";
+        cb.innerHTML += `<div class="msg-ia" id="loading-ia">Pensando...</div>`; cb.scrollTop = cb.scrollHeight;
+
+        const API_KEY = "COLOQUE_SUA_CHAVE_AQUI"; // Cole a chave gsk_ aqui
+
+        try {
+            const r = await fetch('https://api.groq.com/openai/v1/chat/completions', { method: "POST", headers: { "Content-Type": "application/json", "Authorization": `Bearer ${API_KEY}` }, body: JSON.stringify({ model: "llama3-70b-8192", messages: [{ role: "system", content: "Você é a LudoTech." }, { role: "user", content: m }] }) });
+            const d = await r.json(); document.getElementById('loading-ia').remove();
+            cb.innerHTML += `<div class="msg-ia">${d.choices[0].message.content.replace(/\n/g, '<br>')}</div>`; cb.scrollTop = cb.scrollHeight;
+        } catch(e) { document.getElementById('loading-ia').remove(); cb.innerHTML += `<div class="msg-ia" style="color:red;">Erro de conexão IA.</div>`; }
+    });
+
+    // 7. INICIALIZAR CALENDÁRIOS E LUDOPLAY
+    if (typeof FullCalendar !== 'undefined') {
+        const cfg = { initialView: 'dayGridMonth', locale: 'pt-br', headerToolbar: { left: 'prev,next', center: 'title', right: 'dayGridMonth' }, editable: true, droppable: true, eventClick: (info) => editarTarefa(info.event.id), eventDrop: async (info) => { try { await updateDoc(doc(db, "atividades", info.event.id), { datas: info.event.start.toISOString().split('T')[0] }); } catch (err) { info.revert(); } } };
+        if(document.getElementById('calendar-geral')) window.calendarioGeral = new FullCalendar.Calendar(document.getElementById('calendar-geral'), cfg);
+        if(document.getElementById('calendar-individual')) window.calendarioIndividual = new FullCalendar.Calendar(document.getElementById('calendar-individual'), cfg);
     }
 
-    const song = document.getElementById("song");
-    const playBtn = document.querySelector(".play-pause-btn");
-    const controlIcon = document.getElementById("controlIcon");
-    const progress = document.getElementById("progress");
-    const rotImg = document.getElementById("rotatingImage");
-    let isPlaying = false;
-    let rotation = 0;
-    let rotInterval;
-
-    if(playBtn && song) {
-        playBtn.addEventListener("click", () => {
-            if(!isPlaying) {
-                song.play(); isPlaying = true;
-                controlIcon.classList.replace("fa-play", "fa-pause");
-                rotInterval = setInterval(() => { rotation += 2; rotImg.style.transform = `rotate(${rotation}deg)`; }, 50);
-            } else {
-                song.pause(); isPlaying = false;
-                controlIcon.classList.replace("fa-pause", "fa-play");
-                clearInterval(rotInterval);
-            }
-        });
-        song.addEventListener("timeupdate", () => { if(progress) progress.value = (song.currentTime / song.duration) * 100 || 0; });
-        progress?.addEventListener("input", (e) => { song.currentTime = (e.target.value / 100) * song.duration; });
-    }
-
-    if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(e => console.log(e));
+    if (typeof Swiper !== 'undefined') { new Swiper(".swiper", { effect: "coverflow", grabCursor: true, centeredSlides: true, loop: true, speed: 600, slidesPerView: "auto", coverflowEffect: { rotate: 10, stretch: 120, depth: 200, modifier: 1, slideShadows: false } }); }
+    const s = document.getElementById("song"), pb = document.querySelector(".play-pause-btn"), ci = document.getElementById("controlIcon"); let pl = false;
+    if(pb && s) { pb.addEventListener("click", () => { if(!pl) { s.play(); pl=true; ci.classList.replace("fa-play", "fa-pause"); } else { s.pause(); pl=false; ci.classList.replace("fa-pause", "fa-play"); } }); }
 });
