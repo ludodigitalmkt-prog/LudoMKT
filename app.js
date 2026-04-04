@@ -235,7 +235,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         cb.innerHTML += `<div class="msg-user">${m}</div>`; inp.value = "";
         cb.innerHTML += `<div class="msg-ia" id="loading-ia">Pensando...</div>`; cb.scrollTop = cb.scrollHeight;
 
-        const API_KEY = "COLOQUE_SUA_CHAVE_AQUI"; // Cole a chave gsk_ aqui
+        const API_KEY = "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"; // Cole a chave gsk_ aqui
 
         try {
             const r = await fetch('https://api.groq.com/openai/v1/chat/completions', { method: "POST", headers: { "Content-Type": "application/json", "Authorization": `Bearer ${API_KEY}` }, body: JSON.stringify({ model: "llama3-70b-8192", messages: [{ role: "system", content: "Você é a LudoTech." }, { role: "user", content: m }] }) });
