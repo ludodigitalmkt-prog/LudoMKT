@@ -167,9 +167,25 @@ document.addEventListener("DOMContentLoaded", () => {
     carregarLogos();
 
     // LOGIN
-    document.getElementById('btn-entrar').onclick = async () => {
-        const e = document.getElementById('email').value, s = document.getElementById('password').value;
-        try { await signInWithEmailAndPassword(auth, e, s); } catch(err) { alert("E-mail ou Senha incorretos."); }
+    document.getElementById('btn-entrar').onclick = async (e) => {
+        e.preventDefault(); // Evita que a página recarregue sem querer
+        const email = document.getElementById('email').value;
+        const senha = document.getElementById('password').value;
+        
+        if(!email || !senha) return alert("Preencha e-mail e senha!");
+
+        try { 
+            await signInWithEmailAndPassword(auth, email, senha); 
+        } catch (err) { 
+            console.error("Motivo do bloqueio:", err.code);
+            if (err.code === 'auth/invalid-credential' || err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password') {
+                alert("Acesso Negado: E-mail não cadastrado ou senha incorreta!");
+            } else if (err.code === 'auth/invalid-email') {
+                alert("O formato do e-mail está inválido.");
+            } else {
+                alert("Erro no login: " + err.message);
+            }
+        }
     };
 
     onAuthStateChanged(auth, async (user) => {
