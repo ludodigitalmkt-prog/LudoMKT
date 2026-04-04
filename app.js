@@ -415,7 +415,7 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     });
 
-    // CHATBOT GROQ (Corrigido para o Modelo 8b Estável)
+    // CHATBOT GROQ
     document.getElementById('send-ia')?.addEventListener('click', async () => {
         const inp = document.getElementById('chat-input');
         const cb = document.getElementById('chat-messages');
@@ -430,15 +430,15 @@ document.addEventListener("DOMContentLoaded", () => {
         cb.innerHTML += `<div class="msg-ia" id="${loadingId}">Processando...</div>`; 
         cb.scrollTop = cb.scrollHeight;
 
-        // COLE A SUA CHAVE AQUI
-        const API_KEY = "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"; 
+        // COLE A SUA CHAVE AQUI 
+        const API_KEY = "COLOQUE_SUA_CHAVE_AQUI"; 
 
         try {
             const respostaRaw = await fetch('https://api.groq.com/openai/v1/chat/completions', { 
                 method: "POST", 
                 headers: { "Content-Type": "application/json", "Authorization": `Bearer ${API_KEY}` }, 
                 body: JSON.stringify({ 
-                    "model": "llama3-8b-8192", // <- Usando o modelo mais estável
+                    "model": "llama-3.1-8b-instant", // <-- MODELO NOVO, ATIVO E SUPER RÁPIDO!
                     "messages": [
                         { "role": "system", "content": "Você é a LudoTech, IA da LudoMKT." }, 
                         { "role": "user", "content": m }
@@ -458,10 +458,3 @@ document.addEventListener("DOMContentLoaded", () => {
             cb.scrollTop = cb.scrollHeight;
         }
     });
-
-    if (typeof FullCalendar !== 'undefined') {
-        const cfg = { initialView: 'dayGridMonth', locale: 'pt-br', headerToolbar: { left: 'prev,next', center: 'title', right: 'dayGridMonth' }, editable: true, droppable: true, eventClick: (info) => editarTarefa(info.event.id), eventDrop: async (info) => { try { await updateDoc(doc(db, "atividades", info.event.id), { datas: info.event.start.toISOString().split('T')[0] }); } catch (err) { info.revert(); } } };
-        if(document.getElementById('calendar-geral')) window.calendarioGeral = new FullCalendar.Calendar(document.getElementById('calendar-geral'), cfg);
-        if(document.getElementById('calendar-individual')) window.calendarioIndividual = new FullCalendar.Calendar(document.getElementById('calendar-individual'), cfg);
-    }
-});
