@@ -314,31 +314,62 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     });
 
-    // CHATBOT GROQ BLINDADO (Com validação da Chave)
+    // ==========================================
+    // CHATBOT GROQ (VERSÃO BLINDADA)
+    // ==========================================
     document.getElementById('send-ia')?.addEventListener('click', async () => {
-        const inp = document.getElementById('chat-input'); const cb = document.getElementById('chat-messages'); const m = inp.value.trim();
-        if(!m) return; 
-        cb.innerHTML += `<div class="msg-user">${m}</div>`; inp.value = "";
+        const inp = document.getElementById('chat-input');
+        const cb = document.getElementById('chat-messages');
+        const m = inp.value.trim();
         
-        // Coloque a sua chave aqui dentro das aspas 👇
-        const API_KEY = "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"; 
+        if(!m) return;
         
-        if (API_KEY === "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" || !API_KEY.startsWith("gsk_")) {
-            return showToast("⚠️ A Chave da Inteligência Artificial está ausente ou incorreta no código!", "#ff3366");
-        }
+        cb.innerHTML += `<div class="msg-user">${m}</div>`; 
+        inp.value = "";
 
-        const loadingId = 'loading-' + Date.now(); cb.innerHTML += `<div class="msg-ia" id="${loadingId}">Processando...</div>`; cb.scrollTop = cb.scrollHeight;
+        // ⚠️ COLOQUE SUA CHAVE AQUI DENTRO DAS ASPAS:
+        const API_KEY = "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"; 
+
+        if (!API_KEY.startsWith("gsk_")) {
+            return showToast("⚠️ A Chave da IA no código está inválida!", "#ff3366");
+        }
+        
+        const loadingId = 'loading-' + Date.now();
+        cb.innerHTML += `<div class="msg-ia" id="${loadingId}">Processando...</div>`; 
+        cb.scrollTop = cb.scrollHeight;
 
         try {
-            const respostaRaw = await fetch('https://api.groq.com/openai/v1/chat/completions', { method: "POST", headers: { "Content-Type": "application/json", "Authorization": `Bearer ${API_KEY}` }, body: JSON.stringify({ "model": "llama-3.1-8b-instant", "messages": [{ "role": "system", "content": "Você é a IA da LudoMKT." }, { "role": "user", "content": m }] }) });
-            const d = await respostaRaw.json(); if (!respostaRaw.ok) throw new Error(d.error?.message || "Erro");
-            document.getElementById(loadingId)?.remove(); cb.innerHTML += `<div class="msg-ia">${d.choices[0].message.content.replace(/\n/g, '<br>')}</div>`; cb.scrollTop = cb.scrollHeight;
-        } catch(e) { document.getElementById(loadingId)?.remove(); cb.innerHTML += `<div class="msg-ia" style="color:#ff3366; font-size:12px;">Erro: ${e.message}</div>`; cb.scrollTop = cb.scrollHeight; }
-    });
+            console.log("Enviando pergunta para a IA...");
+            const respostaRaw = await fetch('https://api.groq.com/openai/v1/chat/completions', { 
+                method: "POST", 
+                headers: { 
+                    "Content-Type": "application/json", 
+                    "Authorization": `Bearer ${API_KEY}` 
+                }, 
+                body: JSON.stringify({ 
+                    "model": "llama-3.1-8b-instant", 
+                    "messages": [
+                        { "role": "system", "content": "Você é a LudoTech, a Inteligência Artificial corporativa da agência LudoMKT. Responda de forma clara, amigável e em português do Brasil." }, 
+                        { "role": "user", "content": m }
+                    ] 
+                }) 
+            });
+            
+            const d = await respostaRaw.json(); 
+            console.log("Resposta da Groq:", d); // Para rastrearmos erros ocultos!
+            
+            if (!respostaRaw.ok) {
+                throw new Error(d.error?.message || "Erro desconhecido na API.");
+            }
 
-    if (typeof FullCalendar !== 'undefined') {
-        const cfg = { initialView: 'dayGridMonth', locale: 'pt-br', headerToolbar: { left: 'prev,next', center: 'title', right: 'dayGridMonth' }, editable: true, droppable: true, dateClick: (info) => { window.abrirModal(info.dateStr); }, eventClick: (info) => editarTarefa(info.event.id) };
-        if(document.getElementById('calendar-geral')) window.calendarioGeral = new FullCalendar.Calendar(document.getElementById('calendar-geral'), cfg);
-        if(document.getElementById('calendar-individual')) window.calendarioIndividual = new FullCalendar.Calendar(document.getElementById('calendar-individual'), cfg);
-    }
-});
+            document.getElementById(loadingId)?.remove();
+            cb.innerHTML += `<div class="msg-ia">${d.choices[0].message.content.replace(/\n/g, '<br>')}</div>`; 
+            cb.scrollTop = cb.scrollHeight;
+            
+        } catch(e) { 
+            console.error("Erro da IA:", e);
+            document.getElementById(loadingId)?.remove();
+            cb.innerHTML += `<div class="msg-ia" style="color:#ff3366; font-size:12px;">Erro: ${e.message}</div>`; 
+            cb.scrollTop = cb.scrollHeight;
+        }
+    });
