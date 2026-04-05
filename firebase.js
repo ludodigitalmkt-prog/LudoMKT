@@ -12,7 +12,6 @@ const firebaseConfig = {
   appId: "1:173305323322:web:b2cd9947aaa9806dc33a03"
 };
 
-// App Principal (Seu Login)
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const storage = getStorage(app);
@@ -20,6 +19,5 @@ export const db = initializeFirestore(app, {
   localCache: persistentLocalCache({tabManager: persistentMultipleTabManager()})
 });
 
-// App Secundário (Para o RH cadastrar a equipe sem te deslogar)
 const secondaryApp = initializeApp(firebaseConfig, "SecondaryApp");
 export const secondaryAuth = getAuth(secondaryApp);
