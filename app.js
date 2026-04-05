@@ -8,6 +8,14 @@ let currentColabId = null;
 let todasAtividades = {};
 let notificacoesEnviadas = false;
 
+// REGISTRO DO PWA
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js').catch(() => console.log('SW falhou.'));
+    });
+}
+
+// --- FUNÇÕES DE INTERFACE ---
 window.toggleMenu = () => document.getElementById('sidebar').classList.toggle('open');
 window.toggleIA = () => {
     const chat = document.getElementById('ludotech-chat');
@@ -191,7 +199,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const btnSair = document.getElementById('btn-sair'); if(btnSair) { btnSair.addEventListener('click', async () => { await signOut(auth); window.location.reload(); }); }
 
-    // CADASTRO COLABORADOR - COM AVISO DE DUPLICIDADE
+    // CADASTRO COLABORADOR
     document.getElementById('form-rh-completo')?.addEventListener('submit', async (e) => {
         e.preventDefault();
         const permissoes = {}; document.querySelectorAll('#permissoes-cadastro input').forEach(i => permissoes[i.value] = i.checked);
@@ -204,11 +212,8 @@ document.addEventListener("DOMContentLoaded", () => {
             });
             await signOut(secondaryAuth); showToast("Colaborador cadastrado!", "#00ff88"); e.target.reset(); carregarColaboradores();
         } catch(err) { 
-            if(err.code === 'auth/email-already-in-use') {
-                showToast("Erro: Este e-mail já está em uso por outro funcionário!", "#ff3366");
-            } else {
-                showToast("Erro: " + err.message, "#ff3366"); 
-            }
+            if(err.code === 'auth/email-already-in-use') { showToast("Erro: E-mail já em uso!", "#ff3366"); } 
+            else { showToast("Erro: " + err.message, "#ff3366"); }
         }
     });
 
@@ -314,62 +319,31 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     });
 
-    // ==========================================
-    // CHATBOT GROQ (VERSÃO BLINDADA)
-    // ==========================================
+    // CHATBOT GROQ BLINDADO (Com validação da Chave)
     document.getElementById('send-ia')?.addEventListener('click', async () => {
-        const inp = document.getElementById('chat-input');
-        const cb = document.getElementById('chat-messages');
-        const m = inp.value.trim();
+        const inp = document.getElementById('chat-input'); const cb = document.getElementById('chat-messages'); const m = inp.value.trim();
+        if(!m) return; 
+        cb.innerHTML += `<div class="msg-user">${m}</div>`; inp.value = "";
         
-        if(!m) return;
-        
-        cb.innerHTML += `<div class="msg-user">${m}</div>`; 
-        inp.value = "";
-
-        // ⚠️ COLOQUE SUA CHAVE AQUI DENTRO DAS ASPAS:
+        // ⚠️ COLOQUE A SUA CHAVE DA GROQ AQUI DENTRO DAS ASPAS 👇
         const API_KEY = "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"; 
-
-        if (!API_KEY.startsWith("gsk_")) {
-            return showToast("⚠️ A Chave da IA no código está inválida!", "#ff3366");
-        }
         
-        const loadingId = 'loading-' + Date.now();
-        cb.innerHTML += `<div class="msg-ia" id="${loadingId}">Processando...</div>`; 
-        cb.scrollTop = cb.scrollHeight;
+        if (API_KEY === "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" || !API_KEY.startsWith("gsk_")) {
+            return showToast("⚠️ A Chave da Inteligência Artificial está ausente ou incorreta no código!", "#ff3366");
+        }
+
+        const loadingId = 'loading-' + Date.now(); cb.innerHTML += `<div class="msg-ia" id="${loadingId}">Processando...</div>`; cb.scrollTop = cb.scrollHeight;
 
         try {
-            console.log("Enviando pergunta para a IA...");
-            const respostaRaw = await fetch('https://api.groq.com/openai/v1/chat/completions', { 
-                method: "POST", 
-                headers: { 
-                    "Content-Type": "application/json", 
-                    "Authorization": `Bearer ${API_KEY}` 
-                }, 
-                body: JSON.stringify({ 
-                    "model": "llama-3.1-8b-instant", 
-                    "messages": [
-                        { "role": "system", "content": "Você é a LudoTech, a Inteligência Artificial corporativa da agência LudoMKT. Responda de forma clara, amigável e em português do Brasil." }, 
-                        { "role": "user", "content": m }
-                    ] 
-                }) 
-            });
-            
-            const d = await respostaRaw.json(); 
-            console.log("Resposta da Groq:", d); // Para rastrearmos erros ocultos!
-            
-            if (!respostaRaw.ok) {
-                throw new Error(d.error?.message || "Erro desconhecido na API.");
-            }
-
-            document.getElementById(loadingId)?.remove();
-            cb.innerHTML += `<div class="msg-ia">${d.choices[0].message.content.replace(/\n/g, '<br>')}</div>`; 
-            cb.scrollTop = cb.scrollHeight;
-            
-        } catch(e) { 
-            console.error("Erro da IA:", e);
-            document.getElementById(loadingId)?.remove();
-            cb.innerHTML += `<div class="msg-ia" style="color:#ff3366; font-size:12px;">Erro: ${e.message}</div>`; 
-            cb.scrollTop = cb.scrollHeight;
-        }
+            const respostaRaw = await fetch('https://api.groq.com/openai/v1/chat/completions', { method: "POST", headers: { "Content-Type": "application/json", "Authorization": `Bearer ${API_KEY}` }, body: JSON.stringify({ "model": "llama-3.1-8b-instant", "messages": [{ "role": "system", "content": "Você é a IA da LudoMKT." }, { "role": "user", "content": m }] }) });
+            const d = await respostaRaw.json(); if (!respostaRaw.ok) throw new Error(d.error?.message || "Erro");
+            document.getElementById(loadingId)?.remove(); cb.innerHTML += `<div class="msg-ia">${d.choices[0].message.content.replace(/\n/g, '<br>')}</div>`; cb.scrollTop = cb.scrollHeight;
+        } catch(e) { document.getElementById(loadingId)?.remove(); cb.innerHTML += `<div class="msg-ia" style="color:#ff3366; font-size:12px;">Erro: ${e.message}</div>`; cb.scrollTop = cb.scrollHeight; }
     });
+
+    if (typeof FullCalendar !== 'undefined') {
+        const cfg = { initialView: 'dayGridMonth', locale: 'pt-br', headerToolbar: { left: 'prev,next', center: 'title', right: 'dayGridMonth' }, editable: true, droppable: true, dateClick: (info) => { window.abrirModal(info.dateStr); }, eventClick: (info) => editarTarefa(info.event.id) };
+        if(document.getElementById('calendar-geral')) window.calendarioGeral = new FullCalendar.Calendar(document.getElementById('calendar-geral'), cfg);
+        if(document.getElementById('calendar-individual')) window.calendarioIndividual = new FullCalendar.Calendar(document.getElementById('calendar-individual'), cfg);
+    }
+}); // <-- A CHAVE E O PARÊNTESE CRÍTICOS QUE FECHAM O ARQUIVO TODO!
