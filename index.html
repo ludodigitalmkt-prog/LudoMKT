@@ -5,11 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>LudoMKT Workspace</title>
     
-    <link rel="manifest" href="manifest.json">
+    <link rel="manifest" href="manifest.json" id="pwa-manifest">
     <meta name="theme-color" content="#0a0c10">
-    <link rel="apple-touch-icon" href="logo.png">
+    <link rel="apple-touch-icon" href="logo.png" id="pwa-apple-icon">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     
     <link rel="stylesheet" href="style.css">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
@@ -17,6 +16,8 @@
     <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js'></script>
 </head>
 <body>
+
+    <div id="toast-container" class="toast-hidden"></div>
 
     <div id="splash-screen"><img src="logo.png" id="logo-intro" class="splash-logo img-logo-dinamica"></div>
 
@@ -49,7 +50,7 @@
                 <div class="dashboard-grid">
                     <div class="card stat-card" style="border-left: 4px solid #00ff88;"><h3 style="color:#00ff88; font-size:14px;">Concluídas</h3><p id="resumo-concluidas">0</p></div>
                     <div class="card stat-card" style="border-left: 4px solid #ffaa00;"><h3 style="color:#ffaa00; font-size:14px;">Em Andamento</h3><p id="resumo-andamento">0</p></div>
-                    <div class="card stat-card" style="border-left: 4px solid #ff3366;"><h3 style="color:#ff3366; font-size:14px;">Pendentes</h3><p id="resumo-pendentes">0</p></div>
+                    <div class="card stat-card" style="border-left: 4px solid #ff3366;"><h3 style="color:#ff3366; font-size:14px;">Pendentes (Hoje/Atrasadas)</h3><p id="resumo-pendentes">0</p></div>
                 </div>
             </section>
 
@@ -57,7 +58,7 @@
                 <div class="header-top agenda-header">
                     <h1>Agenda Colaborativa</h1>
                     <div class="agenda-actions">
-                        <button class="btn-secundary" onclick="mudarVisaoAgenda('kanban')">Trello</button>
+                        <button class="btn-secundary" onclick="mudarVisaoAgenda('kanban')">Trello (Hoje)</button>
                         <button class="btn-secundary" onclick="mudarVisaoAgenda('calendario')">Calendário</button>
                         <button class="button-uiverse" onclick="abrirModal()">
                             <div class="blob1"></div><div class="inner"><span class="material-icons" style="font-size:18px;">add</span><span class="btn-txt">Atividade</span></div>
@@ -65,6 +66,7 @@
                     </div>
                 </div>
                 <div id="visao-kanban" class="agenda-view active">
+                    <p style="color:var(--text-muted); margin-bottom:15px; font-size:13px;">Exibindo tarefas do dia e pendências em atraso.</p>
                     <div class="kanban-board">
                         <div class="kanban-column" id="coluna-vermelha"><h3>Pendente</h3><div class="cards-container" id="col-pendente"></div></div>
                         <div class="kanban-column" id="coluna-amarela"><h3>Em Andamento</h3><div class="cards-container" id="col-analise"></div></div>
@@ -77,53 +79,54 @@
             <section id="planner" class="tab-content"><div class="header-top"><h1>Meu Planner</h1></div><div class="card" style="padding: 20px; min-height: 500px;"><div id='calendar-individual'></div></div></section>
 
             <section id="rh" class="tab-content">
-                <div class="header-top"><h1>Portal de Gestão</h1></div>
+                <div class="header-top"><h1>Gestão de Talentos</h1></div>
                 <div class="rh-layout">
                     <div class="card">
-                        <h3 style="color:var(--accent); margin-bottom:15px;">Novo Colaborador</h3>
+                        <h3 style="color:var(--accent); margin-bottom:15px;">Ficha do Colaborador</h3>
                         <form id="form-rh-completo">
                             <input type="text" id="rh-nome" class="modal-input" placeholder="Nome Completo" required>
                             <div class="modal-row mobile-col">
-                                <input type="text" id="rh-cargo" class="modal-input" placeholder="Cargo / Função">
-                                <input type="text" id="rh-setor" class="modal-input" placeholder="Setor">
+                                <input type="text" id="rh-cargo" class="modal-input" placeholder="Cargo / Função" required>
+                                <input type="email" id="rh-email" class="modal-input" placeholder="E-mail de Acesso" required>
                             </div>
-                            <input type="email" id="rh-email" class="modal-input" placeholder="E-mail de Acesso" required>
+                            <div class="modal-row mobile-col">
+                                <div><label style="font-size:11px; color:var(--text-muted);">Data de Nascimento</label><input type="date" id="rh-nascimento" class="modal-input" required></div>
+                                <div><label style="font-size:11px; color:var(--text-muted);">Data de Admissão</label><input type="date" id="rh-entrada" class="modal-input" required></div>
+                            </div>
                             <input type="password" id="rh-senha" class="modal-input" placeholder="Senha Provisória" required>
                             <h4 style="margin-top:15px; margin-bottom:5px; color:var(--text-muted);">Módulos Liberados:</h4>
                             <div class="permissions-grid" id="permissoes-cadastro">
                                 <label><input type="checkbox" value="agenda" checked> Agenda Geral</label>
                                 <label><input type="checkbox" value="planner" checked> Meu Planner</label>
-                                <label><input type="checkbox" value="beneficios" checked> Benefícios</label>
                                 <label><input type="checkbox" value="music" checked> LudoMusic</label>
                                 <label><input type="checkbox" value="rh"> Gestão RH</label>
                                 <label><input type="checkbox" value="admin"> Configurações</label>
                             </div>
-                            <button type="submit" class="button-uiverse" style="width:100%;"><div class="blob1"></div><div class="inner" style="justify-content:center;">Cadastrar Equipe</div></button>
+                            <button type="submit" class="button-uiverse" style="width:100%;"><div class="blob1"></div><div class="inner" style="justify-content:center;">Salvar Colaborador</div></button>
                         </form>
                     </div>
                     <div class="card">
-                        <h3 style="margin-bottom:15px;">Equipe Cadastrada</h3>
+                        <h3 style="margin-bottom:15px;">Equipe Ativa</h3>
                         <div id="lista-colaboradores-cards" class="colaboradores-grid"></div>
                     </div>
                 </div>
             </section>
 
             <section id="admin" class="tab-content">
-                <div class="header-top"><h1>Configurações</h1></div>
+                <div class="header-top"><h1>Configurações do App</h1></div>
                 <div class="config-grid">
                     <div class="card">
                         <h3 style="color:var(--accent); margin-bottom:15px;">Identidade Visual</h3>
-                        <label style="color:var(--text-muted); font-size:12px;">Tela de Abertura (Splash):</label>
-                        <input type="file" id="up-logo-intro" class="modal-input" accept="image/*">
-                        <label style="color:var(--text-muted); font-size:12px;">Tela de Login:</label>
-                        <input type="file" id="up-logo-login" class="modal-input" accept="image/*">
-                        <label style="color:var(--text-muted); font-size:12px;">Menu Lateral (Sidebar):</label>
-                        <input type="file" id="up-logo-menu" class="modal-input" accept="image/*">
-                        <button class="button1" id="btn-save-logos">Salvar Imagens no Servidor</button>
+                        <label style="color:var(--text-muted); font-size:12px;">Tela de Abertura (Splash):</label><input type="file" id="up-logo-intro" class="modal-input" accept="image/*">
+                        <label style="color:var(--text-muted); font-size:12px;">Tela de Login:</label><input type="file" id="up-logo-login" class="modal-input" accept="image/*">
+                        <label style="color:var(--text-muted); font-size:12px;">Menu Lateral (Sidebar):</label><input type="file" id="up-logo-menu" class="modal-input" accept="image/*">
+                        <label style="color:var(--text-muted); font-size:12px;">Ícone do App Instalado (PWA):</label><input type="file" id="up-logo-pwa" class="modal-input" accept="image/*">
+                        <label style="color:var(--text-muted); font-size:12px;">Avatar do Robô (IA):</label><input type="file" id="up-logo-ia" class="modal-input" accept="image/*">
+                        <button class="button1" id="btn-save-logos" style="transition:0.3s;">Salvar Imagens</button>
                     </div>
                     <div class="card">
-                        <h3 style="color:var(--accent); margin-bottom:15px;">Integrações</h3>
-                        <label style="color:var(--text-muted); font-size:12px;">Link Spotify (Playlist LudoMusic):</label>
+                        <h3 style="color:var(--accent); margin-bottom:15px;">Integrações Externas</h3>
+                        <label style="color:var(--text-muted); font-size:12px;">Playlist LudoMusic (Spotify):</label>
                         <input type="url" id="config-spotify-url" class="modal-input" placeholder="Link do Spotify...">
                         <button class="button1" id="btn-save-spotify">Sincronizar LudoMusic</button>
                     </div>
@@ -132,15 +135,7 @@
 
             <section id="music" class="tab-content">
                 <div class="header-top"><h1>LudoMusic Vibe</h1></div>
-                <div class="card" style="padding:0; overflow:hidden; border:none; height:600px;">
-                    <iframe id="spotify-iframe" src="" width="100%" height="100%" frameBorder="0" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>
-                </div>
-            </section>
-
-            <section id="beneficios" class="tab-content">
-                <div class="header-top"><h1>Benefícios Pendentes</h1></div>
-                <p style="color:var(--text-muted); margin-bottom: 20px;">Benefícios e pagamentos liberados pelo RH.</p>
-                <div id="meus-beneficios-grid" class="dashboard-grid"></div>
+                <div class="card" style="padding:0; overflow:hidden; border:none; height:600px;"><iframe id="spotify-iframe" src="" width="100%" height="100%" frameBorder="0" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe></div>
             </section>
         </main>
     </div>
@@ -148,7 +143,9 @@
     <div id="ludotech-widget" style="display: none;">
         <div id="ludotech-chat" class="chat-hidden">
             <div class="modal-header" style="margin-bottom:0; padding-bottom:10px; border-bottom:1px solid var(--border);">
-                <strong style="color:var(--accent); font-size:18px;">LudoTech IA</strong>
+                <strong style="color:var(--accent); font-size:18px; display:flex; align-items:center; gap:10px;">
+                    <img src="logo.png" id="chat-header-img" style="width:30px; height:30px; border-radius:50%; object-fit:cover;"> LudoTech IA
+                </strong>
                 <button class="close-btn" onclick="toggleIA()"><span class="material-icons">close</span></button>
             </div>
             <div class="chat-body" id="chat-messages" style="flex-grow:1; overflow-y:auto; padding:15px 0; display:flex; flex-direction:column;"></div>
@@ -157,32 +154,32 @@
                 <button id="send-ia" class="button1" style="width:50px; margin-top:0; padding:0; display:flex; align-items:center; justify-content:center;"><span class="material-icons">send</span></button>
             </div>
         </div>
-        <button id="ludotech-btn" onclick="toggleIA()"><span class="material-icons">smart_toy</span></button>
+        <button id="ludotech-btn" onclick="toggleIA()" style="display:flex; align-items:center; justify-content:center; overflow:hidden;">
+            <img src="" id="ludotech-btn-img" style="width:100%; height:100%; object-fit:cover; display:none;">
+            <span class="material-icons" id="ludotech-btn-icon">smart_toy</span>
+        </button>
     </div>
 
     <div id="modal-colaborador" class="modal-overlay" style="display:none;">
         <div class="modal-content large" style="max-height: 90vh; overflow-y: auto;">
-            <div class="modal-header"><h2 id="modal-rh-nome">Pasta do Colaborador</h2><button class="close-btn" onclick="fecharModalRH()"><span class="material-icons">close</span></button></div>
+            <div class="modal-header"><h2 id="modal-rh-nome">Ficha Funcional</h2><button class="close-btn" onclick="fecharModalRH()"><span class="material-icons">close</span></button></div>
             <div class="rh-layout-modal">
                 <div class="rh-actions">
-                    <h3 style="margin-bottom:15px; color:#00ff88;">Atribuir Novo Benefício</h3>
+                    <h3 style="margin-bottom:15px; color:#00ff88;">Novo Lançamento / Registro</h3>
                     <select id="rh-tipo-evento" class="modal-input">
-                        <option value="Vale Alimentação 🍕">Vale Alimentação 🍕</option>
-                        <option value="Vale Transporte 🚌">Vale Transporte 🚌</option>
-                        <option value="Bônus/Premiação 💰">Bônus/Premiação 💰</option>
-                        <option value="Gift Card 🎁">Gift Card 🎁</option>
-                        <option value="Reembolso 💵">Reembolso 💵</option>
+                        <option value="Anotação">Anotação Geral</option>
+                        <option value="Promoção">Promoção / Cargo</option>
+                        <option value="Feedback">Feedback / Avaliação</option>
+                        <option value="Férias">Aviso de Férias</option>
+                        <option value="Advertência">Advertência</option>
                     </select>
-                    <input type="number" id="rh-valor-evento" class="modal-input" placeholder="Valor a Pagar (R$)">
-                    <input type="url" id="rh-link-qrcode" class="modal-input" placeholder="Link QR Code PIX (Opcional)">
-                    <textarea id="rh-desc-evento" class="modal-input" placeholder="Motivo do pagamento..." rows="2"></textarea>
-                    <button class="button1" id="btn-lancar-rh" style="background:#00ff88; color:#000;">Liberar para Colaborador</button>
+                    <textarea id="rh-desc-evento" class="modal-input" placeholder="Descreva os detalhes do registro..." rows="4"></textarea>
+                    <button class="button1" id="btn-lancar-rh" style="background:#00ff88; color:#000;">Salvar na Ficha</button>
                     <hr style="border:0; border-top:1px solid var(--border); margin: 25px 0;">
-                    <h3 style="margin-bottom:15px; color:#ff3366;">Ações</h3>
-                    <button class="btn-secundary" id="btn-gerar-folha" style="width:100%; margin-bottom:10px;">Imprimir Histórico (PDF)</button>
-                    <button class="button1" id="btn-excluir-colaborador" style="background:transparent; border:1px solid #ff3366; color:#ff3366;">Excluir Colaborador</button>
+                    <h3 style="margin-bottom:15px; color:#ff3366;">Zona de Perigo</h3>
+                    <button class="button1" id="btn-excluir-colaborador" style="background:transparent; border:1px solid #ff3366; color:#ff3366;">Desligar Colaborador</button>
                 </div>
-                <div class="rh-history"><h3 style="margin-bottom:15px;">Linha do Tempo</h3><div id="historico-rh-lista" class="history-list"></div></div>
+                <div class="rh-history"><h3 style="margin-bottom:15px;">Histórico</h3><div id="historico-rh-lista" class="history-list"></div></div>
             </div>
         </div>
     </div>
@@ -194,14 +191,15 @@
                 <input type="hidden" id="task-id">
                 <input type="text" id="task-titulo" class="modal-input" placeholder="Título da Tarefa" required>
                 <div class="modal-row mobile-col">
-                    <select id="task-responsaveis" class="modal-input" multiple title="Segure CTRL para selecionar vários" required></select>
+                    <select id="task-responsaveis" class="modal-input" multiple title="Segure CTRL para vários" required></select>
                     <select id="task-status" class="modal-input"><option value="pendente">Pendente</option><option value="analise">Em Andamento</option><option value="concluido">Concluído</option></select>
                 </div>
                 <div class="modal-row mobile-col">
                     <select id="task-prioridade" class="modal-input"><option value="ordinario">Ordinário</option><option value="urgente">Urgente</option></select>
-                    <input type="text" id="task-datas" class="modal-input" placeholder="Datas (Ex: 2026-05-10, 2026-05-15)">
+                    <input type="text" id="task-datas" class="modal-input" placeholder="Datas (Ex: 2026-05-10, 2026-05-12)">
                 </div>
-                <textarea id="task-desc" class="modal-input" placeholder="Descrição..." rows="3"></textarea>
+                <input type="url" id="task-link" class="modal-input" placeholder="Link de Anexo (Google Drive, Docs, Youtube)">
+                <textarea id="task-desc" class="modal-input" placeholder="Descrição detalhada..." rows="3"></textarea>
                 <div class="modal-actions" style="display:flex; justify-content: space-between; gap:10px;">
                     <button type="button" class="btn-secundary" id="btn-excluir-tarefa" style="color:#ff3366; border-color:#ff3366; display:none;">Excluir</button>
                     <button type="submit" class="button-uiverse"><div class="blob1"></div><div class="inner">Salvar Alterações</div></button>
@@ -210,7 +208,16 @@
         </div>
     </div>
 
-    <div id="print-area" style="display:none;"></div>
+    <div id="modal-anexo" class="modal-overlay" style="display:none; z-index:11000;">
+        <div class="modal-content large">
+            <div class="modal-header"><h2>Visualizar Anexo</h2><button class="close-btn" onclick="document.getElementById('modal-anexo').style.display='none'"><span class="material-icons">close</span></button></div>
+            <iframe id="iframe-anexo" src="" width="100%" style="height: 60vh; border:none; border-radius:10px; background:#fff;"></iframe>
+            <div style="text-align:center; margin-top:15px;">
+                <a href="#" id="btn-nova-aba" target="_blank" class="button1" style="display:inline-block; width:auto; text-decoration:none;">Abrir em Nova Aba</a>
+            </div>
+        </div>
+    </div>
+
     <script type="module" src="app.js"></script>
 </body>
 </html>
