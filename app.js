@@ -24,6 +24,9 @@ window.toggleIA = () => {
     if (chat.classList.contains('chat-hidden')) { chat.classList.remove('chat-hidden'); chat.classList.add('chat-active'); } 
     else { chat.classList.remove('chat-active'); chat.classList.add('chat-hidden'); }
 };
+window.toggleMenu = () => {
+    document.getElementById('sidebar').classList.toggle('open');
+};
 
 window.abrirModal = () => { 
     document.getElementById('task-id').value = ""; 
@@ -97,6 +100,7 @@ function aplicarPermissoes(permissoes) {
             btn.dataset.target = key;
             btn.innerHTML = `<span class="material-icons">${links[key].icon}</span> ${links[key].label}`;
             btn.onclick = () => {
+                document.getElementById('sidebar').classList.remove('open');
                 document.querySelectorAll('.menu-btn').forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
                 document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
