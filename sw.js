@@ -1,18 +1,16 @@
-const CACHE_NAME = 'ludomkt-v2';
+const CACHE_NAME = 'ludomkt-v4';
 
-// Instala o motor do App
 self.addEventListener('install', (event) => {
-    console.log('[LudoMKT App] Instalado com sucesso.');
-    self.skipWaiting();
+    self.skipWaiting(); // Força a atualização imediata do App
 });
 
-// Ativa o motor do App
 self.addEventListener('activate', (event) => {
-    console.log('[LudoMKT App] Ativado.');
-    event.waitUntil(clients.claim());
+    event.waitUntil(clients.claim()); // Assume o controle na hora
 });
 
-// Permite requisições de rede normais
+// Apenas busca os arquivos da internet, sem travar o cache velho
 self.addEventListener('fetch', (event) => {
-    event.respondWith(fetch(event.request).catch(() => console.log("Você está offline.")));
+    event.respondWith(fetch(event.request).catch(() => {
+        console.log("Erro de rede ignorado pelo PWA.");
+    }));
 });
