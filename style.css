@@ -10,15 +10,13 @@
 * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
 body { background-color: var(--bg-body); color: var(--text-main); height: 100vh; width: 100vw; display: flex; overflow: hidden; }
 
-/* =========================================
-   1. TELAS DE SPLASH E LOGIN (EFEITO UIVERSE)
-========================================= */
+/* SPLASH E LOGIN */
 #splash-screen { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: var(--bg-body); display: flex; justify-content: center; align-items: center; z-index: 9999; transition: opacity 0.8s; }
 .splash-logo { width: 150px; animation: zoomInOut 2s forwards; }
 @keyframes zoomInOut { 0% { transform: scale(0.5); opacity: 0; } 50% { transform: scale(1.2); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
 
 #login-screen { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: radial-gradient(circle at center, #1a1e29 0%, #0a0c10 100%); display: flex; align-items: center; justify-content: center; z-index: 1000; }
-.form { display: flex; flex-direction: column; gap: 10px; padding: 2.5em; background-color: #171717; border-radius: 25px; transition: .4s ease-in-out; border: 1px solid var(--border); box-shadow: var(--shadow); width: 380px;}
+.form { display: flex; flex-direction: column; gap: 10px; padding: 2.5em; background-color: #171717; border-radius: 25px; transition: .4s ease-in-out; border: 1px solid var(--border); box-shadow: var(--shadow); width: 380px; max-width: 90%;}
 .form:hover { transform: scale(1.02); border: 1px solid var(--accent); }
 .login-visual-logo { max-width: 140px; margin: 0 auto 20px; display: block; }
 #heading { text-align: center; margin-bottom: 1.5em; color: white; font-size: 1.5em; font-weight: bold;}
@@ -28,26 +26,22 @@ body { background-color: var(--bg-body); color: var(--text-main); height: 100vh;
 .button1 { padding: 1em 2em; border-radius: 12px; border: none; outline: none; transition: .4s ease-in-out; background-color: var(--accent); color: white; cursor: pointer; font-weight: bold; width: 100%; font-size: 16px; margin-top: 15px;}
 .button1:hover { background-color: var(--accent-hover); transform: scale(1.05); }
 
-/* =========================================
-   2. BOTÕES COM EFEITO BLOB (UIVERSE)
-========================================= */
+/* BOTOES UIVERSE */
 .button-uiverse { cursor: pointer; border-radius: 12px; border: none; padding: 2px; background: radial-gradient(circle 80px at 80% -10%, var(--accent), #181b1b); position: relative; }
 .button-uiverse::after { content: ""; position: absolute; width: 65%; height: 60%; border-radius: 120px; top: 0; right: 0; box-shadow: 0 0 20px rgba(108, 92, 231, 0.4); z-index: -1; }
 .blob1 { position: absolute; width: 70px; height: 100%; border-radius: 16px; bottom: 0; left: 0; background: radial-gradient(circle 60px at 0% 100%, #ff3366, var(--accent), transparent); box-shadow: -10px 10px 30px rgba(108, 92, 231, 0.3); }
-.inner { padding: 12px 20px; border-radius: 10px; color: #fff; z-index: 3; position: relative; background: radial-gradient(circle 80px at 80% -50%, #2a2d3e, #0f1111); display: flex; align-items: center; gap: 8px; font-weight: bold;}
+.inner { padding: 12px 20px; border-radius: 10px; color: #fff; z-index: 3; position: relative; background: radial-gradient(circle 80px at 80% -50%, #2a2d3e, #0f1111); display: flex; align-items: center; justify-content:center; gap: 8px; font-weight: bold;}
 .inner::before { content: ""; width: 100%; height: 100%; left: 0; top: 0; border-radius: 14px; background: radial-gradient(circle 60px at 0% 100%, rgba(108, 92, 231, 0.1), transparent); position: absolute; }
 
-/* =========================================
-   3. ESTRUTURA DO WORKSPACE
-========================================= */
+/* WORKSPACE BASE */
 #app-container { display: flex; width: 100%; height: 100%; }
-.sidebar { width: 280px; flex-shrink: 0; background-color: var(--bg-sidebar); border-right: 1px solid var(--border); padding: 24px; display: flex; flex-direction: column; }
+.sidebar { width: 280px; flex-shrink: 0; background-color: var(--bg-sidebar); border-right: 1px solid var(--border); padding: 24px; display: flex; flex-direction: column; z-index: 2000; transition: left 0.3s ease; }
 .sidebar-logo { max-width: 150px; margin: 0 auto 40px; display: block; }
 .menu { flex-grow: 1; display: flex; flex-direction: column; gap: 8px; }
 .menu-btn { color: var(--text-muted); background: transparent; border: none; padding: 14px 16px; border-radius: 12px; cursor: pointer; display: flex; align-items: center; gap: 12px; width: 100%; font-size: 15px; font-weight: 500; transition: 0.2s; text-align: left; }
 .menu-btn:hover, .menu-btn.active { background: var(--accent); color: #fff; }
 .bottom-actions { border-top: 1px solid var(--border); padding-top: 20px; }
-.content { flex-grow: 1; padding: 40px; overflow-y: auto; background-color: var(--bg-body); }
+.content { flex-grow: 1; padding: 40px; overflow-y: auto; background-color: var(--bg-body); position: relative; }
 .tab-content { display: none; animation: fadeIn 0.3s ease; }
 .tab-content.active { display: block; }
 .header-top { margin-bottom: 30px; }
@@ -55,37 +49,32 @@ body { background-color: var(--bg-body); color: var(--text-main); height: 100vh;
 .btn-secundary { background: transparent; border: 1px solid var(--border); color: #fff; padding: 10px 15px; border-radius: 8px; cursor: pointer; transition: 0.2s; }
 .btn-secundary:hover { background: var(--border); }
 
-/* DASHBOARD & RH */
+/* GRIDS E LAYOUTS */
 .dashboard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; }
 .stat-card p { font-size: 36px; font-weight: bold; margin-top: 10px; }
-.rh-layout { display: grid; grid-template-columns: 350px 1fr; gap: 25px; }
-.colaboradores-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 15px; }
+.rh-layout, .config-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 25px; }
+.rh-layout-modal { display: grid; grid-template-columns: 1fr 1fr; gap: 25px; }
+.colaboradores-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 15px; }
 .colab-card { background: var(--bg-sidebar); border: 1px solid var(--border); border-radius: 12px; padding: 20px; text-align: center; cursor: pointer; transition: 0.2s; }
 .colab-card:hover { border-color: var(--accent); transform: translateY(-5px); }
 .history-list { max-height: 400px; overflow-y: auto; padding-right: 10px; }
 .history-item { padding: 15px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
 
-/* =========================================
-   4. KANBAN COM MAGIC CARDS (MYTHRILL)
-========================================= */
+/* KANBAN MAGIC CARDS */
 .agenda-header { display: flex; justify-content: space-between; align-items: center; }
 .kanban-board { display: flex; gap: 20px; min-height: 60vh; }
-.kanban-column { flex: 1; background: var(--bg-sidebar); border-radius: 12px; padding: 20px; border: 1px solid var(--border); overflow-y:auto; border-top: 4px solid var(--border); }
+.kanban-column { flex: 1; background: var(--bg-sidebar); border-radius: 12px; padding: 20px; border: 1px solid var(--border); overflow-y:auto; border-top: 4px solid var(--border); min-width: 280px;}
 #coluna-vermelha { border-top-color: #ff3366 !important; }
 #coluna-amarela { border-top-color: #ffaa00 !important; }
 #coluna-verde { border-top-color: #00ff88 !important; }
-
-/* Efeito Magic Card */
 .kanban-card { background: #191c29; padding: 20px; border-radius: 8px; margin-bottom: 15px; position: relative; cursor: pointer; display: flex; flex-direction: column; color: #fff; z-index: 1;}
 .kanban-card::before { content: ""; width: 104%; height: 104%; border-radius: 10px; background-image: linear-gradient(var(--rotate), #5ddcff, var(--accent) 43%, #4e00c2); position: absolute; z-index: -1; top: -2%; left: -2%; animation: spin 3s linear infinite; opacity: 0; transition: opacity 0.3s;}
 .kanban-card:hover::before { opacity: 1; }
 @keyframes spin { 0% { --rotate: 0deg; } 100% { --rotate: 360deg; } }
 .task-log { font-size: 11px; color: #aaa; margin-top: 12px; border-top: 1px solid var(--border); padding-top: 8px; }
 
-/* =========================================
-   5. IA CHATBOT & MODAIS
-========================================= */
-#ludotech-widget { position: fixed; bottom: 30px; right: 30px; z-index: 9999; }
+/* IA CHATBOT & MODAIS */
+#ludotech-widget { position: fixed; bottom: 30px; right: 30px; z-index: 9000; }
 #ludotech-btn { width: 65px; height: 65px; border-radius: 50%; background: var(--accent); color: white; border: none; cursor: pointer; box-shadow: 0 10px 25px rgba(0,0,0,0.6); transition: 0.3s; }
 #ludotech-btn:hover { transform: scale(1.1); }
 #ludotech-chat { position: absolute; bottom: 85px; right: 0; width: 360px; height: 450px; background: var(--bg-card); border-radius: 20px; border: 1px solid var(--border); box-shadow: var(--shadow); display: flex; flex-direction: column; padding: 15px; transition: 0.3s; }
@@ -95,7 +84,7 @@ body { background-color: var(--bg-body); color: var(--text-main); height: 100vh;
 .msg-ia { background: var(--bg-sidebar); color: var(--text-main); padding: 12px; border-radius: 12px 12px 12px 0; align-self: flex-start; max-width: 85%; font-size:14px; margin-bottom: 10px;}
 
 .modal-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.8); backdrop-filter: blur(5px); display: flex; justify-content: center; align-items: center; z-index: 10000; }
-.modal-content { background: var(--bg-card); width: 100%; max-width: 600px; padding: 35px; border-radius: 20px; border: 1px solid var(--border); box-shadow: 0 20px 50px rgba(0,0,0,0.7); }
+.modal-content { background: var(--bg-card); width: 95%; max-width: 600px; padding: 35px; border-radius: 20px; border: 1px solid var(--border); box-shadow: 0 20px 50px rgba(0,0,0,0.7); max-height: 90vh; overflow-y:auto;}
 .large { max-width: 800px; }
 .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
 .close-btn { background: transparent; border: none; color: var(--text-muted); cursor: pointer; font-size: 24px; }
@@ -104,13 +93,43 @@ body { background-color: var(--bg-body); color: var(--text-main); height: 100vh;
 .modal-row { display: flex; gap: 15px; }
 .permissions-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; background: #000; padding: 20px; border-radius: 10px; margin: 10px 0 20px; border: 1px solid var(--border); }
 
-/* FULLCALENDAR */
-.fc { color: var(--text-main); }
-.fc-theme-standard .fc-scrollgrid, .fc-theme-standard td, .fc-theme-standard th { border-color: var(--border) !important; }
-.fc-col-header-cell { background-color: var(--bg-sidebar); padding: 10px 0 !important; }
-.fc .fc-button-primary { background-color: var(--accent); border-color: var(--accent); text-transform: capitalize; }
-.fc-event { cursor: pointer; border: none; padding: 4px; font-size: 12px; border-radius: 4px;}
+/* MOBILE HEADER APP */
+.mobile-header { display: none; padding: 15px 20px; background: var(--bg-sidebar); border-bottom: 1px solid var(--border); align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 500; }
+.mobile-logo { height: 35px; object-fit: contain; }
+.mobile-only { display: none; }
+.close-sidebar-btn { position: absolute; top: 15px; right: 15px; background: transparent; border: none; color: #fff; font-size: 24px; }
 
-/* IMPRESSÃO */
+/* =========================================
+   RESPONSIVIDADE (PWA / SMARTPHONE)
+========================================= */
+@media (max-width: 768px) {
+    .mobile-only { display: block; }
+    .mobile-header { display: flex; }
+    
+    /* Configuração da Sidebar Escondida */
+    .sidebar { position: fixed; left: -100%; top: 0; height: 100vh; box-shadow: 5px 0 20px rgba(0,0,0,0.8); }
+    .sidebar.open { left: 0; }
+    
+    /* Ajustes Gerais de Conteúdo */
+    .content { padding: 15px; height: calc(100vh - 65px); }
+    .card { padding: 20px; }
+    .agenda-header { flex-direction: column; align-items: flex-start; gap: 15px; }
+    .agenda-actions { display: flex; flex-wrap: wrap; gap: 10px; width: 100%; }
+    .btn-txt { display: none; } /* Oculta texto de botões grandes no mobile */
+    
+    /* Grids para Coluna Única */
+    .dashboard-grid { grid-template-columns: 1fr; }
+    .rh-layout, .config-grid, .rh-layout-modal { grid-template-columns: 1fr; gap: 15px; }
+    .mobile-col { flex-direction: column; gap: 0; }
+    .permissions-grid { grid-template-columns: 1fr; padding: 15px; }
+
+    /* Kanban Scroll Horizontal Native App */
+    .kanban-board { overflow-x: auto; padding-bottom: 15px; scroll-snap-type: x mandatory; }
+    .kanban-column { min-width: 85vw; scroll-snap-align: center; }
+
+    /* Ajuste Chatbot */
+    #ludotech-chat { width: 90vw; right: 5vw; bottom: 100px; }
+}
+
 @media print { body * { visibility: hidden; } #print-area, #print-area * { visibility: visible; } #print-area { position: absolute; left: 0; top: 0; width: 100%; color: #000; background: #fff; padding: 40px; } }
 @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
