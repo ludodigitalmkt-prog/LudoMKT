@@ -31,13 +31,19 @@
     </div>
 
     <div id="app-container" style="display: none;">
-        <aside class="sidebar">
+        <aside class="sidebar" id="sidebar">
+            <button id="close-menu" class="mobile-only close-sidebar-btn" onclick="toggleMenu()"><span class="material-icons">close</span></button>
             <div class="logo"><img src="logo.png" id="logo-menu" class="sidebar-logo img-logo-dinamica"></div>
             <nav class="menu" id="main-nav"></nav>
             <div class="bottom-actions"><button class="menu-btn" id="btn-sair" style="color: #ff3366;"><span class="material-icons">logout</span> Sair</button></div>
         </aside>
 
         <main class="content">
+            <div class="mobile-header mobile-only">
+                <img src="logo.png" class="mobile-logo img-logo-dinamica">
+                <button id="open-menu" onclick="toggleMenu()"><span class="material-icons">menu</span></button>
+            </div>
+
             <section id="home" class="tab-content active">
                 <div class="header-top"><h1>Visão Geral do Mês</h1></div>
                 <div class="dashboard-grid">
@@ -50,11 +56,11 @@
             <section id="agenda" class="tab-content">
                 <div class="header-top agenda-header">
                     <h1>Agenda Colaborativa</h1>
-                    <div style="display:flex; gap:10px;">
+                    <div class="agenda-actions">
                         <button class="btn-secundary" onclick="mudarVisaoAgenda('kanban')">Trello</button>
                         <button class="btn-secundary" onclick="mudarVisaoAgenda('calendario')">Calendário</button>
                         <button class="button-uiverse" onclick="abrirModal()">
-                            <div class="blob1"></div><div class="inner"><span class="material-icons" style="font-size:18px;">add</span> Nova Atividade</div>
+                            <div class="blob1"></div><div class="inner"><span class="material-icons" style="font-size:18px;">add</span><span class="btn-txt">Atividade</span></div>
                         </button>
                     </div>
                 </div>
@@ -71,13 +77,13 @@
             <section id="planner" class="tab-content"><div class="header-top"><h1>Meu Planner</h1></div><div class="card" style="padding: 20px; min-height: 500px;"><div id='calendar-individual'></div></div></section>
 
             <section id="rh" class="tab-content">
-                <div class="header-top"><h1>Portal de Gestão de Talentos</h1></div>
+                <div class="header-top"><h1>Portal de Gestão</h1></div>
                 <div class="rh-layout">
                     <div class="card">
                         <h3 style="color:var(--accent); margin-bottom:15px;">Novo Colaborador</h3>
                         <form id="form-rh-completo">
                             <input type="text" id="rh-nome" class="modal-input" placeholder="Nome Completo" required>
-                            <div class="modal-row">
+                            <div class="modal-row mobile-col">
                                 <input type="text" id="rh-cargo" class="modal-input" placeholder="Cargo / Função">
                                 <input type="text" id="rh-setor" class="modal-input" placeholder="Setor">
                             </div>
@@ -103,10 +109,10 @@
             </section>
 
             <section id="admin" class="tab-content">
-                <div class="header-top"><h1>Configurações do Ecossistema</h1></div>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                <div class="header-top"><h1>Configurações</h1></div>
+                <div class="config-grid">
                     <div class="card">
-                        <h3 style="color:var(--accent); margin-bottom:15px;">Identidade Visual (Logos)</h3>
+                        <h3 style="color:var(--accent); margin-bottom:15px;">Identidade Visual</h3>
                         <label style="color:var(--text-muted); font-size:12px;">Tela de Abertura (Splash):</label>
                         <input type="file" id="up-logo-intro" class="modal-input" accept="image/*">
                         <label style="color:var(--text-muted); font-size:12px;">Tela de Login:</label>
@@ -116,9 +122,9 @@
                         <button class="button1" id="btn-save-logos">Salvar Imagens no Servidor</button>
                     </div>
                     <div class="card">
-                        <h3 style="color:var(--accent); margin-bottom:15px;">Integrações Externas</h3>
+                        <h3 style="color:var(--accent); margin-bottom:15px;">Integrações</h3>
                         <label style="color:var(--text-muted); font-size:12px;">Link Spotify (Playlist LudoMusic):</label>
-                        <input type="url" id="config-spotify-url" class="modal-input" placeholder="Cole o link do Spotify aqui...">
+                        <input type="url" id="config-spotify-url" class="modal-input" placeholder="Link do Spotify...">
                         <button class="button1" id="btn-save-spotify">Sincronizar LudoMusic</button>
                     </div>
                 </div>
@@ -132,8 +138,8 @@
             </section>
 
             <section id="beneficios" class="tab-content">
-                <div class="header-top"><h1>Meus Benefícios Pendentes</h1></div>
-                <p style="color:var(--text-muted); margin-bottom: 20px;">Aqui aparecem os benefícios, vales ou pagamentos liberados pelo RH para você receber.</p>
+                <div class="header-top"><h1>Benefícios Pendentes</h1></div>
+                <p style="color:var(--text-muted); margin-bottom: 20px;">Benefícios e pagamentos liberados pelo RH.</p>
                 <div id="meus-beneficios-grid" class="dashboard-grid"></div>
             </section>
         </main>
@@ -157,7 +163,7 @@
     <div id="modal-colaborador" class="modal-overlay" style="display:none;">
         <div class="modal-content large" style="max-height: 90vh; overflow-y: auto;">
             <div class="modal-header"><h2 id="modal-rh-nome">Pasta do Colaborador</h2><button class="close-btn" onclick="fecharModalRH()"><span class="material-icons">close</span></button></div>
-            <div class="rh-layout" style="grid-template-columns: 1fr 1fr;">
+            <div class="rh-layout-modal">
                 <div class="rh-actions">
                     <h3 style="margin-bottom:15px; color:#00ff88;">Atribuir Novo Benefício</h3>
                     <select id="rh-tipo-evento" class="modal-input">
@@ -168,11 +174,11 @@
                         <option value="Reembolso 💵">Reembolso 💵</option>
                     </select>
                     <input type="number" id="rh-valor-evento" class="modal-input" placeholder="Valor a Pagar (R$)">
-                    <input type="url" id="rh-link-qrcode" class="modal-input" placeholder="Link da Imagem do QR Code PIX (Opcional)">
-                    <textarea id="rh-desc-evento" class="modal-input" placeholder="Descreva o motivo do pagamento..." rows="2"></textarea>
-                    <button class="button1" id="btn-lancar-rh" style="background:#00ff88; color:#000;">Liberar para o Colaborador</button>
+                    <input type="url" id="rh-link-qrcode" class="modal-input" placeholder="Link QR Code PIX (Opcional)">
+                    <textarea id="rh-desc-evento" class="modal-input" placeholder="Motivo do pagamento..." rows="2"></textarea>
+                    <button class="button1" id="btn-lancar-rh" style="background:#00ff88; color:#000;">Liberar para Colaborador</button>
                     <hr style="border:0; border-top:1px solid var(--border); margin: 25px 0;">
-                    <h3 style="margin-bottom:15px; color:#ff3366;">Ações Administrativas</h3>
+                    <h3 style="margin-bottom:15px; color:#ff3366;">Ações</h3>
                     <button class="btn-secundary" id="btn-gerar-folha" style="width:100%; margin-bottom:10px;">Imprimir Histórico (PDF)</button>
                     <button class="button1" id="btn-excluir-colaborador" style="background:transparent; border:1px solid #ff3366; color:#ff3366;">Excluir Colaborador</button>
                 </div>
@@ -187,17 +193,17 @@
             <form id="task-form">
                 <input type="hidden" id="task-id">
                 <input type="text" id="task-titulo" class="modal-input" placeholder="Título da Tarefa" required>
-                <div class="modal-row">
+                <div class="modal-row mobile-col">
                     <select id="task-responsaveis" class="modal-input" multiple title="Segure CTRL para selecionar vários" required></select>
-                    <select id="task-status" class="modal-input"><option value="pendente">Status: Pendente</option><option value="analise">Status: Em Andamento</option><option value="concluido">Status: Concluído</option></select>
+                    <select id="task-status" class="modal-input"><option value="pendente">Pendente</option><option value="analise">Em Andamento</option><option value="concluido">Concluído</option></select>
                 </div>
-                <div class="modal-row">
-                    <select id="task-prioridade" class="modal-input"><option value="ordinario">Prioridade: Ordinário</option><option value="urgente">Prioridade: Urgente</option></select>
+                <div class="modal-row mobile-col">
+                    <select id="task-prioridade" class="modal-input"><option value="ordinario">Ordinário</option><option value="urgente">Urgente</option></select>
                     <input type="text" id="task-datas" class="modal-input" placeholder="Datas (Ex: 2026-05-10, 2026-05-15)">
                 </div>
-                <textarea id="task-desc" class="modal-input" placeholder="Descrição detalhada..." rows="3"></textarea>
-                <div class="modal-actions" style="justify-content: space-between;">
-                    <button type="button" class="btn-secundary" id="btn-excluir-tarefa" style="color:#ff3366; border-color:#ff3366; display:none;">Excluir Tarefa</button>
+                <textarea id="task-desc" class="modal-input" placeholder="Descrição..." rows="3"></textarea>
+                <div class="modal-actions" style="display:flex; justify-content: space-between; gap:10px;">
+                    <button type="button" class="btn-secundary" id="btn-excluir-tarefa" style="color:#ff3366; border-color:#ff3366; display:none;">Excluir</button>
                     <button type="submit" class="button-uiverse"><div class="blob1"></div><div class="inner">Salvar Alterações</div></button>
                 </div>
             </form>
