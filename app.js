@@ -293,6 +293,7 @@ function resetUserForm() {
   userForm.reset();
   document.getElementById('user-id').value = '';
   document.getElementById('user-role').value = 'colaborador';
+  document.getElementById('user-active').checked = true;
   fillUserPermissionsForm(defaultPermissions());
 }
 
@@ -407,6 +408,7 @@ async function bootstrapProfileIfNeeded(user) {
       ...sourceData,
       uid: user.uid,
       email: user.email || sourceData.email || "",
+      active: sourceData.active !== false,
       permissions: normalizePermissions(sourceData.permissions),
       updatedAt: serverTimestamp()
     };
@@ -429,6 +431,7 @@ async function bootstrapProfileIfNeeded(user) {
     birthday: "",
     photoUrl: "",
     benefits: "",
+    active: true,
     permissions: firstRole === "gerencia"
       ? {
           accessInicio: true,
@@ -468,7 +471,7 @@ async function loadCurrentProfile(user) {
 async function loadUsers() {
   const q = query(collection(db, "users"), orderBy("name"));
   const snap = await getDocs(q);
-  const all = snap.docs.map(d => ({ id: d.id, ...d.data(), permissions: normalizePermissions(d.data().permissions) }));
+  const all = snap.docs.map(d => ({ id: d.id, ...d.data(), active: d.data().active !== false, permissions: normalizePermissions(d.data().permissions) }));
 
   const byEmail = new Map();
   for (const user of all) {
@@ -550,7 +553,7 @@ function renderStats() {
 
 function renderBirthdays() {
   const month = new Date().getMonth() + 1;
-  const birthdays = usersData.filter(user => {
+  const birthdays = usersData.filter(user => user.active !== false).filter(user => {
     if (!user.birthday) return false;
     const birthMonth = Number(user.birthday.split("-")[1]);
     return birthMonth === month;
@@ -578,12 +581,14 @@ function renderBirthdays() {
 }
 
 function renderTeam() {
-  if (!usersData.length) {
-    teamCards.innerHTML = `<div class="empty-state">Nenhum colaborador cadastrado.</div>`;
+  const activeUsers = usersData.filter(user => user.active !== false);
+
+  if (!activeUsers.length) {
+    teamCards.innerHTML = `<div class="empty-state">Nenhum colaborador ativo cadastrado.</div>`;
     return;
   }
 
-  teamCards.innerHTML = usersData.map(user => {
+  teamCards.innerHTML = activeUsers.map(user => {
     const userTasksToday = tasksData.filter(task => task.responsibleId === user.id && task.date === new Date().toISOString().slice(0, 10));
     const doneCount = userTasksToday.filter(t => t.status === "concluido").length;
 
@@ -605,11 +610,13 @@ function renderTeam() {
 }
 
 function fillTaskSelects() {
+  const activeUsers = usersData.filter(user => user.active !== false);
+
   taskClientSelect.innerHTML = `<option value="">Selecione</option>` + clientsData.map(client => `
     <option value="${client.id}">${escapeHtml(client.name || "")}</option>
   `).join("");
 
-  taskResponsibleSelect.innerHTML = usersData.map(user => `
+  taskResponsibleSelect.innerHTML = activeUsers.map(user => `
     <option value="${user.id}">${escapeHtml(user.name || "")}</option>
   `).join("");
 }
@@ -771,6 +778,8 @@ function renderRH() {
 
   rhList.innerHTML = usersData.map(user => {
     const accessSummary = getAccessSummary(user);
+    const isActive = user.active !== false;
+
     return `
       <div class="rh-card">
         <div class="card-top-line">
@@ -781,6 +790,7 @@ function renderRH() {
           ${canEditScope('rh') ? `
             <div class="card-actions">
               <button class="icon-btn" onclick="window.editUserProfile('${user.id}')">✎</button>
+              <button class="icon-btn ${isActive ? 'danger' : 'success'}" onclick="window.toggleUserActive('${user.id}')">${isActive ? '⏸' : '▶'}</button>
               <button class="icon-btn danger" onclick="window.deleteUserProfile('${user.id}')">🗑</button>
             </div>
           ` : ""}
@@ -788,9 +798,11 @@ function renderRH() {
         <div class="team-meta"><strong>Perfil:</strong> ${escapeHtml(user.role || "-")}</div>
         <div class="team-meta"><strong>Cargo:</strong> ${escapeHtml(user.position || "-")}</div>
         <div class="team-meta"><strong>Setor:</strong> ${escapeHtml(user.sector || "-")}</div>
+        <div class="team-meta"><strong>Status:</strong> ${isActive ? "Ativo" : "Inativo"}</div>
         <div class="team-meta"><strong>Nascimento:</strong> ${user.birthday ? formatDateBR(user.birthday) : "-"}</div>
         <div class="team-meta"><strong>Benefícios:</strong> ${escapeHtml(user.benefits || "-")}</div>
         <div class="access-tags">
+          <span class="access-tag ${isActive ? '' : 'inactive'}">${isActive ? 'Ativo na agenda' : 'Fora da agenda'}</span>
           ${accessSummary.length ? accessSummary.map(item => `<span class="access-tag">${escapeHtml(item)}</span>`).join("") : `<span class="access-tag">Somente visualização</span>`}
         </div>
       </div>
@@ -1036,6 +1048,7 @@ async function saveUserProfile(event) {
     birthday: document.getElementById("user-birthday").value,
     photoUrl: document.getElementById("user-photo").value.trim(),
     benefits: document.getElementById("user-benefits").value.trim(),
+    active: document.getElementById("user-active").checked,
     permissions: readUserPermissionsForm(),
     updatedAt: serverTimestamp(),
     createdAt: serverTimestamp()
@@ -1047,7 +1060,7 @@ async function saveUserProfile(event) {
   resetUserForm();
   await reloadAllData();
 
-  alert("Colaborador salvo com cargo, acessos e permissões de edição.");
+  alert("Colaborador salvo com cargo, acessos, permissões e status ativo/inativo.");
 }
 
 window.editUserProfile = function(id) {
@@ -1064,9 +1077,20 @@ window.editUserProfile = function(id) {
   document.getElementById("user-birthday").value = user.birthday || "";
   document.getElementById("user-photo").value = user.photoUrl || "";
   document.getElementById("user-benefits").value = user.benefits || "";
+  document.getElementById("user-active").checked = user.active !== false;
   fillUserPermissionsForm(user.permissions || defaultPermissions());
 
   openModal(userModal);
+};
+
+window.toggleUserActive = async function(id) {
+  if (!canEditScope('rh')) return;
+  const user = usersData.find(item => item.id === id);
+  if (!user) return;
+
+  const nextValue = !(user.active !== false);
+  await setDoc(doc(db, "users", id), { active: nextValue, updatedAt: serverTimestamp() }, { merge: true });
+  await reloadAllData();
 };
 
 window.deleteUserProfile = async function(id) {
