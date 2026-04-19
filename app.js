@@ -1,6 +1,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
 import {
   getAuth,
+  createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   signOut,
   onAuthStateChanged
@@ -36,6 +37,8 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
+const userCreatorApp = initializeApp(firebaseConfig, "user-creator-app");
+const userCreatorAuth = getAuth(userCreatorApp);
 
 // =============================
 // ESTADO
@@ -59,6 +62,7 @@ let settingsData = {
 const loginScreen = document.getElementById("login-screen");
 const dashboardScreen = document.getElementById("dashboard-screen");
 const loginForm = document.getElementById("login-form");
+const loginUsernameInput = document.getElementById("login-username");
 const loginMessage = document.getElementById("login-message");
 const logoutBtn = document.getElementById("logout-btn");
 
@@ -294,6 +298,10 @@ function resetUserForm() {
   document.getElementById('user-id').value = '';
   document.getElementById('user-role').value = 'colaborador';
   document.getElementById('user-active').checked = true;
+  const usernameField = document.getElementById('user-username');
+  const passwordField = document.getElementById('user-password');
+  if (usernameField) usernameField.readOnly = false;
+  if (passwordField) passwordField.disabled = false;
   fillUserPermissionsForm(defaultPermissions());
 }
 
@@ -382,6 +390,26 @@ function normalizeIframeUrl(url) {
   return trimmed;
 }
 
+function sanitizeUsername(value = "") {
+  return String(value)
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, ".")
+    .replace(/[^a-z0-9._-]/g, "");
+}
+
+function makeInternalEmail(username = "") {
+  const clean = sanitizeUsername(username);
+  return clean ? `${clean}@interno.agenda` : "";
+}
+
+function loginIdentifierToEmail(identifier = "") {
+  const clean = String(identifier).trim();
+  return clean.includes("@") ? clean : makeInternalEmail(clean);
+}
+
 // =============================
 // AUTH / PERFIL
 // =============================
@@ -407,6 +435,7 @@ async function bootstrapProfileIfNeeded(user) {
     const migratedProfile = {
       ...sourceData,
       uid: user.uid,
+      username: sourceData.username || sanitizeUsername((user.email || sourceData.email || "").split("@")[0]),
       email: user.email || sourceData.email || "",
       active: sourceData.active !== false,
       permissions: normalizePermissions(sourceData.permissions),
@@ -424,6 +453,7 @@ async function bootstrapProfileIfNeeded(user) {
   const profile = {
     uid: user.uid,
     name: user.email?.split("@")[0] || "Usuário",
+    username: sanitizeUsername((user.email || "").split("@")[0]),
     email: user.email || "",
     role: firstRole,
     position: firstRole === "gerencia" ? "Administrador" : "",
@@ -460,7 +490,7 @@ async function loadCurrentProfile(user) {
   await bootstrapProfileIfNeeded(user);
   currentProfile.permissions = normalizePermissions(currentProfile.permissions);
   userRoleBadge.textContent = currentProfile.role === "gerencia" ? "Gestão Administrador" : "Colaborador";
-  currentUserEmail.textContent = currentProfile.email || "";
+  currentUserEmail.textContent = currentProfile.username ? `Usuário: ${currentProfile.username}` : (currentProfile.email || "");
   welcomeText.textContent = `Olá, ${currentProfile.name || "usuário"}!`;
   applyRoleVisibility();
 }
@@ -475,7 +505,7 @@ async function loadUsers() {
 
   const byEmail = new Map();
   for (const user of all) {
-    const emailKey = String(user.email || user.id).toLowerCase();
+    const emailKey = String(user.username || user.email || user.id).toLowerCase();
     if (!byEmail.has(emailKey)) {
       byEmail.set(emailKey, user);
       continue;
@@ -785,7 +815,7 @@ function renderRH() {
         <div class="card-top-line">
           <div>
             <h3>${escapeHtml(user.name || "")}</h3>
-            <p class="team-meta">${escapeHtml(user.email || "-")}</p>
+            <p class="team-meta">Usuário: ${escapeHtml(user.username || "-")}</p>
           </div>
           ${canEditScope('rh') ? `
             <div class="card-actions">
@@ -1028,20 +1058,49 @@ async function saveUserProfile(event) {
   if (!canEditScope('rh')) return;
 
   const documentId = document.getElementById("user-id").value.trim();
-  const email = document.getElementById("user-email").value.trim().toLowerCase();
+  const username = sanitizeUsername(document.getElementById("user-username").value);
   const name = document.getElementById("user-name").value.trim();
+  const initialPassword = document.getElementById("user-password").value;
+  const internalEmail = makeInternalEmail(username);
 
-  if (!name || !email) {
-    alert("Informe nome e e-mail.");
+  if (!name || !username) {
+    alert("Informe nome e usuário.");
     return;
   }
 
-  const cleanId = documentId || email.replace(/[.#$[\]@]/g, "_");
+  let userId = documentId;
+  let storedEmail = internalEmail;
+
+  if (!documentId) {
+    if (!initialPassword || initialPassword.length < 6) {
+      alert("A senha inicial precisa ter pelo menos 6 caracteres.");
+      return;
+    }
+
+    try {
+      const credential = await createUserWithEmailAndPassword(userCreatorAuth, internalEmail, initialPassword);
+      userId = credential.user.uid;
+      storedEmail = credential.user.email || internalEmail;
+      await signOut(userCreatorAuth);
+    } catch (error) {
+      console.error(error);
+      if (error.code === "auth/email-already-in-use") {
+        alert("Esse usuário já existe. Escolha outro nome de usuário.");
+      } else {
+        alert("Não foi possível criar o acesso interno do colaborador.");
+      }
+      return;
+    }
+  } else {
+    const existing = usersData.find(item => item.id === documentId);
+    storedEmail = existing?.email || internalEmail;
+  }
 
   const payload = {
-    uid: cleanId,
+    uid: userId,
     name,
-    email,
+    username,
+    email: storedEmail,
     role: document.getElementById("user-role").value,
     position: document.getElementById("user-position").value.trim(),
     sector: document.getElementById("user-sector").value.trim(),
@@ -1054,13 +1113,13 @@ async function saveUserProfile(event) {
     createdAt: serverTimestamp()
   };
 
-  await setDoc(doc(db, "users", cleanId), payload, { merge: true });
+  await setDoc(doc(db, "users", userId), payload, { merge: true });
 
   closeModal(userModal);
   resetUserForm();
   await reloadAllData();
 
-  alert("Colaborador salvo com cargo, acessos, permissões e status ativo/inativo.");
+  alert(documentId ? "Colaborador atualizado com sucesso." : "Colaborador criado com login interno e salvo com sucesso.");
 }
 
 window.editUserProfile = function(id) {
@@ -1070,7 +1129,10 @@ window.editUserProfile = function(id) {
 
   document.getElementById("user-id").value = user.id;
   document.getElementById("user-name").value = user.name || "";
-  document.getElementById("user-email").value = user.email || "";
+  document.getElementById("user-username").value = user.username || "";
+  document.getElementById("user-password").value = "";
+  document.getElementById("user-password").disabled = true;
+  document.getElementById("user-username").readOnly = true;
   document.getElementById("user-role").value = user.role || "colaborador";
   document.getElementById("user-position").value = user.position || "";
   document.getElementById("user-sector").value = user.sector || "";
@@ -1128,14 +1190,15 @@ loginForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   loginMessage.textContent = "";
 
-  const email = document.getElementById("login-email").value.trim();
+  const identifier = loginUsernameInput.value.trim();
   const password = document.getElementById("login-password").value;
+  const loginEmail = loginIdentifierToEmail(identifier);
 
   try {
-    await signInWithEmailAndPassword(auth, email, password);
+    await signInWithEmailAndPassword(auth, loginEmail, password);
   } catch (error) {
     console.error(error);
-    loginMessage.textContent = "Não foi possível entrar. Verifique e-mail e senha.";
+    loginMessage.textContent = "Não foi possível entrar. Verifique usuário e senha.";
   }
 });
 
@@ -1239,6 +1302,13 @@ onAuthStateChanged(auth, async (user) => {
 
   try {
     await loadCurrentProfile(user);
+
+    if (currentProfile?.active === false) {
+      await signOut(auth);
+      alert("Este acesso está inativo. Procure a gerência.");
+      return;
+    }
+
     await reloadAllData();
     setActiveTab("inicio");
     showScreen(dashboardScreen);
