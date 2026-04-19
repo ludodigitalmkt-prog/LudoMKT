@@ -862,6 +862,16 @@ input:focus, textarea:focus, select:focus{
   font-weight:700;
 }
 
+.access-tag.inactive{
+  background:rgba(214,69,69,.10);
+  color:#b42318;
+}
+
+.icon-btn.success{
+  background:rgba(12,140,82,.10);
+  color:#0c8c52;
+}
+
 @media (prefers-reduced-motion: reduce){
   .aurora,
   .edge-glow::before{
