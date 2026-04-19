@@ -232,6 +232,57 @@ function normalizeIframeUrl(url) {
   return trimmed;
 }
 
+
+const supportsHoverFx = window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+function initVisualFx() {
+  const selectors = [
+    ".login-card",
+    ".card",
+    ".team-card",
+    ".board-column",
+    ".task-card",
+    ".client-card",
+    ".benefit-card",
+    ".rh-card",
+    ".modal-card",
+    ".calendar-cell",
+    ".direction-item"
+  ];
+
+  document.querySelectorAll(selectors.join(",")).forEach((element) => {
+    element.classList.add("fx-card");
+
+    if (!supportsHoverFx || prefersReducedMotion || element.dataset.fxBound === "1") {
+      return;
+    }
+
+    element.dataset.fxBound = "1";
+
+    element.addEventListener("pointermove", (event) => {
+      const rect = element.getBoundingClientRect();
+      const px = (event.clientX - rect.left) / rect.width;
+      const py = (event.clientY - rect.top) / rect.height;
+
+      const rotateY = (px - 0.5) * 5.5;
+      const rotateX = (0.5 - py) * 5.5;
+
+      element.style.setProperty("--rx", `${rotateX.toFixed(2)}deg`);
+      element.style.setProperty("--ry", `${rotateY.toFixed(2)}deg`);
+      element.style.setProperty("--mx", `${(px * 100).toFixed(2)}%`);
+      element.style.setProperty("--my", `${(py * 100).toFixed(2)}%`);
+    });
+
+    element.addEventListener("pointerleave", () => {
+      element.style.setProperty("--rx", "0deg");
+      element.style.setProperty("--ry", "0deg");
+      element.style.setProperty("--mx", "50%");
+      element.style.setProperty("--my", "50%");
+    });
+  });
+}
+
 // =============================
 // AUTH / PERFIL
 // =============================
@@ -326,6 +377,7 @@ async function reloadAllData() {
   renderBoard();
   renderDirection();
   renderCalendar();
+  initVisualFx();
 }
 
 // =============================
@@ -644,6 +696,7 @@ window.editTask = function(id) {
   document.getElementById("task-extraordinary").checked = task.extraordinary === true;
 
   openModal(taskModal);
+  initVisualFx();
 };
 
 window.advanceTask = async function(id) {
@@ -721,6 +774,7 @@ window.editClient = function(id) {
   document.getElementById("client-services").value = client.services || "";
 
   openModal(clientModal);
+  initVisualFx();
 };
 
 window.deleteClient = async function(id) {
@@ -781,6 +835,7 @@ window.editBenefit = function(id) {
   document.getElementById("benefit-description").value = benefit.description || "";
 
   openModal(benefitModal);
+  initVisualFx();
 };
 
 window.deleteBenefit = async function(id) {
@@ -902,21 +957,25 @@ document.querySelectorAll("[data-close-modal]").forEach(button => {
 openTaskModalBtn?.addEventListener("click", () => {
   resetTaskForm();
   openModal(taskModal);
+  initVisualFx();
 });
 
 openClientModalBtn?.addEventListener("click", () => {
   resetClientForm();
   openModal(clientModal);
+  initVisualFx();
 });
 
 openBenefitModalBtn?.addEventListener("click", () => {
   resetBenefitForm();
   openModal(benefitModal);
+  initVisualFx();
 });
 
 openUserModalBtn?.addEventListener("click", () => {
   resetUserForm();
   openModal(userModal);
+  initVisualFx();
 });
 
 taskForm.addEventListener("submit", saveTask);
@@ -996,3 +1055,6 @@ onAuthStateChanged(auth, async (user) => {
     alert("Erro ao carregar dados do sistema.");
   }
 });
+
+
+initVisualFx();
