@@ -16,6 +16,7 @@ import {
   getDoc,
   getDocs,
   query,
+  where,
   orderBy,
   serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
@@ -115,6 +116,89 @@ const musicFrame = document.getElementById("music-frame");
 
 const installBtn = document.getElementById("install-btn");
 
+const DEFAULT_LOGO = "data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 96 96%22%3E%3Cdefs%3E%3ClinearGradient id=%22g%22 x1=%220%22 y1=%220%22 x2=%221%22 y2=%221%22%3E%3Cstop stop-color=%22%238B252C%22/%3E%3Cstop offset=%221%22 stop-color=%22%23b73039%22/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width=%2296%22 height=%2296%22 rx=%2224%22 fill=%22url(%23g)%22/%3E%3Cpath d=%22M22 28h52v40H22z%22 fill=%22white%22 opacity=%220.18%22/%3E%3Cpath d=%22M32 24v48M48 24v48M64 24v48M24 36h48M24 52h48M24 68h48%22 stroke=%22white%22 stroke-width=%224%22 stroke-linecap=%22round%22/%3E%3C/svg%3E";
+
+// =============================
+// PERMISSÕES
+// =============================
+function defaultPermissions() {
+  return {
+    accessInicio: true,
+    accessAgenda: true,
+    accessClientes: true,
+    accessBeneficios: false,
+    accessRh: false,
+    accessMusic: true,
+    accessAjustes: false,
+    canViewDirecao: false,
+    canEditAgenda: false,
+    canEditClientes: false,
+    canEditBeneficios: false,
+    canEditRh: false,
+    canEditAjustes: false
+  };
+}
+
+function normalizePermissions(raw = {}) {
+  return {
+    ...defaultPermissions(),
+    ...(raw || {})
+  };
+}
+
+function getUserPermissions() {
+  return normalizePermissions(currentProfile?.permissions || {});
+}
+
+function hasTabAccess(tabName) {
+  if (isManager()) return true;
+  const p = getUserPermissions();
+  const map = {
+    inicio: p.accessInicio,
+    agenda: p.accessAgenda,
+    clientes: p.accessClientes,
+    beneficios: p.accessBeneficios,
+    rh: p.accessRh,
+    music: p.accessMusic,
+    ajustes: p.accessAjustes
+  };
+  return !!map[tabName];
+}
+
+function canEditScope(scope) {
+  if (isManager()) return true;
+  const p = getUserPermissions();
+  const map = {
+    agenda: p.canEditAgenda,
+    clientes: p.canEditClientes,
+    beneficios: p.canEditBeneficios,
+    rh: p.canEditRh,
+    ajustes: p.canEditAjustes
+  };
+  return !!map[scope];
+}
+
+function canViewDirecao() {
+  if (isManager()) return true;
+  return !!getUserPermissions().canViewDirecao;
+}
+
+function getAccessSummary(user) {
+  const perms = normalizePermissions(user?.permissions || {});
+  const summary = [];
+  if (perms.canEditAgenda) summary.push("Editor agenda");
+  if (perms.canEditClientes) summary.push("Editor clientes");
+  if (perms.canEditBeneficios) summary.push("Editor benefícios");
+  if (perms.canEditRh) summary.push("Editor RH");
+  if (perms.canEditAjustes) summary.push("Editor ajustes");
+  return summary;
+}
+
+function initVisualFx() {
+  document.querySelectorAll(".card, .team-card, .board-column, .task-card, .client-card, .benefit-card, .rh-card, .direction-item, .calendar-cell, .login-card, .modal-card")
+    .forEach((element) => element.classList.add("fx-ready"));
+}
+
 // =============================
 // HELPERS
 // =============================
@@ -147,12 +231,30 @@ function isManager() {
 
 function applyRoleVisibility() {
   document.querySelectorAll(".manager-only").forEach(el => {
-    if (isManager()) {
+    const scope = el.dataset.editorScope || "";
+    const shouldShow = scope ? canEditScope(scope) : isManager();
+    if (shouldShow) {
       el.classList.remove("is-hidden-by-role");
     } else {
       el.classList.add("is-hidden-by-role");
     }
   });
+
+  menuItems.forEach(item => {
+    const allowed = hasTabAccess(item.dataset.tab);
+    item.classList.toggle("is-hidden-by-access", !allowed);
+  });
+
+  const directionOption = document.querySelector('#agenda-view-select option[value="direcao"]');
+  if (directionOption) {
+    directionOption.hidden = !canViewDirecao();
+    if (!canViewDirecao() && agendaViewSelect.value === "direcao") {
+      agendaViewSelect.value = "board";
+      agendaBoardView.classList.add("active");
+      agendaCalendarView.classList.remove("active");
+      agendaDirecaoView.classList.remove("active");
+    }
+  }
 }
 
 function showScreen(screen) {
@@ -189,9 +291,56 @@ function resetBenefitForm() {
 
 function resetUserForm() {
   userForm.reset();
+  document.getElementById('user-id').value = '';
+  document.getElementById('user-role').value = 'colaborador';
+  fillUserPermissionsForm(defaultPermissions());
+}
+
+function fillUserPermissionsForm(permissions = {}) {
+  const p = normalizePermissions(permissions);
+  document.getElementById("perm-access-inicio").checked = p.accessInicio;
+  document.getElementById("perm-access-agenda").checked = p.accessAgenda;
+  document.getElementById("perm-access-clientes").checked = p.accessClientes;
+  document.getElementById("perm-access-beneficios").checked = p.accessBeneficios;
+  document.getElementById("perm-access-rh").checked = p.accessRh;
+  document.getElementById("perm-access-music").checked = p.accessMusic;
+  document.getElementById("perm-access-ajustes").checked = p.accessAjustes;
+  document.getElementById("perm-view-direcao").checked = p.canViewDirecao;
+  document.getElementById("perm-edit-agenda").checked = p.canEditAgenda;
+  document.getElementById("perm-edit-clientes").checked = p.canEditClientes;
+  document.getElementById("perm-edit-beneficios").checked = p.canEditBeneficios;
+  document.getElementById("perm-edit-rh").checked = p.canEditRh;
+  document.getElementById("perm-edit-ajustes").checked = p.canEditAjustes;
+}
+
+function readUserPermissionsForm() {
+  return {
+    accessInicio: document.getElementById("perm-access-inicio").checked,
+    accessAgenda: document.getElementById("perm-access-agenda").checked,
+    accessClientes: document.getElementById("perm-access-clientes").checked,
+    accessBeneficios: document.getElementById("perm-access-beneficios").checked,
+    accessRh: document.getElementById("perm-access-rh").checked,
+    accessMusic: document.getElementById("perm-access-music").checked,
+    accessAjustes: document.getElementById("perm-access-ajustes").checked,
+    canViewDirecao: document.getElementById("perm-view-direcao").checked,
+    canEditAgenda: document.getElementById("perm-edit-agenda").checked,
+    canEditClientes: document.getElementById("perm-edit-clientes").checked,
+    canEditBeneficios: document.getElementById("perm-edit-beneficios").checked,
+    canEditRh: document.getElementById("perm-edit-rh").checked,
+    canEditAjustes: document.getElementById("perm-edit-ajustes").checked
+  };
 }
 
 function setActiveTab(tabName) {
+  if (!hasTabAccess(tabName)) {
+    const firstAvailable = Array.from(menuItems).find(item => hasTabAccess(item.dataset.tab));
+    if (firstAvailable) {
+      tabName = firstAvailable.dataset.tab;
+    } else {
+      tabName = "inicio";
+    }
+  }
+
   menuItems.forEach(item => item.classList.toggle("active", item.dataset.tab === tabName));
   tabs.forEach(tab => tab.classList.toggle("active", tab.id === `tab-${tabName}`));
 
@@ -232,57 +381,6 @@ function normalizeIframeUrl(url) {
   return trimmed;
 }
 
-
-const supportsHoverFx = window.matchMedia("(hover: hover) and (pointer: fine)").matches;
-const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-
-function initVisualFx() {
-  const selectors = [
-    ".login-card",
-    ".card",
-    ".team-card",
-    ".board-column",
-    ".task-card",
-    ".client-card",
-    ".benefit-card",
-    ".rh-card",
-    ".modal-card",
-    ".calendar-cell",
-    ".direction-item"
-  ];
-
-  document.querySelectorAll(selectors.join(",")).forEach((element) => {
-    element.classList.add("fx-card");
-
-    if (!supportsHoverFx || prefersReducedMotion || element.dataset.fxBound === "1") {
-      return;
-    }
-
-    element.dataset.fxBound = "1";
-
-    element.addEventListener("pointermove", (event) => {
-      const rect = element.getBoundingClientRect();
-      const px = (event.clientX - rect.left) / rect.width;
-      const py = (event.clientY - rect.top) / rect.height;
-
-      const rotateY = (px - 0.5) * 5.5;
-      const rotateX = (0.5 - py) * 5.5;
-
-      element.style.setProperty("--rx", `${rotateX.toFixed(2)}deg`);
-      element.style.setProperty("--ry", `${rotateY.toFixed(2)}deg`);
-      element.style.setProperty("--mx", `${(px * 100).toFixed(2)}%`);
-      element.style.setProperty("--my", `${(py * 100).toFixed(2)}%`);
-    });
-
-    element.addEventListener("pointerleave", () => {
-      element.style.setProperty("--rx", "0deg");
-      element.style.setProperty("--ry", "0deg");
-      element.style.setProperty("--mx", "50%");
-      element.style.setProperty("--my", "50%");
-    });
-  });
-}
-
 // =============================
 // AUTH / PERFIL
 // =============================
@@ -291,7 +389,30 @@ async function bootstrapProfileIfNeeded(user) {
   const snap = await getDoc(userRef);
 
   if (snap.exists()) {
-    currentProfile = { id: snap.id, ...snap.data() };
+    currentProfile = {
+      id: snap.id,
+      ...snap.data(),
+      permissions: normalizePermissions(snap.data().permissions)
+    };
+    return;
+  }
+
+  const byEmail = await getDocs(query(collection(db, "users"), where("email", "==", user.email || "")));
+
+  if (!byEmail.empty) {
+    const migratedSource = byEmail.docs[0];
+    const sourceData = migratedSource.data();
+
+    const migratedProfile = {
+      ...sourceData,
+      uid: user.uid,
+      email: user.email || sourceData.email || "",
+      permissions: normalizePermissions(sourceData.permissions),
+      updatedAt: serverTimestamp()
+    };
+
+    await setDoc(userRef, migratedProfile, { merge: true });
+    currentProfile = { id: user.uid, ...migratedProfile };
     return;
   }
 
@@ -303,10 +424,28 @@ async function bootstrapProfileIfNeeded(user) {
     name: user.email?.split("@")[0] || "Usuário",
     email: user.email || "",
     role: firstRole,
+    position: firstRole === "gerencia" ? "Administrador" : "",
     sector: firstRole === "gerencia" ? "Gestão" : "Equipe",
     birthday: "",
     photoUrl: "",
     benefits: "",
+    permissions: firstRole === "gerencia"
+      ? {
+          accessInicio: true,
+          accessAgenda: true,
+          accessClientes: true,
+          accessBeneficios: true,
+          accessRh: true,
+          accessMusic: true,
+          accessAjustes: true,
+          canViewDirecao: true,
+          canEditAgenda: true,
+          canEditClientes: true,
+          canEditBeneficios: true,
+          canEditRh: true,
+          canEditAjustes: true
+        }
+      : defaultPermissions(),
     createdAt: serverTimestamp()
   };
 
@@ -316,6 +455,7 @@ async function bootstrapProfileIfNeeded(user) {
 
 async function loadCurrentProfile(user) {
   await bootstrapProfileIfNeeded(user);
+  currentProfile.permissions = normalizePermissions(currentProfile.permissions);
   userRoleBadge.textContent = currentProfile.role === "gerencia" ? "Gestão Administrador" : "Colaborador";
   currentUserEmail.textContent = currentProfile.email || "";
   welcomeText.textContent = `Olá, ${currentProfile.name || "usuário"}!`;
@@ -328,7 +468,23 @@ async function loadCurrentProfile(user) {
 async function loadUsers() {
   const q = query(collection(db, "users"), orderBy("name"));
   const snap = await getDocs(q);
-  usersData = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  const all = snap.docs.map(d => ({ id: d.id, ...d.data(), permissions: normalizePermissions(d.data().permissions) }));
+
+  const byEmail = new Map();
+  for (const user of all) {
+    const emailKey = String(user.email || user.id).toLowerCase();
+    if (!byEmail.has(emailKey)) {
+      byEmail.set(emailKey, user);
+      continue;
+    }
+
+    const existing = byEmail.get(emailKey);
+    if (existing.id !== existing.uid && user.id === user.uid) {
+      byEmail.set(emailKey, user);
+    }
+  }
+
+  usersData = Array.from(byEmail.values());
 }
 
 async function loadClients() {
@@ -409,7 +565,7 @@ function renderBirthdays() {
   birthdayList.className = "list";
   birthdayList.innerHTML = birthdays.map(user => `
     <div class="team-card">
-      <img class="team-avatar" src="${escapeHtml(user.photoUrl || './logo.png')}" alt="${escapeHtml(user.name || '')}">
+      <img class="team-avatar" src="${escapeHtml(user.photoUrl || DEFAULT_LOGO)}" alt="${escapeHtml(user.name || '')}">
       <div class="team-content">
         <h4>${escapeHtml(user.name || "")}</h4>
         <div class="team-meta">
@@ -433,7 +589,7 @@ function renderTeam() {
 
     return `
       <div class="team-card">
-        <img class="team-avatar" src="${escapeHtml(user.photoUrl || './logo.png')}" alt="${escapeHtml(user.name || '')}">
+        <img class="team-avatar" src="${escapeHtml(user.photoUrl || DEFAULT_LOGO)}" alt="${escapeHtml(user.name || '')}">
         <div class="team-content">
           <h4>${escapeHtml(user.name || "")}</h4>
           <div class="team-meta">
@@ -459,7 +615,7 @@ function fillTaskSelects() {
 }
 
 function taskCardTemplate(task, mode = "board") {
-  const canEdit = isManager();
+  const canEdit = canEditScope('agenda');
   const client = clientsData.find(c => c.id === task.clientId);
   const responsible = usersData.find(u => u.id === task.responsibleId);
   const isExtra = task.extraordinary === true;
@@ -568,7 +724,7 @@ function renderClients() {
           <h3>${escapeHtml(client.name || "")}</h3>
           <p class="team-meta">${escapeHtml(client.contractType || "-")} • ${escapeHtml(client.plan || "-")}</p>
         </div>
-        ${isManager() ? `
+        ${canEditScope('clientes') ? `
           <div class="card-actions">
             <button class="icon-btn" onclick="window.editClient('${client.id}')">✎</button>
             <button class="icon-btn danger" onclick="window.deleteClient('${client.id}')">🗑</button>
@@ -594,7 +750,7 @@ function renderBenefits() {
           <h3>${escapeHtml(benefit.name || "")}</h3>
           <p class="team-meta">${escapeHtml(benefit.type || "-")} • ${escapeHtml(benefit.value || "-")}</p>
         </div>
-        ${isManager() ? `
+        ${canEditScope('beneficios') ? `
           <div class="card-actions">
             <button class="icon-btn" onclick="window.editBenefit('${benefit.id}')">✎</button>
             <button class="icon-btn danger" onclick="window.deleteBenefit('${benefit.id}')">🗑</button>
@@ -613,25 +769,33 @@ function renderRH() {
     return;
   }
 
-  rhList.innerHTML = usersData.map(user => `
-    <div class="rh-card">
-      <div class="card-top-line">
-        <div>
-          <h3>${escapeHtml(user.name || "")}</h3>
-          <p class="team-meta">${escapeHtml(user.email || "-")}</p>
-        </div>
-        ${isManager() ? `
-          <div class="card-actions">
-            <button class="icon-btn danger" onclick="window.deleteUserProfile('${user.id}')">🗑</button>
+  rhList.innerHTML = usersData.map(user => {
+    const accessSummary = getAccessSummary(user);
+    return `
+      <div class="rh-card">
+        <div class="card-top-line">
+          <div>
+            <h3>${escapeHtml(user.name || "")}</h3>
+            <p class="team-meta">${escapeHtml(user.email || "-")}</p>
           </div>
-        ` : ""}
+          ${canEditScope('rh') ? `
+            <div class="card-actions">
+              <button class="icon-btn" onclick="window.editUserProfile('${user.id}')">✎</button>
+              <button class="icon-btn danger" onclick="window.deleteUserProfile('${user.id}')">🗑</button>
+            </div>
+          ` : ""}
+        </div>
+        <div class="team-meta"><strong>Perfil:</strong> ${escapeHtml(user.role || "-")}</div>
+        <div class="team-meta"><strong>Cargo:</strong> ${escapeHtml(user.position || "-")}</div>
+        <div class="team-meta"><strong>Setor:</strong> ${escapeHtml(user.sector || "-")}</div>
+        <div class="team-meta"><strong>Nascimento:</strong> ${user.birthday ? formatDateBR(user.birthday) : "-"}</div>
+        <div class="team-meta"><strong>Benefícios:</strong> ${escapeHtml(user.benefits || "-")}</div>
+        <div class="access-tags">
+          ${accessSummary.length ? accessSummary.map(item => `<span class="access-tag">${escapeHtml(item)}</span>`).join("") : `<span class="access-tag">Somente visualização</span>`}
+        </div>
       </div>
-      <div class="team-meta"><strong>Perfil:</strong> ${escapeHtml(user.role || "-")}</div>
-      <div class="team-meta"><strong>Setor:</strong> ${escapeHtml(user.sector || "-")}</div>
-      <div class="team-meta"><strong>Nascimento:</strong> ${user.birthday ? formatDateBR(user.birthday) : "-"}</div>
-      <div class="team-meta"><strong>Benefícios:</strong> ${escapeHtml(user.benefits || "-")}</div>
-    </div>
-  `).join("");
+    `;
+  }).join("");
 }
 
 // =============================
@@ -639,7 +803,7 @@ function renderRH() {
 // =============================
 async function saveTask(event) {
   event.preventDefault();
-  if (!isManager()) return;
+  if (!canEditScope('agenda')) return;
 
   const id = document.getElementById("task-id").value.trim();
   const payload = {
@@ -678,7 +842,7 @@ async function saveTask(event) {
 }
 
 window.editTask = function(id) {
-  if (!isManager()) return;
+  if (!canEditScope('agenda')) return;
   const task = tasksData.find(item => item.id === id);
   if (!task) return;
 
@@ -696,11 +860,10 @@ window.editTask = function(id) {
   document.getElementById("task-extraordinary").checked = task.extraordinary === true;
 
   openModal(taskModal);
-  initVisualFx();
 };
 
 window.advanceTask = async function(id) {
-  if (!isManager()) return;
+  if (!canEditScope('agenda')) return;
   const task = tasksData.find(item => item.id === id);
   if (!task) return;
 
@@ -717,7 +880,7 @@ window.advanceTask = async function(id) {
 };
 
 window.deleteTask = async function(id) {
-  if (!isManager()) return;
+  if (!canEditScope('agenda')) return;
   const ok = confirm("Deseja excluir esta demanda?");
   if (!ok) return;
 
@@ -730,7 +893,7 @@ window.deleteTask = async function(id) {
 // =============================
 async function saveClient(event) {
   event.preventDefault();
-  if (!isManager()) return;
+  if (!canEditScope('clientes')) return;
 
   const id = document.getElementById("client-id").value.trim();
   const payload = {
@@ -762,7 +925,7 @@ async function saveClient(event) {
 }
 
 window.editClient = function(id) {
-  if (!isManager()) return;
+  if (!canEditScope('clientes')) return;
   const client = clientsData.find(item => item.id === id);
   if (!client) return;
 
@@ -774,11 +937,10 @@ window.editClient = function(id) {
   document.getElementById("client-services").value = client.services || "";
 
   openModal(clientModal);
-  initVisualFx();
 };
 
 window.deleteClient = async function(id) {
-  if (!isManager()) return;
+  if (!canEditScope('clientes')) return;
   const ok = confirm("Deseja excluir este cliente?");
   if (!ok) return;
 
@@ -791,7 +953,7 @@ window.deleteClient = async function(id) {
 // =============================
 async function saveBenefit(event) {
   event.preventDefault();
-  if (!isManager()) return;
+  if (!canEditScope('beneficios')) return;
 
   const id = document.getElementById("benefit-id").value.trim();
   const payload = {
@@ -823,7 +985,7 @@ async function saveBenefit(event) {
 }
 
 window.editBenefit = function(id) {
-  if (!isManager()) return;
+  if (!canEditScope('beneficios')) return;
   const benefit = benefitsData.find(item => item.id === id);
   if (!benefit) return;
 
@@ -835,11 +997,10 @@ window.editBenefit = function(id) {
   document.getElementById("benefit-description").value = benefit.description || "";
 
   openModal(benefitModal);
-  initVisualFx();
 };
 
 window.deleteBenefit = async function(id) {
-  if (!isManager()) return;
+  if (!canEditScope('beneficios')) return;
   const ok = confirm("Deseja excluir este benefício?");
   if (!ok) return;
 
@@ -852,8 +1013,9 @@ window.deleteBenefit = async function(id) {
 // =============================
 async function saveUserProfile(event) {
   event.preventDefault();
-  if (!isManager()) return;
+  if (!canEditScope('rh')) return;
 
+  const documentId = document.getElementById("user-id").value.trim();
   const email = document.getElementById("user-email").value.trim().toLowerCase();
   const name = document.getElementById("user-name").value.trim();
 
@@ -862,17 +1024,19 @@ async function saveUserProfile(event) {
     return;
   }
 
-  const cleanId = email.replace(/[.#$[\]@]/g, "_");
+  const cleanId = documentId || email.replace(/[.#$[\]@]/g, "_");
 
   const payload = {
     uid: cleanId,
     name,
     email,
     role: document.getElementById("user-role").value,
+    position: document.getElementById("user-position").value.trim(),
     sector: document.getElementById("user-sector").value.trim(),
     birthday: document.getElementById("user-birthday").value,
     photoUrl: document.getElementById("user-photo").value.trim(),
     benefits: document.getElementById("user-benefits").value.trim(),
+    permissions: readUserPermissionsForm(),
     updatedAt: serverTimestamp(),
     createdAt: serverTimestamp()
   };
@@ -883,11 +1047,30 @@ async function saveUserProfile(event) {
   resetUserForm();
   await reloadAllData();
 
-  alert("Ficha do colaborador salva. Agora crie o acesso dele no Firebase Authentication e depois ajuste o UID se quiser integrar diretamente ao login.");
+  alert("Colaborador salvo com cargo, acessos e permissões de edição.");
 }
 
+window.editUserProfile = function(id) {
+  if (!canEditScope('rh')) return;
+  const user = usersData.find(item => item.id === id);
+  if (!user) return;
+
+  document.getElementById("user-id").value = user.id;
+  document.getElementById("user-name").value = user.name || "";
+  document.getElementById("user-email").value = user.email || "";
+  document.getElementById("user-role").value = user.role || "colaborador";
+  document.getElementById("user-position").value = user.position || "";
+  document.getElementById("user-sector").value = user.sector || "";
+  document.getElementById("user-birthday").value = user.birthday || "";
+  document.getElementById("user-photo").value = user.photoUrl || "";
+  document.getElementById("user-benefits").value = user.benefits || "";
+  fillUserPermissionsForm(user.permissions || defaultPermissions());
+
+  openModal(userModal);
+};
+
 window.deleteUserProfile = async function(id) {
-  if (!isManager()) return;
+  if (!canEditScope('rh')) return;
   if (id === currentUser.uid) {
     alert("Você não pode excluir seu próprio perfil em uso.");
     return;
@@ -904,7 +1087,7 @@ window.deleteUserProfile = async function(id) {
 // AJUSTES
 // =============================
 async function saveSettings() {
-  if (!isManager()) return;
+  if (!canEditScope('ajustes')) return;
 
   settingsData.themeColor = themeColorInput.value;
   settingsData.fontFamily = fontSelect.value;
@@ -957,25 +1140,21 @@ document.querySelectorAll("[data-close-modal]").forEach(button => {
 openTaskModalBtn?.addEventListener("click", () => {
   resetTaskForm();
   openModal(taskModal);
-  initVisualFx();
 });
 
 openClientModalBtn?.addEventListener("click", () => {
   resetClientForm();
   openModal(clientModal);
-  initVisualFx();
 });
 
 openBenefitModalBtn?.addEventListener("click", () => {
   resetBenefitForm();
   openModal(benefitModal);
-  initVisualFx();
 });
 
 openUserModalBtn?.addEventListener("click", () => {
   resetUserForm();
   openModal(userModal);
-  initVisualFx();
 });
 
 taskForm.addEventListener("submit", saveTask);
