@@ -29,13 +29,13 @@
 
           <form id="login-form" class="form">
             <div class="field">
-              <label for="login-email">E-mail</label>
-              <input type="email" id="login-email" placeholder="seuemail@empresa.com" required />
+              <label for="login-username">Usuário</label>
+              <input type="text" id="login-username" placeholder="Digite seu usuário" required autocomplete="username" />
             </div>
 
             <div class="field">
               <label for="login-password">Senha</label>
-              <input type="password" id="login-password" placeholder="Digite sua senha" required />
+              <input type="password" id="login-password" placeholder="Digite sua senha" required autocomplete="current-password" />
             </div>
 
             <button type="submit" class="btn btn-primary">Entrar</button>
@@ -438,7 +438,7 @@
       <form id="user-form" class="form">
         <input type="hidden" id="user-id" />
         <p class="small-note">
-          Você pode cadastrar o colaborador antes do login. Quando ele entrar com o e-mail no Firebase Auth, o sistema reaproveita as permissões salvas para esse e-mail.
+          Aqui você cria o acesso interno do colaborador com <strong>usuário + senha</strong>. O sistema usa um login técnico por trás, sem mostrar e-mail para o colaborador.
         </p>
 
         <div class="grid two">
@@ -447,12 +447,16 @@
             <input id="user-name" required />
           </div>
           <div class="field">
-            <label for="user-email">E-mail</label>
-            <input type="email" id="user-email" required />
+            <label for="user-username">Usuário de login</label>
+            <input id="user-username" placeholder="Ex: djonatan" required />
           </div>
         </div>
 
         <div class="grid three">
+          <div class="field">
+            <label for="user-password">Senha inicial</label>
+            <input type="password" id="user-password" placeholder="Crie uma senha" autocomplete="new-password" />
+          </div>
           <div class="field">
             <label for="user-role">Perfil</label>
             <select id="user-role" class="input">
@@ -464,17 +468,20 @@
             <label for="user-position">Cargo</label>
             <input id="user-position" placeholder="Ex: Designer, Social Media, Diretor" />
           </div>
+        </div>
+
+        <div class="grid two">
           <div class="field">
             <label for="user-sector">Setor</label>
             <input id="user-sector" />
           </div>
-        </div>
-
-        <div class="grid three">
           <div class="field">
             <label for="user-birthday">Nascimento</label>
             <input type="date" id="user-birthday" />
           </div>
+        </div>
+
+        <div class="grid two">
           <div class="field">
             <label for="user-photo">URL da foto</label>
             <input id="user-photo" />
@@ -513,6 +520,10 @@
             <label><input type="checkbox" id="perm-edit-rh" /> Editar RH</label>
             <label><input type="checkbox" id="perm-edit-ajustes" /> Editar ajustes</label>
           </div>
+        </div>
+
+        <div class="small-note">
+          Depois de criado, o colaborador entra com o <strong>usuário</strong> e a <strong>senha</strong>. Para editar informações depois, você usa o RH. Para trocar a senha depois, o ideal é recriar o acesso ou usar fluxo próprio de redefinição.
         </div>
 
         <div class="modal-actions">
