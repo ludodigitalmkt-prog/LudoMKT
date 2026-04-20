@@ -120,7 +120,8 @@ const musicFrame = document.getElementById("music-frame");
 
 const installBtn = document.getElementById("install-btn");
 
-const DEFAULT_LOGO = "data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 96 96%22%3E%3Cdefs%3E%3ClinearGradient id=%22g%22 x1=%220%22 y1=%220%22 x2=%221%22 y2=%221%22%3E%3Cstop stop-color=%22%238B252C%22/%3E%3Cstop offset=%221%22 stop-color=%22%23b73039%22/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width=%2296%22 height=%2296%22 rx=%2224%22 fill=%22url(%23g)%22/%3E%3Cpath d=%22M22 28h52v40H22z%22 fill=%22white%22 opacity=%220.18%22/%3E%3Cpath d=%22M32 24v48M48 24v48M64 24v48M24 36h48M24 52h48M24 68h48%22 stroke=%22white%22 stroke-width=%224%22 stroke-linecap=%22round%22/%3E%3C/svg%3E";
+const DEFAULT_LOGO = "./logo.png";
+const FALLBACK_LOGO = "data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 96 96%22%3E%3Cdefs%3E%3ClinearGradient id=%22g%22 x1=%220%22 y1=%220%22 x2=%221%22 y2=%221%22%3E%3Cstop stop-color=%22%238B252C%22/%3E%3Cstop offset=%221%22 stop-color=%22%23b73039%22/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width=%2296%22 height=%2296%22 rx=%2224%22 fill=%22url(%23g)%22/%3E%3Cpath d=%22M22 28h52v40H22z%22 fill=%22white%22 opacity=%220.18%22/%3E%3Cpath d=%22M32 24v48M48 24v48M64 24v48M24 36h48M24 52h48M24 68h48%22 stroke=%22white%22 stroke-width=%224%22 stroke-linecap=%22round%22/%3E%3C/svg%3E";
 
 // =============================
 // PERMISSÕES
