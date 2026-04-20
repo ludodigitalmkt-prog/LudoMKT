@@ -58,6 +58,8 @@ let settingsData = {
   fontFamily: "Inter, sans-serif"
 };
 
+let draggedTaskId = null;
+
 // =============================
 // ELEMENTOS
 // =============================
@@ -627,6 +629,62 @@ async function reloadAllData() {
 }
 
 // =============================
+// BOARD DND
+// =============================
+async function updateTaskStatus(taskId, newStatus) {
+  if (!canEditScope("agenda")) return;
+  const task = tasksData.find(item => item.id === taskId);
+  if (!task) return;
+  if (task.status === newStatus) return;
+
+  try {
+    await updateDoc(doc(db, "tasks", taskId), {
+      status: newStatus,
+      updatedAt: serverTimestamp()
+    });
+    await reloadAllData();
+  } catch (error) {
+    console.error(error);
+    alert("Não foi possível mover o card.");
+  }
+}
+
+function initBoardDnD() {
+  document.querySelectorAll('.task-list').forEach((list) => {
+    if (list.dataset.dndBound === '1') return;
+    list.dataset.dndBound = '1';
+
+    list.addEventListener('dragover', (event) => {
+      event.preventDefault();
+      if (!canEditScope("agenda")) return;
+      list.classList.add('drag-over');
+    });
+
+    list.addEventListener('dragleave', () => {
+      list.classList.remove('drag-over');
+    });
+
+    list.addEventListener('drop', async (event) => {
+      event.preventDefault();
+      list.classList.remove('drag-over');
+      if (!draggedTaskId) return;
+      await updateTaskStatus(draggedTaskId, list.dataset.status);
+      draggedTaskId = null;
+    });
+  });
+}
+
+window.startTaskDrag = function(taskId) {
+  if (!canEditScope("agenda")) return;
+  draggedTaskId = taskId;
+};
+
+window.endTaskDrag = function() {
+  draggedTaskId = null;
+  document.querySelectorAll('.task-list').forEach(list => list.classList.remove('drag-over'));
+};
+
+// =============================
 // RENDER
 // =============================
 function renderStats() {
@@ -720,7 +778,7 @@ function taskCardTemplate(task, mode = "board") {
   const isExtra = task.extraordinary === true;
 
   return `
-    <div class="task-card ${isExtra ? 'extraordinary' : ''}">
+    <div class="task-card ${isExtra ? 'extraordinary' : ''}" draggable="true" ondragstart="window.startTaskDrag('${task.id}')" ondragend="window.endTaskDrag()">
       <div class="task-title">${isExtra ? '⚡ ' : ''}${escapeHtml(task.title || "")}</div>
       <div class="task-sub">
         <div><strong>Cliente:</strong> ${escapeHtml(client?.name || "-")}</div>
@@ -740,6 +798,7 @@ function taskCardTemplate(task, mode = "board") {
 }
 
 function renderBoard() {
+  initBoardDnD();
   document.querySelectorAll(".task-list").forEach(list => {
     const status = list.dataset.status;
     const filtered = tasksData.filter(task => task.status === status);
