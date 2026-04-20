@@ -949,3 +949,80 @@ input:focus, textarea:focus, select:focus{
     padding:18px;
   }
 }
+
+
+
+/* =========================
+   TEMA DINÂMICO ESTÁVEL
+   ========================= */
+:root{
+  --sidebar-bg:#0f172a;
+  --sidebar-card:#24324a;
+  --sidebar-active:rgba(255,255,255,.12);
+  --btn-dark-bg:#263347;
+  --surface-card:rgba(255,255,255,.72);
+  --surface-soft:#f6f8fc;
+}
+
+body{
+  background:
+    radial-gradient(circle at top left, rgba(139,37,44,.08), transparent 28%),
+    radial-gradient(circle at bottom right, rgba(48,116,255,.06), transparent 24%),
+    linear-gradient(180deg, #f7f9fc 0%, #eef3f9 100%) !important;
+}
+
+.sidebar{
+  background:var(--sidebar-bg) !important;
+}
+
+.role-badge{
+  background:var(--sidebar-active) !important;
+}
+
+.menu-item:hover,
+.menu-item.active{
+  background:var(--sidebar-active) !important;
+}
+
+.btn-dark{
+  background:var(--btn-dark-bg) !important;
+}
+
+.card,
+.team-card,
+.board-column,
+.task-card,
+.client-card,
+.benefit-card,
+.rh-card,
+.direction-item,
+.calendar-cell,
+.login-card,
+.modal-card{
+  background:var(--surface-card) !important;
+}
+
+.stat,
+.calendar-mini,
+.permission-box,
+.permission-grid label{
+  background:var(--surface-soft) !important;
+}
+
+.brand-area h1,
+.topbar h1,
+.card h2,
+.card h3,
+.card h4,
+.section-header h2,
+.section-header h3{
+  font-family:var(--font-main) !important;
+}
+
+body,
+button,
+input,
+textarea,
+select{
+  font-family:var(--font-main) !important;
+}
