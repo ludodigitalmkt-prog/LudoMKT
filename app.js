@@ -639,6 +639,7 @@ function renderStats() {
 }
 
 function renderBirthdays() {
+  if (!birthdayList) return;
   const month = new Date().getMonth() + 1;
   const birthdays = usersData
     .filter(user => user.active !== false)
@@ -671,6 +672,7 @@ function renderBirthdays() {
 }
 
 function renderTeam() {
+  if (!teamCards) return;
   const activeUsers = usersData.filter(user => user.active !== false);
 
   if (!activeUsers.length) {
