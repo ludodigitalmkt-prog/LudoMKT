@@ -1,7 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
 import {
   getAuth,
-  createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   signOut,
   onAuthStateChanged
@@ -38,9 +37,6 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-// app secundário para criar usuários sem derrubar a sessão atual
-const creatorApp = initializeApp(firebaseConfig, "creator-app");
-const creatorAuth = getAuth(creatorApp);
 
 const DEFAULT_LOGO = "./logo.png";
 const FALLBACK_LOGO = "data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 96 96%22%3E%3Cdefs%3E%3ClinearGradient id=%22g%22 x1=%220%22 y1=%220%22 x2=%221%22 y2=%221%22%3E%3Cstop stop-color=%22%238B252C%22/%3E%3Cstop offset=%221%22 stop-color=%22%23b73039%22/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width=%2296%22 height=%2296%22 rx=%2224%22 fill=%22url(%23g)%22/%3E%3Cpath d=%22M22 28h52v40H22z%22 fill=%22white%22 opacity=%220.18%22/%3E%3Cpath d=%22M32 24v48M48 24v48M64 24v48M24 36h48M24 52h48M24 68h48%22 stroke=%22white%22 stroke-width=%224%22 stroke-linecap=%22round%22/%3E%3C/svg%3E";
@@ -68,7 +64,7 @@ let settingsData = {
 const loginScreen = document.getElementById("login-screen");
 const dashboardScreen = document.getElementById("dashboard-screen");
 const loginForm = document.getElementById("login-form");
-const loginUsernameInput = document.getElementById("login-username");
+const loginEmailInput = document.getElementById("login-email");
 const loginPasswordInput = document.getElementById("login-password");
 const loginMessage = document.getElementById("login-message");
 const logoutBtn = document.getElementById("logout-btn");
@@ -160,10 +156,7 @@ function makeInternalEmail(username = "") {
   return clean ? `${clean}@interno.agenda` : "";
 }
 
-function loginIdentifierToEmail(identifier = "") {
-  const clean = String(identifier).trim();
-  return clean.includes("@") ? clean : makeInternalEmail(clean);
-}
+
 
 function getLogoSrc(url) {
   return url && String(url).trim() ? url : DEFAULT_LOGO;
@@ -386,16 +379,7 @@ function resetUserForm() {
   document.getElementById("user-id").value = "";
   document.getElementById("user-role").value = "colaborador";
   document.getElementById("user-active").checked = true;
-
-  const usernameField = document.getElementById("user-username");
-  const passwordField = document.getElementById("user-password");
-
-  if (usernameField) usernameField.readOnly = false;
-  if (passwordField) {
-    passwordField.disabled = false;
-    passwordField.value = "";
-  }
-
+  document.getElementById("user-username").readOnly = false;
   fillUserPermissionsForm(defaultPermissions());
 }
 
@@ -566,9 +550,7 @@ async function loadCurrentProfile(user) {
   currentProfile.permissions = normalizePermissions(currentProfile.permissions);
 
   userRoleBadge.textContent = currentProfile.role === "gerencia" ? "Gestão Administrador" : "Colaborador";
-  currentUserEmail.textContent = currentProfile.username
-    ? `Usuário: ${currentProfile.username}`
-    : (currentProfile.email || "");
+  currentUserEmail.textContent = currentProfile.email || "";
   welcomeText.textContent = `Olá, ${currentProfile.name || "usuário"}!`;
 
   applyRoleVisibility();
@@ -1252,15 +1234,14 @@ window.editUserProfile = function(id) {
   document.getElementById("user-id").value = user.id;
   document.getElementById("user-name").value = user.name || "";
   document.getElementById("user-username").value = user.username || "";
-  document.getElementById("user-password").value = "";
-  document.getElementById("user-password").disabled = true;
-  document.getElementById("user-username").readOnly = true;
+  document.getElementById("user-username").readOnly = false;
   document.getElementById("user-role").value = user.role || "colaborador";
   document.getElementById("user-position").value = user.position || "";
   document.getElementById("user-sector").value = user.sector || "";
   document.getElementById("user-birthday").value = user.birthday || "";
   document.getElementById("user-photo").value = user.photoUrl || "";
   document.getElementById("user-benefits").value = user.benefits || "";
+  document.getElementById("user-notes").value = user.notes || "";
   document.getElementById("user-active").checked = user.active !== false;
   fillUserPermissionsForm(user.permissions || defaultPermissions());
 
@@ -1306,15 +1287,14 @@ loginForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   loginMessage.textContent = "";
 
-  const identifier = loginUsernameInput.value.trim();
+  const email = loginEmailInput.value.trim();
   const password = loginPasswordInput.value;
-  const loginEmail = loginIdentifierToEmail(identifier);
 
   try {
-    await signInWithEmailAndPassword(auth, loginEmail, password);
+    await signInWithEmailAndPassword(auth, email, password);
   } catch (error) {
     console.error(error);
-    loginMessage.textContent = "Não foi possível entrar. Verifique usuário e senha.";
+    loginMessage.textContent = "Não foi possível entrar. Verifique e-mail e senha da gestão.";
   }
 });
 
