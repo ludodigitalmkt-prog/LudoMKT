@@ -124,7 +124,6 @@ const loadMusicBtn = document.getElementById("load-music-btn");
 const musicFrame = document.getElementById("music-frame");
 
 const installBtn = document.getElementById("install-btn");
-
 // =============================
 // HELPERS
 // =============================
@@ -1425,16 +1424,21 @@ loadMusicBtn.addEventListener("click", () => {
 window.addEventListener("beforeinstallprompt", (e) => {
   e.preventDefault();
   deferredPrompt = e;
-  installBtn.classList.remove("hidden");
+
+  if (installBtn) {
+    installBtn.classList.remove("hidden");
+  }
 });
 
-installBtn.addEventListener("click", async () => {
-  if (!deferredPrompt) return;
-  deferredPrompt.prompt();
-  await deferredPrompt.userChoice;
-  deferredPrompt = null;
-  installBtn.classList.add("hidden");
-});
+if (installBtn) {
+  installBtn.addEventListener("click", async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    await deferredPrompt.userChoice;
+    deferredPrompt = null;
+    installBtn.classList.add("hidden");
+  });
+}
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
