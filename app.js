@@ -1,6 +1,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
 import {
   getAuth,
+  createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   signOut,
   onAuthStateChanged
@@ -37,6 +38,9 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
+// app secundário para criar usuários sem derrubar a sessão atual
+const creatorApp = initializeApp(firebaseConfig, "creator-app");
+const creatorAuth = getAuth(creatorApp);
 
 const DEFAULT_LOGO = "./logo.png";
 const FALLBACK_LOGO = "data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 96 96%22%3E%3Cdefs%3E%3ClinearGradient id=%22g%22 x1=%220%22 y1=%220%22 x2=%221%22 y2=%221%22%3E%3Cstop stop-color=%22%238B252C%22/%3E%3Cstop offset=%221%22 stop-color=%22%23b73039%22/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width=%2296%22 height=%2296%22 rx=%2224%22 fill=%22url(%23g)%22/%3E%3Cpath d=%22M22 28h52v40H22z%22 fill=%22white%22 opacity=%220.18%22/%3E%3Cpath d=%22M32 24v48M48 24v48M64 24v48M24 36h48M24 52h48M24 68h48%22 stroke=%22white%22 stroke-width=%224%22 stroke-linecap=%22round%22/%3E%3C/svg%3E";
@@ -66,7 +70,7 @@ let draggedTaskId = null;
 const loginScreen = document.getElementById("login-screen");
 const dashboardScreen = document.getElementById("dashboard-screen");
 const loginForm = document.getElementById("login-form");
-const loginEmailInput = document.getElementById("login-email");
+const loginUsernameInput = document.getElementById("login-username");
 const loginPasswordInput = document.getElementById("login-password");
 const loginMessage = document.getElementById("login-message");
 const logoutBtn = document.getElementById("logout-btn");
@@ -158,7 +162,10 @@ function makeInternalEmail(username = "") {
   return clean ? `${clean}@interno.agenda` : "";
 }
 
-
+function loginIdentifierToEmail(identifier = "") {
+  const clean = String(identifier).trim();
+  return clean.includes("@") ? clean : makeInternalEmail(clean);
+}
 
 function getLogoSrc(url) {
   return url && String(url).trim() ? url : DEFAULT_LOGO;
@@ -324,44 +331,36 @@ function applyRoleVisibility() {
 
 function fillUserPermissionsForm(permissions = {}) {
   const p = normalizePermissions(permissions);
-  const setChecked = (id, value) => {
-    const el = document.getElementById(id);
-    if (el) el.checked = value;
-  };
-  setChecked("perm-access-inicio", p.accessInicio);
-  setChecked("perm-access-agenda", p.accessAgenda);
-  setChecked("perm-access-clientes", p.accessClientes);
-  setChecked("perm-access-beneficios", p.accessBeneficios);
-  setChecked("perm-access-rh", p.accessRh);
-  setChecked("perm-access-music", p.accessMusic);
-  setChecked("perm-access-ajustes", p.accessAjustes);
-  setChecked("perm-view-direcao", p.canViewDirecao);
-  setChecked("perm-edit-agenda", p.canEditAgenda);
-  setChecked("perm-edit-clientes", p.canEditClientes);
-  setChecked("perm-edit-beneficios", p.canEditBeneficios);
-  setChecked("perm-edit-rh", p.canEditRh);
-  setChecked("perm-edit-ajustes", p.canEditAjustes);
+  document.getElementById("perm-access-inicio").checked = p.accessInicio;
+  document.getElementById("perm-access-agenda").checked = p.accessAgenda;
+  document.getElementById("perm-access-clientes").checked = p.accessClientes;
+  document.getElementById("perm-access-beneficios").checked = p.accessBeneficios;
+  document.getElementById("perm-access-rh").checked = p.accessRh;
+  document.getElementById("perm-access-music").checked = p.accessMusic;
+  document.getElementById("perm-access-ajustes").checked = p.accessAjustes;
+  document.getElementById("perm-view-direcao").checked = p.canViewDirecao;
+  document.getElementById("perm-edit-agenda").checked = p.canEditAgenda;
+  document.getElementById("perm-edit-clientes").checked = p.canEditClientes;
+  document.getElementById("perm-edit-beneficios").checked = p.canEditBeneficios;
+  document.getElementById("perm-edit-rh").checked = p.canEditRh;
+  document.getElementById("perm-edit-ajustes").checked = p.canEditAjustes;
 }
 
 function readUserPermissionsForm() {
-  const checked = (id) => {
-    const el = document.getElementById(id);
-    return !!el?.checked;
-  };
   return {
-    accessInicio: checked("perm-access-inicio"),
-    accessAgenda: checked("perm-access-agenda"),
-    accessClientes: checked("perm-access-clientes"),
-    accessBeneficios: checked("perm-access-beneficios"),
-    accessRh: checked("perm-access-rh"),
-    accessMusic: checked("perm-access-music"),
-    accessAjustes: checked("perm-access-ajustes"),
-    canViewDirecao: checked("perm-view-direcao"),
-    canEditAgenda: checked("perm-edit-agenda"),
-    canEditClientes: checked("perm-edit-clientes"),
-    canEditBeneficios: checked("perm-edit-beneficios"),
-    canEditRh: checked("perm-edit-rh"),
-    canEditAjustes: checked("perm-edit-ajustes")
+    accessInicio: document.getElementById("perm-access-inicio").checked,
+    accessAgenda: document.getElementById("perm-access-agenda").checked,
+    accessClientes: document.getElementById("perm-access-clientes").checked,
+    accessBeneficios: document.getElementById("perm-access-beneficios").checked,
+    accessRh: document.getElementById("perm-access-rh").checked,
+    accessMusic: document.getElementById("perm-access-music").checked,
+    accessAjustes: document.getElementById("perm-access-ajustes").checked,
+    canViewDirecao: document.getElementById("perm-view-direcao").checked,
+    canEditAgenda: document.getElementById("perm-edit-agenda").checked,
+    canEditClientes: document.getElementById("perm-edit-clientes").checked,
+    canEditBeneficios: document.getElementById("perm-edit-beneficios").checked,
+    canEditRh: document.getElementById("perm-edit-rh").checked,
+    canEditAjustes: document.getElementById("perm-edit-ajustes").checked
   };
 }
 
@@ -386,10 +385,19 @@ function resetBenefitForm() {
 
 function resetUserForm() {
   userForm.reset();
-  document.getElementById("user-id").value = "";
-  if (document.getElementById("user-role")) document.getElementById("user-role").value = "colaborador";
-  if (document.getElementById("user-active")) document.getElementById("user-active").checked = true;
-  if (document.getElementById("user-username")) document.getElementById("user-username").readOnly = false;
+  if (byId("user-id")) byId("user-id").value = "";
+  if (byId("user-role")) byId("user-role").value = "colaborador";
+  if (byId("user-active")) byId("user-active").checked = true;
+
+  const usernameField = document.getElementById("user-username");
+  const passwordField = document.getElementById("user-password");
+
+  if (usernameField) usernameField.readOnly = false;
+  if (passwordField) {
+    passwordField.disabled = false;
+    passwordField.value = "";
+  }
+
   fillUserPermissionsForm(defaultPermissions());
 }
 
@@ -407,6 +415,23 @@ function normalizeIframeUrl(url) {
     return trimmed.replace("open.spotify.com/", "open.spotify.com/embed/");
   }
   return trimmed;
+}
+
+function byId(id) {
+  return document.getElementById(id);
+}
+
+function val(id, fallback = "") {
+  return byId(id)?.value ?? fallback;
+}
+
+function trimmedVal(id, fallback = "") {
+  return String(byId(id)?.value ?? fallback).trim();
+}
+
+function checkedVal(id, fallback = false) {
+  const el = byId(id);
+  return el ? !!el.checked : fallback;
 }
 
 // =============================
@@ -560,7 +585,9 @@ async function loadCurrentProfile(user) {
   currentProfile.permissions = normalizePermissions(currentProfile.permissions);
 
   userRoleBadge.textContent = currentProfile.role === "gerencia" ? "Gestão Administrador" : "Colaborador";
-  currentUserEmail.textContent = currentProfile.email || "";
+  currentUserEmail.textContent = currentProfile.username
+    ? `Usuário: ${currentProfile.username}`
+    : (currentProfile.email || "");
   welcomeText.textContent = `Olá, ${currentProfile.name || "usuário"}!`;
 
   applyRoleVisibility();
@@ -642,8 +669,7 @@ async function reloadAllData() {
 async function updateTaskStatus(taskId, newStatus) {
   if (!canEditScope("agenda")) return;
   const task = tasksData.find(item => item.id === taskId);
-  if (!task) return;
-  if (task.status === newStatus) return;
+  if (!task || task.status === newStatus) return;
 
   try {
     await updateDoc(doc(db, "tasks", taskId), {
@@ -705,7 +731,6 @@ function renderStats() {
 }
 
 function renderBirthdays() {
-  if (!birthdayList) return;
   const month = new Date().getMonth() + 1;
   const birthdays = usersData
     .filter(user => user.active !== false)
@@ -738,7 +763,6 @@ function renderBirthdays() {
 }
 
 function renderTeam() {
-  if (!teamCards) return;
   const activeUsers = usersData.filter(user => user.active !== false);
 
   if (!activeUsers.length) {
@@ -1227,10 +1251,10 @@ async function saveUserProfile(event) {
   event.preventDefault();
   if (!canEditScope("rh")) return;
 
-  const documentId = document.getElementById("user-id").value.trim();
-  const username = sanitizeUsername(document.getElementById("user-username").value);
-  const name = document.getElementById("user-name").value.trim();
-  const initialPassword = document.getElementById("user-password").value;
+  const documentId = trimmedVal("user-id");
+  const username = sanitizeUsername(val("user-username"));
+  const name = trimmedVal("user-name");
+  const initialPassword = val("user-password");
   const internalEmail = makeInternalEmail(username);
 
   if (!name || !username) {
@@ -1271,13 +1295,13 @@ async function saveUserProfile(event) {
     name,
     username,
     email: storedEmail,
-    role: document.getElementById("user-role")?.value || "colaborador",
-    position: document.getElementById("user-position")?.value?.trim() || "",
-    sector: document.getElementById("user-sector")?.value?.trim() || "",
-    birthday: document.getElementById("user-birthday")?.value || "",
-    photoUrl: document.getElementById("user-photo")?.value?.trim() || "",
-    benefits: document.getElementById("user-benefits")?.value?.trim() || "",
-    active: document.getElementById("user-active") ? document.getElementById("user-active").checked : true,
+    role: val("user-role", "colaborador"),
+    position: trimmedVal("user-position"),
+    sector: trimmedVal("user-sector"),
+    birthday: val("user-birthday"),
+    photoUrl: trimmedVal("user-photo"),
+    benefits: trimmedVal("user-benefits"),
+    active: checkedVal("user-active", true),
     permissions: readUserPermissionsForm(),
     updatedAt: serverTimestamp(),
     createdAt: serverTimestamp()
@@ -1300,18 +1324,19 @@ window.editUserProfile = function(id) {
   const user = usersData.find(item => item.id === id);
   if (!user) return;
 
-  document.getElementById("user-id").value = user.id;
-  document.getElementById("user-name").value = user.name || "";
-  document.getElementById("user-username").value = user.username || "";
-  if (document.getElementById("user-username")) document.getElementById("user-username").readOnly = false;
-  if (document.getElementById("user-role")) document.getElementById("user-role").value = user.role || "colaborador";
-  if (document.getElementById("user-position")) document.getElementById("user-position").value = user.position || "";
-  if (document.getElementById("user-sector")) document.getElementById("user-sector").value = user.sector || "";
-  if (document.getElementById("user-birthday")) document.getElementById("user-birthday").value = user.birthday || "";
-  if (document.getElementById("user-photo")) document.getElementById("user-photo").value = user.photoUrl || "";
-  if (document.getElementById("user-benefits")) document.getElementById("user-benefits").value = user.benefits || "";
-  if (document.getElementById("user-notes")) document.getElementById("user-notes").value = user.notes || "";
-  if (document.getElementById("user-active")) document.getElementById("user-active").checked = user.active !== false;
+  if (byId("user-id")) byId("user-id").value = user.id;
+  if (byId("user-name")) byId("user-name").value = user.name || "";
+  if (byId("user-username")) byId("user-username").value = user.username || "";
+  if (byId("user-password")) byId("user-password").value = "";
+  if (byId("user-password")) byId("user-password").disabled = true;
+  if (byId("user-username")) byId("user-username").readOnly = true;
+  if (byId("user-role")) byId("user-role").value = user.role || "colaborador";
+  if (byId("user-position")) byId("user-position").value = user.position || "";
+  if (byId("user-sector")) byId("user-sector").value = user.sector || "";
+  if (byId("user-birthday")) byId("user-birthday").value = user.birthday || "";
+  if (byId("user-photo")) byId("user-photo").value = user.photoUrl || "";
+  if (byId("user-benefits")) byId("user-benefits").value = user.benefits || "";
+  if (byId("user-active")) byId("user-active").checked = user.active !== false;
   fillUserPermissionsForm(user.permissions || defaultPermissions());
 
   openModal(userModal);
@@ -1356,14 +1381,15 @@ loginForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   loginMessage.textContent = "";
 
-  const email = loginEmailInput.value.trim();
+  const identifier = (loginUsernameInput?.value || byId("login-email")?.value || "").trim();
   const password = loginPasswordInput.value;
+  const loginEmail = loginIdentifierToEmail(identifier);
 
   try {
-    await signInWithEmailAndPassword(auth, email, password);
+    await signInWithEmailAndPassword(auth, loginEmail, password);
   } catch (error) {
     console.error(error);
-    loginMessage.textContent = "Não foi possível entrar. Verifique e-mail e senha da gestão.";
+    loginMessage.textContent = "Não foi possível entrar. Verifique usuário e senha.";
   }
 });
 
@@ -1415,35 +1441,23 @@ benefitForm.addEventListener("submit", saveBenefit);
 userForm.addEventListener("submit", saveUserProfile);
 saveSettingsBtn?.addEventListener("click", saveSettings);
 
-directionDateInput.addEventListener("change", renderDirection);
-calendarMonthInput.addEventListener("change", renderCalendar);
+if (directionDateInput) directionDateInput.addEventListener("change", renderDirection);
+if (calendarMonthInput) calendarMonthInput.addEventListener("change", renderCalendar);
 
-loadMusicBtn.addEventListener("click", () => {
-  const url = normalizeIframeUrl(musicUrlInput.value);
-  if (!url) {
-    alert("Cole uma URL válida.");
-    return;
-  }
-  musicFrame.src = url;
-});
+if (loadMusicBtn && musicUrlInput && musicFrame) {
+  loadMusicBtn.addEventListener("click", () => {
+    const url = normalizeIframeUrl(musicUrlInput.value);
+    if (!url) {
+      alert("Cole uma URL válida.");
+      return;
+    }
+    musicFrame.src = url;
+  });
+}
 
 // =============================
 // PWA
 // =============================
-window.addEventListener("beforeinstallprompt", (e) => {
-  e.preventDefault();
-  deferredPrompt = e;
-  installBtn.classList.remove("hidden");
-});
-
-installBtn.addEventListener("click", async () => {
-  if (!deferredPrompt) return;
-  deferredPrompt.prompt();
-  await deferredPrompt.userChoice;
-  deferredPrompt = null;
-  installBtn.classList.add("hidden");
-});
-
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
     navigator.serviceWorker.register("./sw.js").catch(err => {
