@@ -1028,17 +1028,7 @@ select{
 }
 
 
-.task-list.drag-over{
-  background:rgba(139,37,44,.05);
-  border:1px dashed var(--primary);
-  border-radius:18px;
-  padding:8px;
-}
-
-.task-card[draggable="true"]{
-  cursor:grab;
-}
-
-.task-card[draggable="true"]:active{
-  cursor:grabbing;
-}
+#install-btn{display:none !important;}
+.task-list.drag-over{background:rgba(139,37,44,.05);border:1px dashed var(--primary);border-radius:18px;padding:8px;}
+.task-card[draggable="true"]{cursor:grab;}
+.task-card[draggable="true"]:active{cursor:grabbing;}
