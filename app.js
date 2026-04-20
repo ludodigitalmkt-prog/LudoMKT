@@ -37,8 +37,14 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
-const userCreatorApp = initializeApp(firebaseConfig, "user-creator-app");
-const userCreatorAuth = getAuth(userCreatorApp);
+
+// app secundário para criar usuários sem derrubar a sessão atual
+const creatorApp = initializeApp(firebaseConfig, "creator-app");
+const creatorAuth = getAuth(creatorApp);
+
+const DEFAULT_LOGO = "./logo.png";
+const FALLBACK_LOGO = "data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 96 96%22%3E%3Cdefs%3E%3ClinearGradient id=%22g%22 x1=%220%22 y1=%220%22 x2=%221%22 y2=%221%22%3E%3Cstop stop-color=%22%238B252C%22/%3E%3Cstop offset=%221%22 stop-color=%22%23b73039%22/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width=%2296%22 height=%2296%22 rx=%2224%22 fill=%22url(%23g)%22/%3E%3Cpath d=%22M22 28h52v40H22z%22 fill=%22white%22 opacity=%220.18%22/%3E%3Cpath d=%22M32 24v48M48 24v48M64 24v48M24 36h48M24 52h48M24 68h48%22 stroke=%22white%22 stroke-width=%224%22 stroke-linecap=%22round%22/%3E%3C/svg%3E";
+const SETTINGS_KEY = "agenda_inteligente_settings_v2";
 
 // =============================
 // ESTADO
@@ -63,6 +69,7 @@ const loginScreen = document.getElementById("login-screen");
 const dashboardScreen = document.getElementById("dashboard-screen");
 const loginForm = document.getElementById("login-form");
 const loginUsernameInput = document.getElementById("login-username");
+const loginPasswordInput = document.getElementById("login-password");
 const loginMessage = document.getElementById("login-message");
 const logoutBtn = document.getElementById("logout-btn");
 
@@ -120,12 +127,61 @@ const musicFrame = document.getElementById("music-frame");
 
 const installBtn = document.getElementById("install-btn");
 
-const DEFAULT_LOGO = "./logo.png";
-const FALLBACK_LOGO = "data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 96 96%22%3E%3Cdefs%3E%3ClinearGradient id=%22g%22 x1=%220%22 y1=%220%22 x2=%221%22 y2=%221%22%3E%3Cstop stop-color=%22%238B252C%22/%3E%3Cstop offset=%221%22 stop-color=%22%23b73039%22/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width=%2296%22 height=%2296%22 rx=%2224%22 fill=%22url(%23g)%22/%3E%3Cpath d=%22M22 28h52v40H22z%22 fill=%22white%22 opacity=%220.18%22/%3E%3Cpath d=%22M32 24v48M48 24v48M64 24v48M24 36h48M24 52h48M24 68h48%22 stroke=%22white%22 stroke-width=%224%22 stroke-linecap=%22round%22/%3E%3C/svg%3E";
+// =============================
+// HELPERS
+// =============================
+function formatDateBR(dateString) {
+  if (!dateString) return "-";
+  const [year, month, day] = dateString.split("-");
+  return `${day}/${month}/${year}`;
+}
 
-// =============================
-// PERMISSÕES
-// =============================
+function escapeHtml(str = "") {
+  return String(str)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
+
+function sanitizeUsername(value = "") {
+  return String(value)
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, ".")
+    .replace(/[^a-z0-9._-]/g, "");
+}
+
+function makeInternalEmail(username = "") {
+  const clean = sanitizeUsername(username);
+  return clean ? `${clean}@interno.agenda` : "";
+}
+
+function loginIdentifierToEmail(identifier = "") {
+  const clean = String(identifier).trim();
+  return clean.includes("@") ? clean : makeInternalEmail(clean);
+}
+
+function getLogoSrc(url) {
+  return url && String(url).trim() ? url : DEFAULT_LOGO;
+}
+
+function showScreen(screen) {
+  [loginScreen, dashboardScreen].forEach(s => s.classList.remove("active"));
+  screen.classList.add("active");
+}
+
+function openModal(modal) {
+  modal.classList.remove("hidden");
+}
+
+function closeModal(modal) {
+  modal.classList.add("hidden");
+}
+
 function defaultPermissions() {
   return {
     accessInicio: true,
@@ -155,9 +211,14 @@ function getUserPermissions() {
   return normalizePermissions(currentProfile?.permissions || {});
 }
 
+function isManager() {
+  return currentProfile?.role === "gerencia";
+}
+
 function hasTabAccess(tabName) {
   if (isManager()) return true;
   const p = getUserPermissions();
+
   const map = {
     inicio: p.accessInicio,
     agenda: p.accessAgenda,
@@ -167,12 +228,14 @@ function hasTabAccess(tabName) {
     music: p.accessMusic,
     ajustes: p.accessAjustes
   };
+
   return !!map[tabName];
 }
 
 function canEditScope(scope) {
   if (isManager()) return true;
   const p = getUserPermissions();
+
   const map = {
     agenda: p.canEditAgenda,
     clientes: p.canEditClientes,
@@ -180,6 +243,7 @@ function canEditScope(scope) {
     rh: p.canEditRh,
     ajustes: p.canEditAjustes
   };
+
   return !!map[scope];
 }
 
@@ -188,66 +252,67 @@ function canViewDirecao() {
   return !!getUserPermissions().canViewDirecao;
 }
 
-function getAccessSummary(user) {
-  const perms = normalizePermissions(user?.permissions || {});
-  const summary = [];
-  if (perms.canEditAgenda) summary.push("Editor agenda");
-  if (perms.canEditClientes) summary.push("Editor clientes");
-  if (perms.canEditBeneficios) summary.push("Editor benefícios");
-  if (perms.canEditRh) summary.push("Editor RH");
-  if (perms.canEditAjustes) summary.push("Editor ajustes");
-  return summary;
+function normalizeHex(hex) {
+  const value = String(hex || "").trim();
+  if (!value.startsWith("#")) return "#8B252C";
+  if (value.length === 4) {
+    return "#" + value.slice(1).split("").map(char => char + char).join("");
+  }
+  return value.length === 7 ? value : "#8B252C";
 }
 
-function initVisualFx() {
-  document.querySelectorAll(".card, .team-card, .board-column, .task-card, .client-card, .benefit-card, .rh-card, .direction-item, .calendar-cell, .login-card, .modal-card")
-    .forEach((element) => element.classList.add("fx-ready"));
+function hexToRgb(hex) {
+  const clean = normalizeHex(hex).replace("#", "");
+  const num = parseInt(clean, 16);
+  return {
+    r: (num >> 16) & 255,
+    g: (num >> 8) & 255,
+    b: num & 255
+  };
 }
 
-// =============================
-// HELPERS
-// =============================
-function formatDateBR(dateString) {
-  if (!dateString) return "-";
-  const [year, month, day] = dateString.split("-");
-  return `${day}/${month}/${year}`;
+function shadeHex(hex, factor = 0) {
+  const { r, g, b } = hexToRgb(hex);
+  const calc = (value) => Math.min(255, Math.max(0, Math.round(value + (255 - value) * factor)));
+  const calcDark = (value) => Math.min(255, Math.max(0, Math.round(value * (1 + factor))));
+  const apply = factor >= 0 ? calc : calcDark;
+  const rr = apply(r).toString(16).padStart(2, "0");
+  const gg = apply(g).toString(16).padStart(2, "0");
+  const bb = apply(b).toString(16).padStart(2, "0");
+  return `#${rr}${gg}${bb}`;
 }
 
-function monthNamePt(monthIndex) {
-  const names = [
-    "janeiro", "fevereiro", "março", "abril", "maio", "junho",
-    "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"
-  ];
-  return names[monthIndex];
-}
+function setActiveTab(tabName) {
+  if (!hasTabAccess(tabName)) {
+    const firstAllowed = Array.from(menuItems).find(item => hasTabAccess(item.dataset.tab));
+    tabName = firstAllowed ? firstAllowed.dataset.tab : "inicio";
+  }
 
-function escapeHtml(str = "") {
-  return String(str)
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
-}
+  menuItems.forEach(item => item.classList.toggle("active", item.dataset.tab === tabName));
+  tabs.forEach(tab => tab.classList.toggle("active", tab.id === `tab-${tabName}`));
 
-function isManager() {
-  return currentProfile?.role === "gerencia";
+  const titles = {
+    inicio: "Tela Inicial",
+    agenda: "Agenda",
+    clientes: "Clientes",
+    beneficios: "Benefícios",
+    rh: "RH",
+    music: "Music",
+    ajustes: "Ajustes"
+  };
+
+  pageTitle.textContent = titles[tabName] || "Sistema";
 }
 
 function applyRoleVisibility() {
   document.querySelectorAll(".manager-only").forEach(el => {
     const scope = el.dataset.editorScope || "";
     const shouldShow = scope ? canEditScope(scope) : isManager();
-    if (shouldShow) {
-      el.classList.remove("is-hidden-by-role");
-    } else {
-      el.classList.add("is-hidden-by-role");
-    }
+    el.classList.toggle("is-hidden-by-role", !shouldShow);
   });
 
   menuItems.forEach(item => {
-    const allowed = hasTabAccess(item.dataset.tab);
-    item.classList.toggle("is-hidden-by-access", !allowed);
+    item.classList.toggle("is-hidden-by-access", !hasTabAccess(item.dataset.tab));
   });
 
   const directionOption = document.querySelector('#agenda-view-select option[value="direcao"]');
@@ -260,50 +325,6 @@ function applyRoleVisibility() {
       agendaDirecaoView.classList.remove("active");
     }
   }
-}
-
-function showScreen(screen) {
-  [loginScreen, dashboardScreen].forEach(s => s.classList.remove("active"));
-  screen.classList.add("active");
-}
-
-function openModal(modal) {
-  modal.classList.remove("hidden");
-}
-
-function closeModal(modal) {
-  modal.classList.add("hidden");
-}
-
-function resetTaskForm() {
-  taskForm.reset();
-  document.getElementById("task-id").value = "";
-  document.getElementById("task-status").value = "a_fazer";
-  document.getElementById("task-priority").value = "media";
-  document.getElementById("task-date").value = new Date().toISOString().slice(0, 10);
-}
-
-function resetClientForm() {
-  clientForm.reset();
-  document.getElementById("client-id").value = "";
-}
-
-function resetBenefitForm() {
-  benefitForm.reset();
-  document.getElementById("benefit-id").value = "";
-  document.getElementById("benefit-status").value = "ativo";
-}
-
-function resetUserForm() {
-  userForm.reset();
-  document.getElementById('user-id').value = '';
-  document.getElementById('user-role').value = 'colaborador';
-  document.getElementById('user-active').checked = true;
-  const usernameField = document.getElementById('user-username');
-  const passwordField = document.getElementById('user-password');
-  if (usernameField) usernameField.readOnly = false;
-  if (passwordField) passwordField.disabled = false;
-  fillUserPermissionsForm(defaultPermissions());
 }
 
 function fillUserPermissionsForm(permissions = {}) {
@@ -341,42 +362,45 @@ function readUserPermissionsForm() {
   };
 }
 
-function setActiveTab(tabName) {
-  if (!hasTabAccess(tabName)) {
-    const firstAvailable = Array.from(menuItems).find(item => hasTabAccess(item.dataset.tab));
-    if (firstAvailable) {
-      tabName = firstAvailable.dataset.tab;
-    } else {
-      tabName = "inicio";
-    }
-  }
-
-  menuItems.forEach(item => item.classList.toggle("active", item.dataset.tab === tabName));
-  tabs.forEach(tab => tab.classList.toggle("active", tab.id === `tab-${tabName}`));
-
-  const titles = {
-    inicio: "Tela Inicial",
-    agenda: "Agenda",
-    clientes: "Clientes",
-    beneficios: "Benefícios",
-    rh: "RH",
-    music: "Music",
-    ajustes: "Ajustes"
-  };
-
-  pageTitle.textContent = titles[tabName] || "Sistema";
+function resetTaskForm() {
+  taskForm.reset();
+  document.getElementById("task-id").value = "";
+  document.getElementById("task-status").value = "a_fazer";
+  document.getElementById("task-priority").value = "media";
+  document.getElementById("task-date").value = new Date().toISOString().slice(0, 10);
 }
 
-function applySettings() {
-  document.documentElement.style.setProperty("--primary", settingsData.themeColor || "#8B252C");
-  document.documentElement.style.setProperty("--font-main", settingsData.fontFamily || "Inter, sans-serif");
+function resetClientForm() {
+  clientForm.reset();
+  document.getElementById("client-id").value = "";
+}
 
-  themeColorInput.value = settingsData.themeColor || "#8B252C";
-  fontSelect.value = settingsData.fontFamily || "Inter, sans-serif";
+function resetBenefitForm() {
+  benefitForm.reset();
+  document.getElementById("benefit-id").value = "";
+  document.getElementById("benefit-status").value = "ativo";
+}
+
+function resetUserForm() {
+  userForm.reset();
+  document.getElementById("user-id").value = "";
+  document.getElementById("user-role").value = "colaborador";
+  document.getElementById("user-active").checked = true;
+
+  const usernameField = document.getElementById("user-username");
+  const passwordField = document.getElementById("user-password");
+
+  if (usernameField) usernameField.readOnly = false;
+  if (passwordField) {
+    passwordField.disabled = false;
+    passwordField.value = "";
+  }
+
+  fillUserPermissionsForm(defaultPermissions());
 }
 
 function normalizeIframeUrl(url) {
-  const trimmed = url.trim();
+  const trimmed = String(url || "").trim();
   if (!trimmed) return "";
 
   if (trimmed.includes("open.spotify.com/playlist/")) {
@@ -391,28 +415,77 @@ function normalizeIframeUrl(url) {
   return trimmed;
 }
 
-function sanitizeUsername(value = "") {
-  return String(value)
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
-    .trim()
-    .replace(/\s+/g, ".")
-    .replace(/[^a-z0-9._-]/g, "");
+// =============================
+// SETTINGS
+// =============================
+function applySettings() {
+  const color = normalizeHex(settingsData.themeColor || "#8B252C");
+  const font = settingsData.fontFamily || "Inter, sans-serif";
+
+  document.documentElement.style.setProperty("--primary", color);
+  document.documentElement.style.setProperty("--primary-2", shadeHex(color, -0.12));
+  document.documentElement.style.setProperty("--font-main", font);
+
+  document.documentElement.style.setProperty("--sidebar-bg", shadeHex(color, -0.84));
+  document.documentElement.style.setProperty("--sidebar-card", shadeHex(color, -0.72));
+  document.documentElement.style.setProperty("--sidebar-active", "rgba(255,255,255,.14)");
+  document.documentElement.style.setProperty("--btn-dark-bg", shadeHex(color, -0.68));
+  document.documentElement.style.setProperty("--surface-card", "rgba(255,255,255,.72)");
+  document.documentElement.style.setProperty("--surface-soft", "#f6f8fc");
+
+  themeColorInput.value = color;
+  fontSelect.value = font;
 }
 
-function makeInternalEmail(username = "") {
-  const clean = sanitizeUsername(username);
-  return clean ? `${clean}@interno.agenda` : "";
+function loadSettingsFromLocal() {
+  try {
+    const raw = localStorage.getItem(SETTINGS_KEY);
+    if (!raw) return;
+    settingsData = {
+      ...settingsData,
+      ...JSON.parse(raw)
+    };
+  } catch (error) {
+    console.error("Erro ao ler settings do localStorage:", error);
+  }
 }
 
-function loginIdentifierToEmail(identifier = "") {
-  const clean = String(identifier).trim();
-  return clean.includes("@") ? clean : makeInternalEmail(clean);
+async function loadSettingsFromCloud() {
+  try {
+    const ref = doc(db, "settings", "global");
+    const snap = await getDoc(ref);
+    if (snap.exists()) {
+      settingsData = {
+        ...settingsData,
+        ...snap.data()
+      };
+      localStorage.setItem(SETTINGS_KEY, JSON.stringify(settingsData));
+    }
+  } catch (error) {
+    console.warn("Não foi possível ler settings online. Usando local.", error);
+  }
+}
+
+async function saveSettings() {
+  if (!canEditScope("ajustes")) return;
+
+  settingsData.themeColor = themeColorInput.value;
+  settingsData.fontFamily = fontSelect.value;
+
+  applySettings();
+  localStorage.setItem(SETTINGS_KEY, JSON.stringify(settingsData));
+
+  try {
+    await setDoc(doc(db, "settings", "global"), settingsData, { merge: true });
+    alert("Ajustes salvos.");
+  } catch (error) {
+    console.warn(error);
+    alert("Ajustes aplicados e salvos localmente neste navegador.");
+  }
 }
 
 // =============================
-// AUTH / PERFIL
+// PERFIL / AUTH
 // =============================
 async function bootstrapProfileIfNeeded(user) {
   const userRef = doc(db, "users", user.uid);
@@ -422,6 +495,7 @@ async function bootstrapProfileIfNeeded(user) {
     currentProfile = {
       id: snap.id,
       ...snap.data(),
+      active: snap.data().active !== false,
       permissions: normalizePermissions(snap.data().permissions)
     };
     return;
@@ -430,21 +504,21 @@ async function bootstrapProfileIfNeeded(user) {
   const byEmail = await getDocs(query(collection(db, "users"), where("email", "==", user.email || "")));
 
   if (!byEmail.empty) {
-    const migratedSource = byEmail.docs[0];
-    const sourceData = migratedSource.data();
+    const source = byEmail.docs[0];
+    const sourceData = source.data();
 
-    const migratedProfile = {
+    const migrated = {
       ...sourceData,
       uid: user.uid,
-      username: sourceData.username || sanitizeUsername((user.email || sourceData.email || "").split("@")[0]),
       email: user.email || sourceData.email || "",
+      username: sourceData.username || sanitizeUsername((user.email || "").split("@")[0]),
       active: sourceData.active !== false,
       permissions: normalizePermissions(sourceData.permissions),
       updatedAt: serverTimestamp()
     };
 
-    await setDoc(userRef, migratedProfile, { merge: true });
-    currentProfile = { id: user.uid, ...migratedProfile };
+    await setDoc(userRef, migrated, { merge: true });
+    currentProfile = { id: user.uid, ...migrated };
     return;
   }
 
@@ -490,9 +564,13 @@ async function bootstrapProfileIfNeeded(user) {
 async function loadCurrentProfile(user) {
   await bootstrapProfileIfNeeded(user);
   currentProfile.permissions = normalizePermissions(currentProfile.permissions);
+
   userRoleBadge.textContent = currentProfile.role === "gerencia" ? "Gestão Administrador" : "Colaborador";
-  currentUserEmail.textContent = currentProfile.username ? `Usuário: ${currentProfile.username}` : (currentProfile.email || "");
+  currentUserEmail.textContent = currentProfile.username
+    ? `Usuário: ${currentProfile.username}`
+    : (currentProfile.email || "");
   welcomeText.textContent = `Olá, ${currentProfile.name || "usuário"}!`;
+
   applyRoleVisibility();
 }
 
@@ -502,23 +580,30 @@ async function loadCurrentProfile(user) {
 async function loadUsers() {
   const q = query(collection(db, "users"), orderBy("name"));
   const snap = await getDocs(q);
-  const all = snap.docs.map(d => ({ id: d.id, ...d.data(), active: d.data().active !== false, permissions: normalizePermissions(d.data().permissions) }));
 
-  const byEmail = new Map();
+  const all = snap.docs.map(d => ({
+    id: d.id,
+    ...d.data(),
+    active: d.data().active !== false,
+    permissions: normalizePermissions(d.data().permissions)
+  }));
+
+  const byLogin = new Map();
+
   for (const user of all) {
-    const emailKey = String(user.username || user.email || user.id).toLowerCase();
-    if (!byEmail.has(emailKey)) {
-      byEmail.set(emailKey, user);
+    const key = String(user.username || user.email || user.id).toLowerCase();
+    if (!byLogin.has(key)) {
+      byLogin.set(key, user);
       continue;
     }
 
-    const existing = byEmail.get(emailKey);
+    const existing = byLogin.get(key);
     if (existing.id !== existing.uid && user.id === user.uid) {
-      byEmail.set(emailKey, user);
+      byLogin.set(key, user);
     }
   }
 
-  usersData = Array.from(byEmail.values());
+  usersData = Array.from(byLogin.values());
 }
 
 async function loadClients() {
@@ -539,22 +624,12 @@ async function loadTasks() {
   tasksData = snap.docs.map(d => ({ id: d.id, ...d.data() }));
 }
 
-async function loadSettings() {
-  const ref = doc(db, "settings", "global");
-  const snap = await getDoc(ref);
-  if (snap.exists()) {
-    settingsData = { ...settingsData, ...snap.data() };
-  }
-  applySettings();
-}
-
 async function reloadAllData() {
   await Promise.all([
     loadUsers(),
     loadClients(),
     loadBenefits(),
-    loadTasks(),
-    loadSettings()
+    loadTasks()
   ]);
 
   renderTeam();
@@ -567,7 +642,6 @@ async function reloadAllData() {
   renderBoard();
   renderDirection();
   renderCalendar();
-  initVisualFx();
 }
 
 // =============================
@@ -584,11 +658,13 @@ function renderStats() {
 
 function renderBirthdays() {
   const month = new Date().getMonth() + 1;
-  const birthdays = usersData.filter(user => user.active !== false).filter(user => {
-    if (!user.birthday) return false;
-    const birthMonth = Number(user.birthday.split("-")[1]);
-    return birthMonth === month;
-  });
+  const birthdays = usersData
+    .filter(user => user.active !== false)
+    .filter(user => {
+      if (!user.birthday) return false;
+      const birthMonth = Number(user.birthday.split("-")[1]);
+      return birthMonth === month;
+    });
 
   if (!birthdays.length) {
     birthdayList.className = "list empty-state";
@@ -599,10 +675,11 @@ function renderBirthdays() {
   birthdayList.className = "list";
   birthdayList.innerHTML = birthdays.map(user => `
     <div class="team-card">
-      <img class="team-avatar" src="${escapeHtml(user.photoUrl || DEFAULT_LOGO)}" alt="${escapeHtml(user.name || '')}">
+      <img class="team-avatar" src="${escapeHtml(getLogoSrc(user.photoUrl))}" alt="${escapeHtml(user.name || "")}" onerror="this.onerror=null;this.src='${FALLBACK_LOGO}'">
       <div class="team-content">
         <h4>${escapeHtml(user.name || "")}</h4>
         <div class="team-meta">
+          <div>Usuário: ${escapeHtml(user.username || "-")}</div>
           <div>Setor: ${escapeHtml(user.sector || "-")}</div>
           <div>Aniversário: ${formatDateBR(user.birthday)}</div>
         </div>
@@ -625,14 +702,14 @@ function renderTeam() {
 
     return `
       <div class="team-card">
-        <img class="team-avatar" src="${escapeHtml(user.photoUrl || DEFAULT_LOGO)}" alt="${escapeHtml(user.name || '')}">
+        <img class="team-avatar" src="${escapeHtml(getLogoSrc(user.photoUrl))}" alt="${escapeHtml(user.name || "")}" onerror="this.onerror=null;this.src='${FALLBACK_LOGO}'">
         <div class="team-content">
           <h4>${escapeHtml(user.name || "")}</h4>
           <div class="team-meta">
+            <div>Usuário: ${escapeHtml(user.username || "-")}</div>
+            <div>Cargo: ${escapeHtml(user.position || "-")}</div>
             <div>Setor: ${escapeHtml(user.sector || "-")}</div>
-            <div>Aniversário: ${user.birthday ? formatDateBR(user.birthday) : "-"}</div>
-            <div>${userTasksToday.length} do dia</div>
-            <div>${doneCount} concluída(s)</div>
+            <div>${userTasksToday.length} do dia • ${doneCount} concluída(s)</div>
           </div>
         </div>
       </div>
@@ -653,7 +730,7 @@ function fillTaskSelects() {
 }
 
 function taskCardTemplate(task, mode = "board") {
-  const canEdit = canEditScope('agenda');
+  const canEdit = canEditScope("agenda");
   const client = clientsData.find(c => c.id === task.clientId);
   const responsible = usersData.find(u => u.id === task.responsibleId);
   const isExtra = task.extraordinary === true;
@@ -762,7 +839,7 @@ function renderClients() {
           <h3>${escapeHtml(client.name || "")}</h3>
           <p class="team-meta">${escapeHtml(client.contractType || "-")} • ${escapeHtml(client.plan || "-")}</p>
         </div>
-        ${canEditScope('clientes') ? `
+        ${canEditScope("clientes") ? `
           <div class="card-actions">
             <button class="icon-btn" onclick="window.editClient('${client.id}')">✎</button>
             <button class="icon-btn danger" onclick="window.deleteClient('${client.id}')">🗑</button>
@@ -788,7 +865,7 @@ function renderBenefits() {
           <h3>${escapeHtml(benefit.name || "")}</h3>
           <p class="team-meta">${escapeHtml(benefit.type || "-")} • ${escapeHtml(benefit.value || "-")}</p>
         </div>
-        ${canEditScope('beneficios') ? `
+        ${canEditScope("beneficios") ? `
           <div class="card-actions">
             <button class="icon-btn" onclick="window.editBenefit('${benefit.id}')">✎</button>
             <button class="icon-btn danger" onclick="window.deleteBenefit('${benefit.id}')">🗑</button>
@@ -799,6 +876,17 @@ function renderBenefits() {
       <div class="team-meta">${escapeHtml(benefit.description || "-")}</div>
     </div>
   `).join("");
+}
+
+function getAccessSummary(user) {
+  const perms = normalizePermissions(user?.permissions || {});
+  const summary = [];
+  if (perms.canEditAgenda) summary.push("Editor agenda");
+  if (perms.canEditClientes) summary.push("Editor clientes");
+  if (perms.canEditBeneficios) summary.push("Editor benefícios");
+  if (perms.canEditRh) summary.push("Editor RH");
+  if (perms.canEditAjustes) summary.push("Editor ajustes");
+  return summary;
 }
 
 function renderRH() {
@@ -818,7 +906,7 @@ function renderRH() {
             <h3>${escapeHtml(user.name || "")}</h3>
             <p class="team-meta">Usuário: ${escapeHtml(user.username || "-")}</p>
           </div>
-          ${canEditScope('rh') ? `
+          ${canEditScope("rh") ? `
             <div class="card-actions">
               <button class="icon-btn" onclick="window.editUserProfile('${user.id}')">✎</button>
               <button class="icon-btn ${isActive ? 'danger' : 'success'}" onclick="window.toggleUserActive('${user.id}')">${isActive ? '⏸' : '▶'}</button>
@@ -830,7 +918,6 @@ function renderRH() {
         <div class="team-meta"><strong>Cargo:</strong> ${escapeHtml(user.position || "-")}</div>
         <div class="team-meta"><strong>Setor:</strong> ${escapeHtml(user.sector || "-")}</div>
         <div class="team-meta"><strong>Status:</strong> ${isActive ? "Ativo" : "Inativo"}</div>
-        <div class="team-meta"><strong>Nascimento:</strong> ${user.birthday ? formatDateBR(user.birthday) : "-"}</div>
         <div class="team-meta"><strong>Benefícios:</strong> ${escapeHtml(user.benefits || "-")}</div>
         <div class="access-tags">
           <span class="access-tag ${isActive ? '' : 'inactive'}">${isActive ? 'Ativo na agenda' : 'Fora da agenda'}</span>
@@ -846,7 +933,7 @@ function renderRH() {
 // =============================
 async function saveTask(event) {
   event.preventDefault();
-  if (!canEditScope('agenda')) return;
+  if (!canEditScope("agenda")) return;
 
   const id = document.getElementById("task-id").value.trim();
   const payload = {
@@ -869,23 +956,28 @@ async function saveTask(event) {
     return;
   }
 
-  if (id) {
-    await updateDoc(doc(db, "tasks", id), payload);
-  } else {
-    await addDoc(collection(db, "tasks"), {
-      ...payload,
-      createdAt: serverTimestamp(),
-      createdBy: currentUser.uid
-    });
-  }
+  try {
+    if (id) {
+      await updateDoc(doc(db, "tasks", id), payload);
+    } else {
+      await addDoc(collection(db, "tasks"), {
+        ...payload,
+        createdAt: serverTimestamp(),
+        createdBy: currentUser.uid
+      });
+    }
 
-  closeModal(taskModal);
-  resetTaskForm();
-  await reloadAllData();
+    closeModal(taskModal);
+    resetTaskForm();
+    await reloadAllData();
+  } catch (error) {
+    console.error(error);
+    alert("Não foi possível salvar a demanda.");
+  }
 }
 
 window.editTask = function(id) {
-  if (!canEditScope('agenda')) return;
+  if (!canEditScope("agenda")) return;
   const task = tasksData.find(item => item.id === id);
   if (!task) return;
 
@@ -906,7 +998,7 @@ window.editTask = function(id) {
 };
 
 window.advanceTask = async function(id) {
-  if (!canEditScope('agenda')) return;
+  if (!canEditScope("agenda")) return;
   const task = tasksData.find(item => item.id === id);
   if (!task) return;
 
@@ -914,21 +1006,29 @@ window.advanceTask = async function(id) {
   const currentIndex = steps.indexOf(task.status);
   const nextStatus = steps[Math.min(currentIndex + 1, steps.length - 1)];
 
-  await updateDoc(doc(db, "tasks", id), {
-    status: nextStatus,
-    updatedAt: serverTimestamp()
-  });
-
-  await reloadAllData();
+  try {
+    await updateDoc(doc(db, "tasks", id), {
+      status: nextStatus,
+      updatedAt: serverTimestamp()
+    });
+    await reloadAllData();
+  } catch (error) {
+    console.error(error);
+    alert("Não foi possível atualizar a demanda.");
+  }
 };
 
 window.deleteTask = async function(id) {
-  if (!canEditScope('agenda')) return;
-  const ok = confirm("Deseja excluir esta demanda?");
-  if (!ok) return;
+  if (!canEditScope("agenda")) return;
+  if (!confirm("Deseja excluir esta demanda?")) return;
 
-  await deleteDoc(doc(db, "tasks", id));
-  await reloadAllData();
+  try {
+    await deleteDoc(doc(db, "tasks", id));
+    await reloadAllData();
+  } catch (error) {
+    console.error(error);
+    alert("Não foi possível excluir a demanda.");
+  }
 };
 
 // =============================
@@ -936,7 +1036,7 @@ window.deleteTask = async function(id) {
 // =============================
 async function saveClient(event) {
   event.preventDefault();
-  if (!canEditScope('clientes')) return;
+  if (!canEditScope("clientes")) return;
 
   const id = document.getElementById("client-id").value.trim();
   const payload = {
@@ -953,22 +1053,27 @@ async function saveClient(event) {
     return;
   }
 
-  if (id) {
-    await updateDoc(doc(db, "clients", id), payload);
-  } else {
-    await addDoc(collection(db, "clients"), {
-      ...payload,
-      createdAt: serverTimestamp()
-    });
-  }
+  try {
+    if (id) {
+      await updateDoc(doc(db, "clients", id), payload);
+    } else {
+      await addDoc(collection(db, "clients"), {
+        ...payload,
+        createdAt: serverTimestamp()
+      });
+    }
 
-  closeModal(clientModal);
-  resetClientForm();
-  await reloadAllData();
+    closeModal(clientModal);
+    resetClientForm();
+    await reloadAllData();
+  } catch (error) {
+    console.error(error);
+    alert("Não foi possível salvar o cliente.");
+  }
 }
 
 window.editClient = function(id) {
-  if (!canEditScope('clientes')) return;
+  if (!canEditScope("clientes")) return;
   const client = clientsData.find(item => item.id === id);
   if (!client) return;
 
@@ -983,12 +1088,16 @@ window.editClient = function(id) {
 };
 
 window.deleteClient = async function(id) {
-  if (!canEditScope('clientes')) return;
-  const ok = confirm("Deseja excluir este cliente?");
-  if (!ok) return;
+  if (!canEditScope("clientes")) return;
+  if (!confirm("Deseja excluir este cliente?")) return;
 
-  await deleteDoc(doc(db, "clients", id));
-  await reloadAllData();
+  try {
+    await deleteDoc(doc(db, "clients", id));
+    await reloadAllData();
+  } catch (error) {
+    console.error(error);
+    alert("Não foi possível excluir o cliente.");
+  }
 };
 
 // =============================
@@ -996,7 +1105,7 @@ window.deleteClient = async function(id) {
 // =============================
 async function saveBenefit(event) {
   event.preventDefault();
-  if (!canEditScope('beneficios')) return;
+  if (!canEditScope("beneficios")) return;
 
   const id = document.getElementById("benefit-id").value.trim();
   const payload = {
@@ -1013,22 +1122,27 @@ async function saveBenefit(event) {
     return;
   }
 
-  if (id) {
-    await updateDoc(doc(db, "benefits", id), payload);
-  } else {
-    await addDoc(collection(db, "benefits"), {
-      ...payload,
-      createdAt: serverTimestamp()
-    });
-  }
+  try {
+    if (id) {
+      await updateDoc(doc(db, "benefits", id), payload);
+    } else {
+      await addDoc(collection(db, "benefits"), {
+        ...payload,
+        createdAt: serverTimestamp()
+      });
+    }
 
-  closeModal(benefitModal);
-  resetBenefitForm();
-  await reloadAllData();
+    closeModal(benefitModal);
+    resetBenefitForm();
+    await reloadAllData();
+  } catch (error) {
+    console.error(error);
+    alert("Não foi possível salvar o benefício.");
+  }
 }
 
 window.editBenefit = function(id) {
-  if (!canEditScope('beneficios')) return;
+  if (!canEditScope("beneficios")) return;
   const benefit = benefitsData.find(item => item.id === id);
   if (!benefit) return;
 
@@ -1043,12 +1157,16 @@ window.editBenefit = function(id) {
 };
 
 window.deleteBenefit = async function(id) {
-  if (!canEditScope('beneficios')) return;
-  const ok = confirm("Deseja excluir este benefício?");
-  if (!ok) return;
+  if (!canEditScope("beneficios")) return;
+  if (!confirm("Deseja excluir este benefício?")) return;
 
-  await deleteDoc(doc(db, "benefits", id));
-  await reloadAllData();
+  try {
+    await deleteDoc(doc(db, "benefits", id));
+    await reloadAllData();
+  } catch (error) {
+    console.error(error);
+    alert("Não foi possível excluir o benefício.");
+  }
 };
 
 // =============================
@@ -1056,7 +1174,7 @@ window.deleteBenefit = async function(id) {
 // =============================
 async function saveUserProfile(event) {
   event.preventDefault();
-  if (!canEditScope('rh')) return;
+  if (!canEditScope("rh")) return;
 
   const documentId = document.getElementById("user-id").value.trim();
   const username = sanitizeUsername(document.getElementById("user-username").value);
@@ -1079,16 +1197,16 @@ async function saveUserProfile(event) {
     }
 
     try {
-      const credential = await createUserWithEmailAndPassword(userCreatorAuth, internalEmail, initialPassword);
+      const credential = await createUserWithEmailAndPassword(creatorAuth, internalEmail, initialPassword);
       userId = credential.user.uid;
       storedEmail = credential.user.email || internalEmail;
-      await signOut(userCreatorAuth);
+      await signOut(creatorAuth);
     } catch (error) {
       console.error(error);
       if (error.code === "auth/email-already-in-use") {
         alert("Esse usuário já existe. Escolha outro nome de usuário.");
       } else {
-        alert("Não foi possível criar o acesso interno do colaborador.");
+        alert("Não foi possível criar o login interno do colaborador.");
       }
       return;
     }
@@ -1114,17 +1232,20 @@ async function saveUserProfile(event) {
     createdAt: serverTimestamp()
   };
 
-  await setDoc(doc(db, "users", userId), payload, { merge: true });
-
-  closeModal(userModal);
-  resetUserForm();
-  await reloadAllData();
-
-  alert(documentId ? "Colaborador atualizado com sucesso." : "Colaborador criado com login interno e salvo com sucesso.");
+  try {
+    await setDoc(doc(db, "users", userId), payload, { merge: true });
+    closeModal(userModal);
+    resetUserForm();
+    await reloadAllData();
+    alert(documentId ? "Colaborador atualizado com sucesso." : "Colaborador criado com sucesso.");
+  } catch (error) {
+    console.error(error);
+    alert("Não foi possível salvar o colaborador. Verifique as rules do Firestore.");
+  }
 }
 
 window.editUserProfile = function(id) {
-  if (!canEditScope('rh')) return;
+  if (!canEditScope("rh")) return;
   const user = usersData.find(item => item.id === id);
   if (!user) return;
 
@@ -1147,42 +1268,36 @@ window.editUserProfile = function(id) {
 };
 
 window.toggleUserActive = async function(id) {
-  if (!canEditScope('rh')) return;
+  if (!canEditScope("rh")) return;
   const user = usersData.find(item => item.id === id);
   if (!user) return;
 
-  const nextValue = !(user.active !== false);
-  await setDoc(doc(db, "users", id), { active: nextValue, updatedAt: serverTimestamp() }, { merge: true });
-  await reloadAllData();
+  try {
+    const nextValue = !(user.active !== false);
+    await setDoc(doc(db, "users", id), { active: nextValue, updatedAt: serverTimestamp() }, { merge: true });
+    await reloadAllData();
+  } catch (error) {
+    console.error(error);
+    alert("Não foi possível alterar o status do colaborador.");
+  }
 };
 
 window.deleteUserProfile = async function(id) {
-  if (!canEditScope('rh')) return;
+  if (!canEditScope("rh")) return;
   if (id === currentUser.uid) {
     alert("Você não pode excluir seu próprio perfil em uso.");
     return;
   }
+  if (!confirm("Deseja excluir esta ficha de colaborador?")) return;
 
-  const ok = confirm("Deseja excluir esta ficha de colaborador?");
-  if (!ok) return;
-
-  await deleteDoc(doc(db, "users", id));
-  await reloadAllData();
+  try {
+    await deleteDoc(doc(db, "users", id));
+    await reloadAllData();
+  } catch (error) {
+    console.error(error);
+    alert("Não foi possível excluir o colaborador.");
+  }
 };
-
-// =============================
-// AJUSTES
-// =============================
-async function saveSettings() {
-  if (!canEditScope('ajustes')) return;
-
-  settingsData.themeColor = themeColorInput.value;
-  settingsData.fontFamily = fontSelect.value;
-
-  await setDoc(doc(db, "settings", "global"), settingsData, { merge: true });
-  applySettings();
-  alert("Ajustes salvos.");
-}
 
 // =============================
 // EVENTOS
@@ -1192,7 +1307,7 @@ loginForm.addEventListener("submit", async (event) => {
   loginMessage.textContent = "";
 
   const identifier = loginUsernameInput.value.trim();
-  const password = document.getElementById("login-password").value;
+  const password = loginPasswordInput.value;
   const loginEmail = loginIdentifierToEmail(identifier);
 
   try {
@@ -1289,7 +1404,7 @@ if ("serviceWorker" in navigator) {
 }
 
 // =============================
-// OBSERVADOR DE AUTH
+// AUTH OBSERVER
 // =============================
 onAuthStateChanged(auth, async (user) => {
   if (!user) {
@@ -1302,6 +1417,9 @@ onAuthStateChanged(auth, async (user) => {
   currentUser = user;
 
   try {
+    loadSettingsFromLocal();
+    applySettings();
+
     await loadCurrentProfile(user);
 
     if (currentProfile?.active === false) {
@@ -1310,9 +1428,9 @@ onAuthStateChanged(auth, async (user) => {
       return;
     }
 
+    await loadSettingsFromCloud();
+    applySettings();
     await reloadAllData();
-    setActiveTab("inicio");
-    showScreen(dashboardScreen);
 
     if (!directionDateInput.value) {
       directionDateInput.value = new Date().toISOString().slice(0, 10);
@@ -1324,11 +1442,15 @@ onAuthStateChanged(auth, async (user) => {
 
     renderDirection();
     renderCalendar();
+
+    setActiveTab("inicio");
+    showScreen(dashboardScreen);
   } catch (error) {
     console.error(error);
     alert("Erro ao carregar dados do sistema.");
   }
 });
 
-
-initVisualFx();
+// aplica local logo no carregamento
+loadSettingsFromLocal();
+applySettings();
