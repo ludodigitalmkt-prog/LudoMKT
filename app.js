@@ -124,6 +124,7 @@ const loadMusicBtn = document.getElementById("load-music-btn");
 const musicFrame = document.getElementById("music-frame");
 
 const installBtn = document.getElementById("install-btn");
+
 // =============================
 // HELPERS
 // =============================
@@ -323,36 +324,44 @@ function applyRoleVisibility() {
 
 function fillUserPermissionsForm(permissions = {}) {
   const p = normalizePermissions(permissions);
-  document.getElementById("perm-access-inicio").checked = p.accessInicio;
-  document.getElementById("perm-access-agenda").checked = p.accessAgenda;
-  document.getElementById("perm-access-clientes").checked = p.accessClientes;
-  document.getElementById("perm-access-beneficios").checked = p.accessBeneficios;
-  document.getElementById("perm-access-rh").checked = p.accessRh;
-  document.getElementById("perm-access-music").checked = p.accessMusic;
-  document.getElementById("perm-access-ajustes").checked = p.accessAjustes;
-  document.getElementById("perm-view-direcao").checked = p.canViewDirecao;
-  document.getElementById("perm-edit-agenda").checked = p.canEditAgenda;
-  document.getElementById("perm-edit-clientes").checked = p.canEditClientes;
-  document.getElementById("perm-edit-beneficios").checked = p.canEditBeneficios;
-  document.getElementById("perm-edit-rh").checked = p.canEditRh;
-  document.getElementById("perm-edit-ajustes").checked = p.canEditAjustes;
+  const setChecked = (id, value) => {
+    const el = document.getElementById(id);
+    if (el) el.checked = value;
+  };
+  setChecked("perm-access-inicio", p.accessInicio);
+  setChecked("perm-access-agenda", p.accessAgenda);
+  setChecked("perm-access-clientes", p.accessClientes);
+  setChecked("perm-access-beneficios", p.accessBeneficios);
+  setChecked("perm-access-rh", p.accessRh);
+  setChecked("perm-access-music", p.accessMusic);
+  setChecked("perm-access-ajustes", p.accessAjustes);
+  setChecked("perm-view-direcao", p.canViewDirecao);
+  setChecked("perm-edit-agenda", p.canEditAgenda);
+  setChecked("perm-edit-clientes", p.canEditClientes);
+  setChecked("perm-edit-beneficios", p.canEditBeneficios);
+  setChecked("perm-edit-rh", p.canEditRh);
+  setChecked("perm-edit-ajustes", p.canEditAjustes);
 }
 
 function readUserPermissionsForm() {
+  const checked = (id) => {
+    const el = document.getElementById(id);
+    return !!el?.checked;
+  };
   return {
-    accessInicio: document.getElementById("perm-access-inicio").checked,
-    accessAgenda: document.getElementById("perm-access-agenda").checked,
-    accessClientes: document.getElementById("perm-access-clientes").checked,
-    accessBeneficios: document.getElementById("perm-access-beneficios").checked,
-    accessRh: document.getElementById("perm-access-rh").checked,
-    accessMusic: document.getElementById("perm-access-music").checked,
-    accessAjustes: document.getElementById("perm-access-ajustes").checked,
-    canViewDirecao: document.getElementById("perm-view-direcao").checked,
-    canEditAgenda: document.getElementById("perm-edit-agenda").checked,
-    canEditClientes: document.getElementById("perm-edit-clientes").checked,
-    canEditBeneficios: document.getElementById("perm-edit-beneficios").checked,
-    canEditRh: document.getElementById("perm-edit-rh").checked,
-    canEditAjustes: document.getElementById("perm-edit-ajustes").checked
+    accessInicio: checked("perm-access-inicio"),
+    accessAgenda: checked("perm-access-agenda"),
+    accessClientes: checked("perm-access-clientes"),
+    accessBeneficios: checked("perm-access-beneficios"),
+    accessRh: checked("perm-access-rh"),
+    accessMusic: checked("perm-access-music"),
+    accessAjustes: checked("perm-access-ajustes"),
+    canViewDirecao: checked("perm-view-direcao"),
+    canEditAgenda: checked("perm-edit-agenda"),
+    canEditClientes: checked("perm-edit-clientes"),
+    canEditBeneficios: checked("perm-edit-beneficios"),
+    canEditRh: checked("perm-edit-rh"),
+    canEditAjustes: checked("perm-edit-ajustes")
   };
 }
 
@@ -378,9 +387,9 @@ function resetBenefitForm() {
 function resetUserForm() {
   userForm.reset();
   document.getElementById("user-id").value = "";
-  document.getElementById("user-role").value = "colaborador";
-  document.getElementById("user-active").checked = true;
-  document.getElementById("user-username").readOnly = false;
+  if (document.getElementById("user-role")) document.getElementById("user-role").value = "colaborador";
+  if (document.getElementById("user-active")) document.getElementById("user-active").checked = true;
+  if (document.getElementById("user-username")) document.getElementById("user-username").readOnly = false;
   fillUserPermissionsForm(defaultPermissions());
 }
 
@@ -1262,13 +1271,13 @@ async function saveUserProfile(event) {
     name,
     username,
     email: storedEmail,
-    role: document.getElementById("user-role").value,
-    position: document.getElementById("user-position").value.trim(),
-    sector: document.getElementById("user-sector").value.trim(),
-    birthday: document.getElementById("user-birthday").value,
-    photoUrl: document.getElementById("user-photo").value.trim(),
-    benefits: document.getElementById("user-benefits").value.trim(),
-    active: document.getElementById("user-active").checked,
+    role: document.getElementById("user-role")?.value || "colaborador",
+    position: document.getElementById("user-position")?.value?.trim() || "",
+    sector: document.getElementById("user-sector")?.value?.trim() || "",
+    birthday: document.getElementById("user-birthday")?.value || "",
+    photoUrl: document.getElementById("user-photo")?.value?.trim() || "",
+    benefits: document.getElementById("user-benefits")?.value?.trim() || "",
+    active: document.getElementById("user-active") ? document.getElementById("user-active").checked : true,
     permissions: readUserPermissionsForm(),
     updatedAt: serverTimestamp(),
     createdAt: serverTimestamp()
@@ -1294,15 +1303,15 @@ window.editUserProfile = function(id) {
   document.getElementById("user-id").value = user.id;
   document.getElementById("user-name").value = user.name || "";
   document.getElementById("user-username").value = user.username || "";
-  document.getElementById("user-username").readOnly = false;
-  document.getElementById("user-role").value = user.role || "colaborador";
-  document.getElementById("user-position").value = user.position || "";
-  document.getElementById("user-sector").value = user.sector || "";
-  document.getElementById("user-birthday").value = user.birthday || "";
-  document.getElementById("user-photo").value = user.photoUrl || "";
-  document.getElementById("user-benefits").value = user.benefits || "";
-  document.getElementById("user-notes").value = user.notes || "";
-  document.getElementById("user-active").checked = user.active !== false;
+  if (document.getElementById("user-username")) document.getElementById("user-username").readOnly = false;
+  if (document.getElementById("user-role")) document.getElementById("user-role").value = user.role || "colaborador";
+  if (document.getElementById("user-position")) document.getElementById("user-position").value = user.position || "";
+  if (document.getElementById("user-sector")) document.getElementById("user-sector").value = user.sector || "";
+  if (document.getElementById("user-birthday")) document.getElementById("user-birthday").value = user.birthday || "";
+  if (document.getElementById("user-photo")) document.getElementById("user-photo").value = user.photoUrl || "";
+  if (document.getElementById("user-benefits")) document.getElementById("user-benefits").value = user.benefits || "";
+  if (document.getElementById("user-notes")) document.getElementById("user-notes").value = user.notes || "";
+  if (document.getElementById("user-active")) document.getElementById("user-active").checked = user.active !== false;
   fillUserPermissionsForm(user.permissions || defaultPermissions());
 
   openModal(userModal);
@@ -1424,21 +1433,16 @@ loadMusicBtn.addEventListener("click", () => {
 window.addEventListener("beforeinstallprompt", (e) => {
   e.preventDefault();
   deferredPrompt = e;
-
-  if (installBtn) {
-    installBtn.classList.remove("hidden");
-  }
+  installBtn.classList.remove("hidden");
 });
 
-if (installBtn) {
-  installBtn.addEventListener("click", async () => {
-    if (!deferredPrompt) return;
-    deferredPrompt.prompt();
-    await deferredPrompt.userChoice;
-    deferredPrompt = null;
-    installBtn.classList.add("hidden");
-  });
-}
+installBtn.addEventListener("click", async () => {
+  if (!deferredPrompt) return;
+  deferredPrompt.prompt();
+  await deferredPrompt.userChoice;
+  deferredPrompt = null;
+  installBtn.classList.add("hidden");
+});
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
