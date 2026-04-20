@@ -30,8 +30,8 @@
 
           <form id="login-form" class="form">
             <div class="field">
-              <label for="login-email">E-mail da gestão</label>
-              <input type="email" id="login-email" placeholder="gestao@ludo.com" required autocomplete="username" />
+              <label for="login-username">Usuário</label>
+              <input type="text" id="login-username" placeholder="Digite seu usuário" required autocomplete="username" />
             </div>
 
             <div class="field">
@@ -77,31 +77,41 @@
             <p id="welcome-text">Bem-vindo ao sistema.</p>
           </div>
           <div class="topbar-actions">
+            
           </div>
         </header>
 
         <section id="tab-inicio" class="tab-content active">
-          <div class="card">
-            <h3>Resumo do dia</h3>
-            <div class="stats">
-              <div class="stat">
-                <span class="stat-label">A fazer</span>
-                <strong id="stat-a-fazer">0</strong>
+          <div class="grid two">
+            <div class="card">
+              <h3>Resumo do dia</h3>
+              <div class="stats">
+                <div class="stat">
+                  <span class="stat-label">A fazer</span>
+                  <strong id="stat-a-fazer">0</strong>
+                </div>
+                <div class="stat">
+                  <span class="stat-label">Em andamento</span>
+                  <strong id="stat-andamento">0</strong>
+                </div>
+                <div class="stat">
+                  <span class="stat-label">Concluídas</span>
+                  <strong id="stat-concluidas">0</strong>
+                </div>
               </div>
-              <div class="stat">
-                <span class="stat-label">Em andamento</span>
-                <strong id="stat-andamento">0</strong>
-              </div>
-              <div class="stat">
-                <span class="stat-label">Concluídas</span>
-                <strong id="stat-concluidas">0</strong>
-              </div>
+            </div>
+
+            <div class="card">
+              <h3>Aniversariantes do mês</h3>
+              <div id="birthday-list" class="list empty-state">Nenhum colaborador cadastrado.</div>
             </div>
           </div>
 
           <div class="card">
-            <h3>Painel inicial</h3>
-            <p class="team-meta">A tela inicial foi simplificada. Os colaboradores ficam concentrados na aba RH e são usados na agenda apenas como cadastros internos ativos.</p>
+            <div class="section-header">
+              <h3>Equipe</h3>
+            </div>
+            <div id="team-cards" class="team-grid"></div>
           </div>
         </section>
 
@@ -429,7 +439,7 @@
       <form id="user-form" class="form">
         <input type="hidden" id="user-id" />
         <p class="small-note">
-          Aqui você cadastra o colaborador internamente no sistema. Esse cadastro serve para agenda, RH e permissões internas.
+          Aqui você cria o acesso interno do colaborador com <strong>usuário + senha</strong>. O sistema usa um login técnico por trás, sem mostrar e-mail para o colaborador.
         </p>
 
         <div class="grid two">
@@ -438,12 +448,16 @@
             <input id="user-name" required />
           </div>
           <div class="field">
-            <label for="user-username">Usuário interno</label>
+            <label for="user-username">Usuário de login</label>
             <input id="user-username" placeholder="Ex: djonatan" required />
           </div>
         </div>
 
         <div class="grid three">
+          <div class="field">
+            <label for="user-password">Senha inicial</label>
+            <input type="password" id="user-password" placeholder="Crie uma senha" autocomplete="new-password" />
+          </div>
           <div class="field">
             <label for="user-role">Perfil</label>
             <select id="user-role" class="input">
@@ -455,31 +469,27 @@
             <label for="user-position">Cargo</label>
             <input id="user-position" placeholder="Ex: Designer, Social Media, Diretor" />
           </div>
+        </div>
+
+        <div class="grid two">
           <div class="field">
             <label for="user-sector">Setor</label>
             <input id="user-sector" />
           </div>
-        </div>
-
-        <div class="grid two">
           <div class="field">
             <label for="user-birthday">Nascimento</label>
             <input type="date" id="user-birthday" />
           </div>
-          <div class="field">
-            <label for="user-photo">URL da foto</label>
-            <input id="user-photo" />
-          </div>
         </div>
 
         <div class="grid two">
           <div class="field">
-            <label for="user-benefits">Benefícios ativos</label>
-            <input id="user-benefits" placeholder="Ex: Vale alimentação, Gympass" />
+            <label for="user-photo">URL da foto</label>
+            <input id="user-photo" />
           </div>
           <div class="field">
-            <label for="user-notes">Observações internas</label>
-            <input id="user-notes" placeholder="Observações rápidas" />
+            <label for="user-benefits">Benefícios ativos</label>
+            <input id="user-benefits" placeholder="Ex: Vale alimentação, Gympass" />
           </div>
         </div>
 
