@@ -706,8 +706,29 @@ async function saveTask(e) {
   const responsible = usersData.find(u => u.id === responsibleId);
   const clientId = val("task-client");
   const client = clientsData.find(c => c.id === clientId);
-  const repeatEnabled = checkedVal("task-repeat-enabled");
-  const payload = { title: trimmedVal("task-title"), clientId, clientName: client?.name || "", description: trimmedVal("task-description"), responsibleId, responsibleName: responsible?.name || responsible?.username || "", status: val("task-status"), priority: val("task-priority"), date: val("task-date"), time: val("task-time"), theme: trimmedVal("task-theme"), repeatEnabled, repeatStartDate: repeatEnabled ? (val("task-repeat-start") || val("task-date")) : "", repeatEndDate: repeatEnabled ? (val("task-repeat-end") || val("task-date")) : "", repeatWeekdays: repeatEnabled ? getRepeatDays() : [], repeatMonths: repeatEnabled ? getRepeatMonths() : [], extraordinary: checkedVal("task-extraordinary"), updatedAt: serverTimestamp() };
+  const selectedRepeatDays = getRepeatDays();
+  const selectedRepeatMonths = getRepeatMonths();
+  const repeatEnabled = checkedVal("task-repeat-enabled") || !!val("task-repeat-start") || !!val("task-repeat-end") || selectedRepeatDays.length > 0 || selectedRepeatMonths.length > 0;
+  const payload = {
+    title: trimmedVal("task-title"),
+    clientId,
+    clientName: client?.name || "",
+    description: trimmedVal("task-description"),
+    responsibleId,
+    responsibleName: responsible?.name || responsible?.username || "",
+    status: val("task-status"),
+    priority: val("task-priority"),
+    date: val("task-date"),
+    time: val("task-time"),
+    theme: trimmedVal("task-theme"),
+    repeatEnabled,
+    repeatStartDate: repeatEnabled ? (val("task-repeat-start") || val("task-date")) : "",
+    repeatEndDate: repeatEnabled ? (val("task-repeat-end") || val("task-date")) : "",
+    repeatWeekdays: repeatEnabled ? (selectedRepeatDays.length ? selectedRepeatDays : [0,1,2,3,4,5,6]) : [],
+    repeatMonths: repeatEnabled ? selectedRepeatMonths : [],
+    extraordinary: checkedVal("task-extraordinary"),
+    updatedAt: serverTimestamp()
+  };
   if (!payload.title || !payload.date) { alert("Preencha título e data."); return; }
   if (payload.repeatEnabled && payload.repeatEndDate < payload.repeatStartDate) { alert("O período final da repetição não pode ser menor que o inicial."); return; }
   try {
