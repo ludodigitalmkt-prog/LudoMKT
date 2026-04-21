@@ -5,249 +5,227 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Agenda Inteligente</title>
   <meta name="theme-color" content="#8B252C" />
-    <link rel="manifest" href="./manifest.json" />
   <link rel="icon" href="./favicon.ico" />
+  <link rel="manifest" href="./manifest.json" />
   <link rel="stylesheet" href="./style.css" />
 </head>
 <body>
-  <div class="ambient-bg" aria-hidden="true">
-    <span class="aurora aurora-1"></span>
-    <span class="aurora aurora-2"></span>
-    <span class="aurora aurora-3"></span>
-  </div>
-  <div class="edge-glow edge-glow-top" aria-hidden="true"></div>
-  <div class="edge-glow edge-glow-bottom" aria-hidden="true"></div>
+  <section id="login-screen" class="screen active">
+    <div class="login-box">
+      <img src="./logo.png" alt="Logo" class="login-logo" onerror="this.style.display='none'">
+      <h1>Agenda Inteligente</h1>
+      <p>Gestão e equipe com agenda operacional.</p>
 
-  <div id="app">
-    <section id="login-screen" class="screen active">
-      <div class="login-wrap">
-        <div class="login-card">
-          <div class="brand-area">
-            <img src="./logo.png" onerror="this.onerror=null;this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 96 96%22%3E%3Cdefs%3E%3ClinearGradient id=%22g%22 x1=%220%22 y1=%220%22 x2=%221%22 y2=%221%22%3E%3Cstop stop-color=%22%238B252C%22/%3E%3Cstop offset=%221%22 stop-color=%22%23b73039%22/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width=%2296%22 height=%2296%22 rx=%2224%22 fill=%22url(%23g)%22/%3E%3Cpath d=%22M22 28h52v40H22z%22 fill=%22white%22 opacity=%220.18%22/%3E%3Cpath d=%22M32 24v48M48 24v48M64 24v48M24 36h48M24 52h48M24 68h48%22 stroke=%22white%22 stroke-width=%224%22 stroke-linecap=%22round%22/%3E%3C/svg%3E'" alt="Logo" class="brand-logo" />
-            <h1>Agenda Inteligente</h1>
-            <p>Planejamento, equipe, clientes e direção.</p>
-          </div>
-
-          <form id="login-form" class="form">
-            <div class="field">
-              <label for="login-username">Usuário</label>
-              <input type="text" id="login-username" placeholder="Digite seu usuário" required autocomplete="username" />
-            </div>
-
-            <div class="field">
-              <label for="login-password">Senha</label>
-              <input type="password" id="login-password" placeholder="Digite sua senha" required autocomplete="current-password" />
-            </div>
-
-            <button type="submit" class="btn btn-primary">Entrar</button>
-            <p id="login-message" class="message"></p>
-          </form>
+      <form id="login-form" class="form">
+        <div class="field">
+          <label for="login-username">Usuário ou e-mail</label>
+          <input id="login-username" autocomplete="username" placeholder="Ex: gestao ou gestao@ludo.com" required />
         </div>
+
+        <div class="field">
+          <label for="login-password">Senha</label>
+          <input type="password" id="login-password" autocomplete="current-password" placeholder="Digite sua senha" required />
+        </div>
+
+        <button type="submit" class="btn btn-primary full">Entrar</button>
+        <p id="login-message" class="message"></p>
+      </form>
+    </div>
+  </section>
+
+  <section id="dashboard-screen" class="screen">
+    <aside class="sidebar">
+      <div class="sidebar-top">
+        <img src="./logo.png" alt="Logo" class="sidebar-logo" onerror="this.style.display='none'">
+        <h2>Agenda Inteligente</h2>
+        <p id="user-role-badge" class="role-badge">...</p>
+        <p id="current-user-name" class="sidebar-user-name">...</p>
+        <p id="current-user-login" class="sidebar-user-email">...</p>
       </div>
-    </section>
 
-    <section id="dashboard-screen" class="screen">
-      <aside class="sidebar">
-        <div class="sidebar-top">
-          <img src="./logo.png" onerror="this.onerror=null;this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 96 96%22%3E%3Cdefs%3E%3ClinearGradient id=%22g%22 x1=%220%22 y1=%220%22 x2=%221%22 y2=%221%22%3E%3Cstop stop-color=%22%238B252C%22/%3E%3Cstop offset=%221%22 stop-color=%22%23b73039%22/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width=%2296%22 height=%2296%22 rx=%2224%22 fill=%22url(%23g)%22/%3E%3Cpath d=%22M22 28h52v40H22z%22 fill=%22white%22 opacity=%220.18%22/%3E%3Cpath d=%22M32 24v48M48 24v48M64 24v48M24 36h48M24 52h48M24 68h48%22 stroke=%22white%22 stroke-width=%224%22 stroke-linecap=%22round%22/%3E%3C/svg%3E'" alt="Logo" class="sidebar-logo" />
-          <h2>Agenda Inteligente</h2>
-          <p id="user-role-badge" class="role-badge">...</p>
-          <p id="current-user-email" class="user-email">...</p>
+      <nav class="menu">
+        <button class="menu-item active" data-tab="inicio">Início</button>
+        <button class="menu-item" data-tab="agenda">Agenda</button>
+        <button class="menu-item" data-tab="clientes">Clientes</button>
+        <button class="menu-item" data-tab="beneficios">Benefícios</button>
+        <button class="menu-item" data-tab="rh">RH</button>
+        <button class="menu-item" data-tab="music">Music</button>
+        <button class="menu-item" data-tab="ajustes">Ajustes</button>
+      </nav>
+
+      <div class="sidebar-bottom">
+        <button id="logout-btn" class="btn btn-dark full">Sair</button>
+      </div>
+    </aside>
+
+    <main class="content">
+      <header class="topbar">
+        <div>
+          <h1 id="page-title">Tela Inicial</h1>
+          <p id="welcome-text">Bem-vindo ao sistema.</p>
+        </div>
+      </header>
+
+      <section id="tab-inicio" class="tab-content active">
+        <div class="card">
+          <h2>Tela Inicial</h2>
+          <p id="home-hello" class="muted">Olá!</p>
         </div>
 
-        <nav class="menu">
-          <button class="menu-item active" data-tab="inicio">Início</button>
-          <button class="menu-item" data-tab="agenda">Agenda</button>
-          <button class="menu-item" data-tab="clientes">Clientes</button>
-          <button class="menu-item" data-tab="beneficios">Benefícios</button>
-          <button class="menu-item" data-tab="rh">RH</button>
-          <button class="menu-item" data-tab="music">Music</button>
-          <button class="menu-item" data-tab="ajustes">Ajustes</button>
-        </nav>
-
-        <div class="sidebar-bottom">
-          <button id="logout-btn" class="btn btn-dark full">Sair</button>
+        <div class="card">
+          <h3>Resumo do dia</h3>
+          <div class="stats">
+            <div class="stat">
+              <span>A fazer</span>
+              <strong id="stat-a-fazer">0</strong>
+            </div>
+            <div class="stat">
+              <span>Em andamento</span>
+              <strong id="stat-andamento">0</strong>
+            </div>
+            <div class="stat">
+              <span>Concluídas</span>
+              <strong id="stat-concluidas">0</strong>
+            </div>
+          </div>
         </div>
-      </aside>
+      </section>
 
-      <main class="content">
-        <header class="topbar">
-          <div>
-            <h1 id="page-title">Tela Inicial</h1>
-            <p id="welcome-text">Bem-vindo ao sistema.</p>
-          </div>
-          <div class="topbar-actions">
-            
-          </div>
-        </header>
+      <section id="tab-agenda" class="tab-content">
+        <div class="section-header">
+          <h2>Agenda</h2>
+          <div class="row-actions">
+            <select id="agenda-view-select" class="input small">
+              <option value="board">Board</option>
+              <option value="calendar">Calendário</option>
+              <option value="direcao">Direção</option>
+            </select>
 
-        <section id="tab-inicio" class="tab-content active">
-          <div class="grid two">
-            <div class="card">
-              <h3>Resumo do dia</h3>
-              <div class="stats">
-                <div class="stat">
-                  <span class="stat-label">A fazer</span>
-                  <strong id="stat-a-fazer">0</strong>
-                </div>
-                <div class="stat">
-                  <span class="stat-label">Em andamento</span>
-                  <strong id="stat-andamento">0</strong>
-                </div>
-                <div class="stat">
-                  <span class="stat-label">Concluídas</span>
-                  <strong id="stat-concluidas">0</strong>
-                </div>
-              </div>
+            <button id="open-task-modal-btn" class="btn btn-primary manager-only">+ Nova Demanda</button>
+          </div>
+        </div>
+
+        <div id="agenda-board-view" class="agenda-view active">
+          <div class="board">
+            <div class="board-column">
+              <h4>A fazer</h4>
+              <div class="task-list droppable" data-status="a_fazer"></div>
             </div>
-
-            <div class="card">
-              <h3>Aniversariantes do mês</h3>
-              <div id="birthday-list" class="list empty-state">Nenhum colaborador cadastrado.</div>
+            <div class="board-column">
+              <h4>Em andamento</h4>
+              <div class="task-list droppable" data-status="em_andamento"></div>
+            </div>
+            <div class="board-column">
+              <h4>Revisão</h4>
+              <div class="task-list droppable" data-status="revisao"></div>
+            </div>
+            <div class="board-column">
+              <h4>Publicado</h4>
+              <div class="task-list droppable" data-status="publicado"></div>
+            </div>
+            <div class="board-column">
+              <h4>Concluído</h4>
+              <div class="task-list droppable" data-status="concluido"></div>
             </div>
           </div>
+        </div>
 
+        <div id="agenda-calendar-view" class="agenda-view">
           <div class="card">
             <div class="section-header">
-              <h3>Equipe</h3>
+              <h3>Calendário mensal</h3>
+              <input type="month" id="calendar-month-input" class="input small" />
             </div>
-            <div id="team-cards" class="team-grid"></div>
+            <div id="calendar-grid" class="calendar-grid"></div>
           </div>
-        </section>
+        </div>
 
-        <section id="tab-agenda" class="tab-content">
-          <div class="section-header">
-            <h2>Agenda</h2>
-            <div class="row-actions">
-              <select id="agenda-view-select" class="input small">
-                <option value="board">Board</option>
-                <option value="calendar">Calendário</option>
-                <option value="direcao">Direção</option>
-              </select>
-              <button id="open-task-modal-btn" class="btn btn-primary manager-only" data-editor-scope="agenda">+ Nova Demanda</button>
-            </div>
-          </div>
-
-          <div id="agenda-board-view" class="agenda-view active">
-            <div class="board">
-              <div class="board-column">
-                <h4>A fazer</h4>
-                <div class="task-list" data-status="a_fazer"></div>
-              </div>
-              <div class="board-column">
-                <h4>Em andamento</h4>
-                <div class="task-list" data-status="em_andamento"></div>
-              </div>
-              <div class="board-column">
-                <h4>Revisão</h4>
-                <div class="task-list" data-status="revisao"></div>
-              </div>
-              <div class="board-column">
-                <h4>Publicado</h4>
-                <div class="task-list" data-status="publicado"></div>
-              </div>
-              <div class="board-column">
-                <h4>Concluído</h4>
-                <div class="task-list" data-status="concluido"></div>
-              </div>
-            </div>
-          </div>
-
-          <div id="agenda-calendar-view" class="agenda-view">
-            <div class="card">
-              <div class="section-header">
-                <h3>Calendário mensal</h3>
-                <input type="month" id="calendar-month-input" class="input small" />
-              </div>
-              <div id="calendar-grid" class="calendar-grid"></div>
-            </div>
-          </div>
-
-          <div id="agenda-direcao-view" class="agenda-view">
-            <div class="card">
-              <div class="section-header">
-                <h3>Visão da direção</h3>
-                <input type="date" id="direction-date-input" class="input small" />
-              </div>
-              <div id="direction-list" class="list empty-state">Nenhuma demanda nesta data.</div>
-            </div>
-          </div>
-        </section>
-
-        <section id="tab-clientes" class="tab-content">
-          <div class="section-header">
-            <h2>Clientes</h2>
-            <button id="open-client-modal-btn" class="btn btn-primary manager-only" data-editor-scope="clientes">+ Novo Cliente</button>
-          </div>
-          <div id="clients-list" class="grid cards-grid"></div>
-        </section>
-
-        <section id="tab-beneficios" class="tab-content">
-          <div class="section-header">
-            <h2>Benefícios</h2>
-            <button id="open-benefit-modal-btn" class="btn btn-primary manager-only" data-editor-scope="beneficios">+ Novo Benefício</button>
-          </div>
-          <div id="benefits-list" class="grid cards-grid"></div>
-        </section>
-
-        <section id="tab-rh" class="tab-content">
-          <div class="section-header">
-            <h2>RH</h2>
-            <button id="open-user-modal-btn" class="btn btn-primary manager-only" data-editor-scope="rh">+ Novo Colaborador</button>
-          </div>
-          <div id="rh-list" class="grid cards-grid"></div>
-        </section>
-
-        <section id="tab-music" class="tab-content">
+        <div id="agenda-direcao-view" class="agenda-view">
           <div class="card">
-            <h3>Music</h3>
-            <p>Cole um link compatível com iframe.</p>
-            <div class="music-controls">
-              <input id="music-url" class="input" placeholder="Cole aqui a URL do player" />
-              <button id="load-music-btn" class="btn btn-primary">Carregar</button>
+            <div class="section-header">
+              <h3>Visão da direção</h3>
+              <input type="date" id="direction-date-input" class="input small" />
             </div>
-            <div class="iframe-wrap">
-              <iframe id="music-frame" title="Player de música"></iframe>
-            </div>
+            <div id="direction-list" class="list empty-state">Nenhuma demanda nesta data.</div>
           </div>
-        </section>
+        </div>
+      </section>
 
-        <section id="tab-ajustes" class="tab-content">
-          <div class="grid two">
-            <div class="card">
-              <h3>Aparência</h3>
-              <div class="field">
-                <label for="theme-color-input">Cor principal</label>
-                <input type="color" id="theme-color-input" value="#8B252C" />
-              </div>
-              <div class="field">
-                <label for="font-select">Fonte</label>
-                <select id="font-select" class="input">
-                  <option value="Inter, sans-serif">Inter</option>
-                  <option value="Montserrat, sans-serif">Montserrat</option>
-                  <option value="Poppins, sans-serif">Poppins</option>
-                </select>
-              </div>
-              <button id="save-settings-btn" class="btn btn-primary manager-only" data-editor-scope="ajustes">Salvar ajustes</button>
-            </div>
+      <section id="tab-clientes" class="tab-content">
+        <div class="section-header">
+          <h2>Clientes</h2>
+          <button id="open-client-modal-btn" class="btn btn-primary manager-only">+ Novo Cliente</button>
+        </div>
+        <div id="clients-list" class="cards-grid"></div>
+      </section>
 
-            <div class="card">
-              <h3>Observações</h3>
-              <p>Logo e ícone ficam nos arquivos <strong>logo.png</strong> e <strong>favicon.ico</strong>.</p>
-              <p>O sistema já está pronto para Firebase Auth + Firestore.</p>
-            </div>
+      <section id="tab-beneficios" class="tab-content">
+        <div class="section-header">
+          <h2>Benefícios</h2>
+          <button id="open-benefit-modal-btn" class="btn btn-primary manager-only">+ Novo Benefício</button>
+        </div>
+        <div id="benefits-list" class="cards-grid"></div>
+      </section>
+
+      <section id="tab-rh" class="tab-content">
+        <div class="section-header">
+          <h2>RH</h2>
+          <button id="open-user-modal-btn" class="btn btn-primary manager-only">+ Novo Colaborador</button>
+        </div>
+        <div id="rh-list" class="cards-grid"></div>
+      </section>
+
+      <section id="tab-music" class="tab-content">
+        <div class="card">
+          <h3>Music</h3>
+          <p class="muted">Cole um link compatível com iframe.</p>
+          <div class="music-controls">
+            <input id="music-url" class="input" placeholder="Cole a URL do player" />
+            <button id="load-music-btn" class="btn btn-primary">Carregar</button>
           </div>
-        </section>
-      </main>
-    </section>
-  </div>
+          <div class="iframe-wrap">
+            <iframe id="music-frame" title="Player"></iframe>
+          </div>
+        </div>
+      </section>
 
-  <!-- MODAL TAREFA -->
+      <section id="tab-ajustes" class="tab-content">
+        <div class="grid two">
+          <div class="card">
+            <h3>Aparência</h3>
+
+            <div class="field">
+              <label for="theme-color-input">Cor principal</label>
+              <input type="color" id="theme-color-input" value="#8B252C" />
+            </div>
+
+            <div class="field">
+              <label for="font-select">Fonte</label>
+              <select id="font-select" class="input">
+                <option value="Inter, sans-serif">Inter</option>
+                <option value="Montserrat, sans-serif">Montserrat</option>
+                <option value="Poppins, sans-serif">Poppins</option>
+              </select>
+            </div>
+
+            <button id="save-settings-btn" class="btn btn-primary manager-only">Salvar ajustes</button>
+          </div>
+
+          <div class="card">
+            <h3>Observações</h3>
+            <p class="muted">Coloque <strong>logo.png</strong> e <strong>favicon.ico</strong> na raiz do projeto.</p>
+            <p class="muted">Ative Email/Senha no Firebase Authentication.</p>
+          </div>
+        </div>
+      </section>
+    </main>
+  </section>
+
   <div id="task-modal" class="modal hidden">
     <div class="modal-card">
       <div class="modal-header">
         <h3>Nova Demanda</h3>
-        <button class="icon-btn" data-close-modal="task-modal">×</button>
+        <button type="button" class="icon-btn" data-close-modal="task-modal">×</button>
       </div>
 
       <form id="task-form" class="form">
@@ -255,29 +233,29 @@
 
         <div class="grid two">
           <div class="field">
-            <label for="task-title">Título</label>
+            <label>Título</label>
             <input id="task-title" required />
           </div>
 
           <div class="field">
-            <label for="task-client">Cliente</label>
+            <label>Cliente</label>
             <select id="task-client" class="input"></select>
           </div>
         </div>
 
         <div class="field">
-          <label for="task-description">Descrição / briefing</label>
+          <label>Descrição / briefing</label>
           <textarea id="task-description" rows="4"></textarea>
         </div>
 
         <div class="grid three">
           <div class="field">
-            <label for="task-responsible">Responsável</label>
+            <label>Responsável</label>
             <select id="task-responsible" class="input"></select>
           </div>
 
           <div class="field">
-            <label for="task-status">Status</label>
+            <label>Status</label>
             <select id="task-status" class="input">
               <option value="a_fazer">A fazer</option>
               <option value="em_andamento">Em andamento</option>
@@ -288,7 +266,7 @@
           </div>
 
           <div class="field">
-            <label for="task-priority">Prioridade</label>
+            <label>Prioridade</label>
             <select id="task-priority" class="input">
               <option value="baixa">Baixa</option>
               <option value="media">Média</option>
@@ -300,24 +278,19 @@
 
         <div class="grid three">
           <div class="field">
-            <label for="task-date">Data</label>
+            <label>Data</label>
             <input type="date" id="task-date" required />
           </div>
 
           <div class="field">
-            <label for="task-time">Hora</label>
+            <label>Hora</label>
             <input type="time" id="task-time" />
           </div>
 
           <div class="field">
-            <label for="task-theme">Tema / campanha</label>
+            <label>Tema / campanha</label>
             <input id="task-theme" />
           </div>
-        </div>
-
-        <div class="field">
-          <label for="task-link">Link do material</label>
-          <input id="task-link" />
         </div>
 
         <div class="field checkbox-line">
@@ -333,12 +306,11 @@
     </div>
   </div>
 
-  <!-- MODAL CLIENTE -->
   <div id="client-modal" class="modal hidden">
     <div class="modal-card">
       <div class="modal-header">
         <h3>Novo Cliente</h3>
-        <button class="icon-btn" data-close-modal="client-modal">×</button>
+        <button type="button" class="icon-btn" data-close-modal="client-modal">×</button>
       </div>
 
       <form id="client-form" class="form">
@@ -346,28 +318,28 @@
 
         <div class="grid two">
           <div class="field">
-            <label for="client-name">Nome</label>
+            <label>Nome</label>
             <input id="client-name" required />
           </div>
           <div class="field">
-            <label for="client-contract">Tipo de contrato</label>
+            <label>Tipo de contrato</label>
             <input id="client-contract" />
           </div>
         </div>
 
         <div class="grid two">
           <div class="field">
-            <label for="client-plan">Plano</label>
+            <label>Plano</label>
             <input id="client-plan" />
           </div>
           <div class="field">
-            <label for="client-docs">Docs anexados / links</label>
+            <label>Docs / links</label>
             <input id="client-docs" />
           </div>
         </div>
 
         <div class="field">
-          <label for="client-services">Serviços realizados</label>
+          <label>Serviços realizados</label>
           <textarea id="client-services" rows="4"></textarea>
         </div>
 
@@ -379,12 +351,11 @@
     </div>
   </div>
 
-  <!-- MODAL BENEFÍCIO -->
   <div id="benefit-modal" class="modal hidden">
     <div class="modal-card">
       <div class="modal-header">
         <h3>Novo Benefício</h3>
-        <button class="icon-btn" data-close-modal="benefit-modal">×</button>
+        <button type="button" class="icon-btn" data-close-modal="benefit-modal">×</button>
       </div>
 
       <form id="benefit-form" class="form">
@@ -392,22 +363,22 @@
 
         <div class="grid two">
           <div class="field">
-            <label for="benefit-name">Nome</label>
+            <label>Nome</label>
             <input id="benefit-name" required />
           </div>
           <div class="field">
-            <label for="benefit-type">Tipo</label>
+            <label>Tipo</label>
             <input id="benefit-type" />
           </div>
         </div>
 
         <div class="grid two">
           <div class="field">
-            <label for="benefit-value">Valor</label>
+            <label>Valor</label>
             <input id="benefit-value" />
           </div>
           <div class="field">
-            <label for="benefit-status">Status</label>
+            <label>Status</label>
             <select id="benefit-status" class="input">
               <option value="ativo">Ativo</option>
               <option value="inativo">Inativo</option>
@@ -416,7 +387,7 @@
         </div>
 
         <div class="field">
-          <label for="benefit-description">Descrição</label>
+          <label>Descrição</label>
           <textarea id="benefit-description" rows="4"></textarea>
         </div>
 
@@ -428,68 +399,74 @@
     </div>
   </div>
 
-  <!-- MODAL COLABORADOR -->
   <div id="user-modal" class="modal hidden">
-    <div class="modal-card">
+    <div class="modal-card large">
       <div class="modal-header">
         <h3>Novo Colaborador</h3>
-        <button class="icon-btn" data-close-modal="user-modal">×</button>
+        <button type="button" class="icon-btn" data-close-modal="user-modal">×</button>
       </div>
 
       <form id="user-form" class="form">
         <input type="hidden" id="user-id" />
-        <p class="small-note">
-          Aqui você cria o acesso interno do colaborador com <strong>usuário + senha</strong>. O sistema usa um login técnico por trás, sem mostrar e-mail para o colaborador.
-        </p>
 
         <div class="grid two">
           <div class="field">
-            <label for="user-name">Nome completo</label>
+            <label>Nome completo</label>
             <input id="user-name" required />
           </div>
+
           <div class="field">
-            <label for="user-username">Usuário de login</label>
-            <input id="user-username" placeholder="Ex: djonatan" required />
+            <label>Usuário de login</label>
+            <input id="user-username" placeholder="Ex: djonatan" />
+          </div>
+        </div>
+
+        <div class="grid two">
+          <div class="field">
+            <label>Senha inicial</label>
+            <input type="password" id="user-password" placeholder="Use ao criar o acesso" />
+          </div>
+
+          <div class="field">
+            <label>E-mail opcional</label>
+            <input id="user-email" type="email" placeholder="Opcional" />
           </div>
         </div>
 
         <div class="grid three">
           <div class="field">
-            <label for="user-password">Senha inicial</label>
-            <input type="password" id="user-password" placeholder="Crie uma senha" autocomplete="new-password" />
-          </div>
-          <div class="field">
-            <label for="user-role">Perfil</label>
+            <label>Perfil</label>
             <select id="user-role" class="input">
               <option value="colaborador">Colaborador</option>
               <option value="gerencia">Gerência</option>
             </select>
           </div>
-          <div class="field">
-            <label for="user-position">Cargo</label>
-            <input id="user-position" placeholder="Ex: Designer, Social Media, Diretor" />
-          </div>
-        </div>
 
-        <div class="grid two">
           <div class="field">
-            <label for="user-sector">Setor</label>
+            <label>Cargo</label>
+            <input id="user-position" />
+          </div>
+
+          <div class="field">
+            <label>Setor</label>
             <input id="user-sector" />
           </div>
-          <div class="field">
-            <label for="user-birthday">Nascimento</label>
-            <input type="date" id="user-birthday" />
-          </div>
         </div>
 
-        <div class="grid two">
+        <div class="grid three">
           <div class="field">
-            <label for="user-photo">URL da foto</label>
+            <label>Nascimento</label>
+            <input type="date" id="user-birthday" />
+          </div>
+
+          <div class="field">
+            <label>Foto (URL)</label>
             <input id="user-photo" />
           </div>
+
           <div class="field">
-            <label for="user-benefits">Benefícios ativos</label>
-            <input id="user-benefits" placeholder="Ex: Vale alimentação, Gympass" />
+            <label>Benefícios</label>
+            <input id="user-benefits" />
           </div>
         </div>
 
@@ -498,34 +475,32 @@
           <label for="user-active">Colaborador ativo</label>
         </div>
 
-        <div class="permission-box">
-          <h4>Acessos às abas</h4>
-          <div class="permission-grid">
-            <label><input type="checkbox" id="perm-access-inicio" checked /> Início</label>
-            <label><input type="checkbox" id="perm-access-agenda" checked /> Agenda</label>
-            <label><input type="checkbox" id="perm-access-clientes" checked /> Clientes</label>
-            <label><input type="checkbox" id="perm-access-beneficios" /> Benefícios</label>
-            <label><input type="checkbox" id="perm-access-rh" /> RH</label>
-            <label><input type="checkbox" id="perm-access-music" checked /> Music</label>
-            <label><input type="checkbox" id="perm-access-ajustes" /> Ajustes</label>
-            <label><input type="checkbox" id="perm-view-direcao" /> Visualizar direção</label>
+        <div class="permissions-box">
+          <h4>Acessos de visualização</h4>
+          <div class="grid two">
+            <label class="check-card"><input type="checkbox" id="perm-accessInicio" checked> Início</label>
+            <label class="check-card"><input type="checkbox" id="perm-accessAgenda" checked> Agenda</label>
+            <label class="check-card"><input type="checkbox" id="perm-accessClientes"> Clientes</label>
+            <label class="check-card"><input type="checkbox" id="perm-accessBeneficios"> Benefícios</label>
+            <label class="check-card"><input type="checkbox" id="perm-accessRh"> RH</label>
+            <label class="check-card"><input type="checkbox" id="perm-accessMusic" checked> Music</label>
+            <label class="check-card"><input type="checkbox" id="perm-accessAjustes"> Ajustes</label>
+            <label class="check-card"><input type="checkbox" id="perm-canViewDirecao"> Visualizar direção</label>
           </div>
-        </div>
 
-        <div class="permission-box">
           <h4>Permissões de edição</h4>
-          <div class="permission-grid">
-            <label><input type="checkbox" id="perm-edit-agenda" /> Editar agenda</label>
-            <label><input type="checkbox" id="perm-edit-clientes" /> Editar clientes</label>
-            <label><input type="checkbox" id="perm-edit-beneficios" /> Editar benefícios</label>
-            <label><input type="checkbox" id="perm-edit-rh" /> Editar RH</label>
-            <label><input type="checkbox" id="perm-edit-ajustes" /> Editar ajustes</label>
+          <div class="grid two">
+            <label class="check-card"><input type="checkbox" id="perm-canEditAgenda"> Editar agenda</label>
+            <label class="check-card"><input type="checkbox" id="perm-canEditClientes"> Editar clientes</label>
+            <label class="check-card"><input type="checkbox" id="perm-canEditBeneficios"> Editar benefícios</label>
+            <label class="check-card"><input type="checkbox" id="perm-canEditRh"> Editar RH</label>
+            <label class="check-card"><input type="checkbox" id="perm-canEditAjustes"> Editar ajustes</label>
           </div>
         </div>
 
-        <div class="small-note">
-          Depois de criado, o colaborador entra com o <strong>usuário</strong> e a <strong>senha</strong>. Para editar informações depois, você usa o RH. Para trocar a senha depois, o ideal é recriar o acesso ou usar fluxo próprio de redefinição.
-        </div>
+        <p class="small-note">
+          Se preencher usuário e senha na criação, o acesso do colaborador será criado no Firebase Auth com e-mail oculto.
+        </p>
 
         <div class="modal-actions">
           <button type="button" class="btn btn-light" data-close-modal="user-modal">Fechar</button>
