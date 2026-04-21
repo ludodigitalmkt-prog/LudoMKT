@@ -48,7 +48,7 @@ function clearRepeatChecks() {
 
 function taskOccursByRule(task, dateStr) {
   if (!task) return false;
-  if (!task.repeatEnabled) return task.date === dateStr;
+  if (!isRecurringTask(task)) return task.date === dateStr;
 
   const start = task.repeatStartDate || task.date;
   const end = task.repeatEndDate || task.date;
@@ -68,7 +68,7 @@ function taskOccursByRule(task, dateStr) {
 
 function taskOccursOnDate(task, dateStr) {
   if (!task) return false;
-  if (!task.repeatEnabled) return task.date === dateStr;
+  if (!isRecurringTask(task)) return task.date === dateStr;
 
   const moved = task.movedOccurrences || {};
   const movedTargets = Object.values(moved || {});
@@ -85,6 +85,10 @@ function getOccurrenceSourceDate(task, dateStr) {
   if (!task?.repeatEnabled) return task?.date || dateStr;
   const entry = Object.entries(task.movedOccurrences || {}).find(([, target]) => target === dateStr);
   return entry ? entry[0] : dateStr;
+}
+
+function isRecurringTask(task) {
+  return !!(task?.repeatEnabled || task?.repeatStartDate || task?.repeatEndDate || (task?.repeatWeekdays || []).length || (task?.repeatMonths || []).length || Object.keys(task?.movedOccurrences || {}).length || Object.keys(task?.occurrenceOverrides || {}).length);
 }
 
 function repeatSummary(task) {
@@ -119,18 +123,15 @@ function dayCounts(tasks, dateStr) {
 function boardFilteredTasks() {
   const selectedDate = boardDateFilter?.value || "";
   const includeOverdue = !!boardIncludeOverdue?.checked;
-  let list = [...tasksData];
+  const today = todayISO();
 
-  if (selectedDate) {
-    list = list.filter(task => taskOccursOnDate(task, selectedDate));
-  }
+  if (!selectedDate && !includeOverdue) return [...tasksData];
 
-  if (includeOverdue) {
-    const today = todayISO();
-    list = list.filter(task => (task.date && task.date < today && task.status !== "concluido") || (!selectedDate || taskOccursOnDate(task, selectedDate)));
-  }
-
-  return list;
+  return tasksData.filter(task => {
+    const matchSelected = selectedDate ? taskOccursOnDate(task, selectedDate) : true;
+    const overdue = includeOverdue ? (task.date && task.date < today && task.status !== "concluido") : false;
+    return matchSelected || overdue;
+  });
 }
 
 function renderAgendaTeamSummary() {
@@ -637,7 +638,7 @@ function initDragAndDrop() {
       const newDate = cell.dataset.date;
 
       try {
-        if (task.repeatEnabled && draggedOccurrenceDate) {
+        if (isRecurringTask(task) && draggedOccurrenceDate) {
           const movedOccurrences = { ...(task.movedOccurrences || {}) };
           movedOccurrences[draggedOccurrenceDate] = newDate;
           await updateDoc(doc(db, "tasks", draggedTaskId), { movedOccurrences, updatedAt: serverTimestamp() });
@@ -706,29 +707,8 @@ async function saveTask(e) {
   const responsible = usersData.find(u => u.id === responsibleId);
   const clientId = val("task-client");
   const client = clientsData.find(c => c.id === clientId);
-  const selectedRepeatDays = getRepeatDays();
-  const selectedRepeatMonths = getRepeatMonths();
-  const repeatEnabled = checkedVal("task-repeat-enabled") || !!val("task-repeat-start") || !!val("task-repeat-end") || selectedRepeatDays.length > 0 || selectedRepeatMonths.length > 0;
-  const payload = {
-    title: trimmedVal("task-title"),
-    clientId,
-    clientName: client?.name || "",
-    description: trimmedVal("task-description"),
-    responsibleId,
-    responsibleName: responsible?.name || responsible?.username || "",
-    status: val("task-status"),
-    priority: val("task-priority"),
-    date: val("task-date"),
-    time: val("task-time"),
-    theme: trimmedVal("task-theme"),
-    repeatEnabled,
-    repeatStartDate: repeatEnabled ? (val("task-repeat-start") || val("task-date")) : "",
-    repeatEndDate: repeatEnabled ? (val("task-repeat-end") || val("task-date")) : "",
-    repeatWeekdays: repeatEnabled ? (selectedRepeatDays.length ? selectedRepeatDays : [0,1,2,3,4,5,6]) : [],
-    repeatMonths: repeatEnabled ? selectedRepeatMonths : [],
-    extraordinary: checkedVal("task-extraordinary"),
-    updatedAt: serverTimestamp()
-  };
+  const repeatEnabled = checkedVal("task-repeat-enabled");
+  const payload = { title: trimmedVal("task-title"), clientId, clientName: client?.name || "", description: trimmedVal("task-description"), responsibleId, responsibleName: responsible?.name || responsible?.username || "", status: val("task-status"), priority: val("task-priority"), date: val("task-date"), time: val("task-time"), theme: trimmedVal("task-theme"), repeatEnabled, repeatStartDate: repeatEnabled ? (val("task-repeat-start") || val("task-date")) : "", repeatEndDate: repeatEnabled ? (val("task-repeat-end") || val("task-date")) : "", repeatWeekdays: repeatEnabled ? getRepeatDays() : [], repeatMonths: repeatEnabled ? getRepeatMonths() : [], extraordinary: checkedVal("task-extraordinary"), updatedAt: serverTimestamp() };
   if (!payload.title || !payload.date) { alert("Preencha título e data."); return; }
   if (payload.repeatEnabled && payload.repeatEndDate < payload.repeatStartDate) { alert("O período final da repetição não pode ser menor que o inicial."); return; }
   try {
@@ -782,10 +762,12 @@ window.quickAdvanceOccurrence = async function(taskId, dateStr) {
   const steps = ["a_fazer", "em_andamento", "revisao", "publicado", "concluido"];
   const nextStatus = steps[Math.min(steps.indexOf(currentStatus) + 1, steps.length - 1)];
   try {
-    if (task.repeatEnabled) {
+    if (isRecurringTask(task)) {
       const occurrenceOverrides = { ...(task.occurrenceOverrides || {}) };
       occurrenceOverrides[dateStr] = { ...(occurrenceOverrides[dateStr] || {}), status: nextStatus };
-      await updateDoc(doc(db, "tasks", task.id), { occurrenceOverrides, updatedAt: serverTimestamp() });
+      const payload = { occurrenceOverrides, updatedAt: serverTimestamp() };
+      if (task.status !== "a_fazer") payload.status = "a_fazer";
+      await updateDoc(doc(db, "tasks", task.id), payload);
     } else {
       await updateDoc(doc(db, "tasks", task.id), { status: nextStatus, updatedAt: serverTimestamp() });
     }
@@ -974,13 +956,15 @@ calendarTaskStatusBtn?.addEventListener("click", async () => {
   const newStatus = calendarOccurrenceStatus?.value || task.status || "a_fazer";
 
   try {
-    if (task.repeatEnabled) {
+    if (isRecurringTask(task)) {
       const occurrenceOverrides = { ...(task.occurrenceOverrides || {}) };
       occurrenceOverrides[currentCalendarOccurrence.date] = {
         ...(occurrenceOverrides[currentCalendarOccurrence.date] || {}),
         status: newStatus
       };
-      await updateDoc(doc(db, "tasks", task.id), { occurrenceOverrides, updatedAt: serverTimestamp() });
+      const payload = { occurrenceOverrides, updatedAt: serverTimestamp() };
+      if (task.status !== "a_fazer") payload.status = "a_fazer";
+      await updateDoc(doc(db, "tasks", task.id), payload);
     } else {
       await updateDoc(doc(db, "tasks", task.id), { status: newStatus, updatedAt: serverTimestamp() });
     }
