@@ -427,3 +427,13 @@ input:focus,textarea:focus,select:focus{
 .calendar-mini.status-revisao{border-left:4px solid #d89614;background:rgba(216,150,20,.08)}
 .calendar-mini.status-publicado{border-left:4px solid #8b5cf6;background:rgba(139,92,246,.08)}
 .calendar-mini.status-concluido{border-left:4px solid #0c8c52;background:rgba(12,140,82,.08)}
+
+.team-summary-card.with-photo{display:flex;gap:14px;align-items:flex-start}.team-summary-avatar{width:64px;height:64px;border-radius:18px;object-fit:cover;background:#dde5ef;flex-shrink:0}
+.calendar-weekday{background:var(--surface-2);border:1px solid var(--line);border-radius:16px;padding:12px;text-align:center;font-weight:700;font-size:.85rem}
+.calendar-cell.empty{background:transparent;border:1px dashed var(--line);min-height:150px}
+.calendar-day-box{cursor:pointer;transition:.2s ease}.calendar-day-box:hover{transform:translateY(-2px);box-shadow:0 10px 20px rgba(20,35,60,.08)}
+.calendar-cell.day-done{background:rgba(12,140,82,.08);border-color:rgba(12,140,82,.35)}
+.calendar-cell.day-pending{background:rgba(214,69,69,.06);border-color:rgba(214,69,69,.3)}
+.calendar-cell.day-progress{background:rgba(48,116,255,.06);border-color:rgba(48,116,255,.3)}
+.calendar-counts{display:flex;flex-direction:column;gap:8px;margin-bottom:10px}.calendar-preview{font-size:.9rem;line-height:1.45;color:var(--text)}
+.calendar-day-card{padding:16px;border-radius:18px;border:1px solid var(--line);background:#fff}.calendar-day-card.pending{border-left:5px solid #d64545;background:rgba(214,69,69,.06)}.calendar-day-card.done{border-left:5px solid #0c8c52;background:rgba(12,140,82,.06)}.calendar-day-card.progress{border-left:5px solid #3074ff;background:rgba(48,116,255,.06)}
