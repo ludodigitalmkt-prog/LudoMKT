@@ -23,6 +23,56 @@ const todayISO = () => new Date().toISOString().slice(0, 10);
 const monthDays = (year, month) => new Date(year, month, 0).getDate();
 function escapeHtml(str = "") { return String(str).replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#039;"); }
 function formatDateBR(dateString) { if (!dateString) return "-"; const [y,m,d] = dateString.split("-"); return `${d}/${m}/${y}`; }
+function weekDayLabel(num) {
+  const map = {0:"Dom",1:"Seg",2:"Ter",3:"Qua",4:"Qui",5:"Sex",6:"Sáb"};
+  return map[num] || "";
+}
+
+function monthLabel(num) {
+  const map = {1:"Jan",2:"Fev",3:"Mar",4:"Abr",5:"Mai",6:"Jun",7:"Jul",8:"Ago",9:"Set",10:"Out",11:"Nov",12:"Dez"};
+  return map[num] || "";
+}
+
+function getRepeatDays() {
+  return [0,1,2,3,4,5,6].filter(d => checkedVal(`repeat-day-${d}`));
+}
+
+function getRepeatMonths() {
+  return [1,2,3,4,5,6,7,8,9,10,11,12].filter(m => checkedVal(`repeat-month-${m}`));
+}
+
+function clearRepeatChecks() {
+  [0,1,2,3,4,5,6].forEach(d => { const el = byId(`repeat-day-${d}`); if (el) el.checked = false; });
+  [1,2,3,4,5,6,7,8,9,10,11,12].forEach(m => { const el = byId(`repeat-month-${m}`); if (el) el.checked = false; });
+}
+
+function taskOccursOnDate(task, dateStr) {
+  if (!task) return false;
+  if (!task.repeatEnabled) return task.date === dateStr;
+
+  const start = task.repeatStartDate || task.date;
+  const end = task.repeatEndDate || task.date;
+  if (!start || !end) return task.date === dateStr;
+  if (dateStr < start || dateStr > end) return false;
+
+  const dateObj = new Date(`${dateStr}T00:00:00`);
+  const weekday = dateObj.getDay();
+  const month = Number(dateStr.split('-')[1]);
+  const days = Array.isArray(task.repeatWeekdays) ? task.repeatWeekdays : [];
+  const months = Array.isArray(task.repeatMonths) ? task.repeatMonths : [];
+
+  const dayOk = days.length ? days.includes(weekday) : true;
+  const monthOk = months.length ? months.includes(month) : true;
+  return dayOk && monthOk;
+}
+
+function repeatSummary(task) {
+  if (!task?.repeatEnabled) return "";
+  const days = (task.repeatWeekdays || []).map(weekDayLabel).join(", ");
+  const months = (task.repeatMonths || []).map(monthLabel).join(", ");
+  const period = `${formatDateBR(task.repeatStartDate || task.date)} até ${formatDateBR(task.repeatEndDate || task.date)}`;
+  return `<div><strong>Repete:</strong> ${days || "Todos os dias"}</div><div><strong>Meses:</strong> ${months || "Todos"}</div><div><strong>Período:</strong> ${period}</div>`;
+}
 function normalizeUsername(v = "") { return String(v).trim().toLowerCase().replace(/\s+/g, "."); }
 
 let currentUser = null;
@@ -292,7 +342,7 @@ async function reloadAllData() {
 }
 
 function renderStats() {
-  const dayTasks = tasksData.filter(t => t.date === todayISO());
+  const dayTasks = tasksData.filter(t => taskOccursOnDate(t, todayISO()));
   statAFazer.textContent = dayTasks.filter(t => t.status === "a_fazer").length;
   statAndamento.textContent = dayTasks.filter(t => t.status === "em_andamento").length;
   statConcluidas.textContent = dayTasks.filter(t => t.status === "concluido").length;
@@ -315,7 +365,7 @@ function taskCardTemplate(task, mode = "board") {
         <div><strong>Responsável:</strong> ${escapeHtml(task.responsibleName || "-")}</div>
         <div><strong>Data:</strong> ${formatDateBR(task.date)} ${task.time ? "• " + escapeHtml(task.time) : ""}</div>
         <div><strong>Prioridade:</strong> ${escapeHtml(task.priority || "-")}</div>
-        ${task.theme ? `<div><strong>Tema:</strong> ${escapeHtml(task.theme)}</div>` : ""}
+        ${task.theme ? `<div><strong>Tema:</strong> ${escapeHtml(task.theme)}</div>` : ""}${repeatSummary(task)}
       </div>
       ${mode === "board" && canEdit ? `<div class="task-actions"><button class="btn btn-light" onclick="window.editTask('${task.id}')">Editar</button><button class="btn btn-light" onclick="window.advanceTask('${task.id}')">Avançar</button><button class="btn btn-light" onclick="window.deleteTask('${task.id}')">Excluir</button></div>` : ""}
     </div>`;
@@ -332,7 +382,7 @@ function renderBoard() {
 function renderDirection() {
   const selectedDate = directionDateInput.value || todayISO();
   directionDateInput.value = selectedDate;
-  const filtered = tasksData.filter(task => task.date === selectedDate).sort((a, b) => (a.time || "").localeCompare(b.time || ""));
+  const filtered = tasksData.filter(task => taskOccursOnDate(task, selectedDate)).sort((a, b) => (a.time || "").localeCompare(b.time || ""));
   if (!filtered.length) { directionList.className = "list empty-state"; directionList.textContent = "Nenhuma demanda nesta data."; return; }
   directionList.className = "list";
   directionList.innerHTML = filtered.map(task => `<div class="direction-item">${taskCardTemplate(task, "direction")}</div>`).join("");
@@ -346,7 +396,7 @@ function renderCalendar() {
   calendarGrid.innerHTML = "";
   for (let day = 1; day <= total; day++) {
     const date = `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-    const dayTasks = tasksData.filter(task => task.date === date);
+    const dayTasks = tasksData.filter(task => taskOccursOnDate(task, date));
     const div = document.createElement("div");
     div.className = "calendar-cell";
     div.innerHTML = `<div class="day-number">${String(day).padStart(2, "0")}/${String(month).padStart(2, "0")}</div>${dayTasks.length ? dayTasks.slice(0, 4).map(task => `<div class="calendar-mini">${task.extraordinary ? "⚡ " : ""}<strong>${escapeHtml(task.title || "")}</strong><br>${escapeHtml(task.time || "--:--")} • ${escapeHtml(task.status || "")}</div>`).join("") : `<div class="empty-state">Sem demanda</div>`}`;
@@ -400,14 +450,14 @@ function initDragAndDrop() {
   });
 }
 
-function resetTaskForm() { taskForm?.reset(); byId("task-id").value = ""; byId("task-status").value = "a_fazer"; byId("task-priority").value = "media"; byId("task-date").value = todayISO(); }
+function resetTaskForm() { taskForm?.reset(); byId("task-id").value = ""; byId("task-status").value = "a_fazer"; byId("task-priority").value = "media"; byId("task-date").value = todayISO(); byId("task-repeat-enabled").checked = false; byId("task-repeat-start").value = todayISO(); byId("task-repeat-end").value = todayISO(); clearRepeatChecks(); }
 function resetClientForm() { clientForm?.reset(); byId("client-id").value = ""; }
 function resetBenefitForm() { benefitForm?.reset(); byId("benefit-id").value = ""; byId("benefit-status").value = "ativo"; }
 
 window.editTask = function(id) {
   if (!(isManager() || getPerm("canEditAgenda"))) return;
   const task = tasksData.find(t => t.id === id); if (!task) return;
-  byId("task-id").value = task.id; byId("task-title").value = task.title || ""; byId("task-client").value = task.clientId || ""; byId("task-description").value = task.description || ""; byId("task-responsible").value = task.responsibleId || ""; byId("task-status").value = task.status || "a_fazer"; byId("task-priority").value = task.priority || "media"; byId("task-date").value = task.date || ""; byId("task-time").value = task.time || ""; byId("task-theme").value = task.theme || ""; byId("task-extraordinary").checked = task.extraordinary === true; openModal(taskModal);
+  byId("task-id").value = task.id; byId("task-title").value = task.title || ""; byId("task-client").value = task.clientId || ""; byId("task-description").value = task.description || ""; byId("task-responsible").value = task.responsibleId || ""; byId("task-status").value = task.status || "a_fazer"; byId("task-priority").value = task.priority || "media"; byId("task-date").value = task.date || ""; byId("task-time").value = task.time || ""; byId("task-theme").value = task.theme || ""; byId("task-repeat-enabled").checked = task.repeatEnabled === true; byId("task-repeat-start").value = task.repeatStartDate || task.date || ""; byId("task-repeat-end").value = task.repeatEndDate || task.date || ""; clearRepeatChecks(); (task.repeatWeekdays || []).forEach(d => { const el = byId(`repeat-day-${d}`); if (el) el.checked = true; }); (task.repeatMonths || []).forEach(m => { const el = byId(`repeat-month-${m}`); if (el) el.checked = true; }); byId("task-extraordinary").checked = task.extraordinary === true; openModal(taskModal);
 };
 window.editClient = function(id) {
   if (!(isManager() || getPerm("canEditClientes"))) return;
@@ -453,8 +503,10 @@ async function saveTask(e) {
   const responsible = usersData.find(u => u.id === responsibleId);
   const clientId = val("task-client");
   const client = clientsData.find(c => c.id === clientId);
-  const payload = { title: trimmedVal("task-title"), clientId, clientName: client?.name || "", description: trimmedVal("task-description"), responsibleId, responsibleName: responsible?.name || responsible?.username || "", status: val("task-status"), priority: val("task-priority"), date: val("task-date"), time: val("task-time"), theme: trimmedVal("task-theme"), extraordinary: checkedVal("task-extraordinary"), updatedAt: serverTimestamp() };
+  const repeatEnabled = checkedVal("task-repeat-enabled");
+  const payload = { title: trimmedVal("task-title"), clientId, clientName: client?.name || "", description: trimmedVal("task-description"), responsibleId, responsibleName: responsible?.name || responsible?.username || "", status: val("task-status"), priority: val("task-priority"), date: val("task-date"), time: val("task-time"), theme: trimmedVal("task-theme"), repeatEnabled, repeatStartDate: repeatEnabled ? (val("task-repeat-start") || val("task-date")) : "", repeatEndDate: repeatEnabled ? (val("task-repeat-end") || val("task-date")) : "", repeatWeekdays: repeatEnabled ? getRepeatDays() : [], repeatMonths: repeatEnabled ? getRepeatMonths() : [], extraordinary: checkedVal("task-extraordinary"), updatedAt: serverTimestamp() };
   if (!payload.title || !payload.date) { alert("Preencha título e data."); return; }
+  if (payload.repeatEnabled && payload.repeatEndDate < payload.repeatStartDate) { alert("O período final da repetição não pode ser menor que o inicial."); return; }
   try {
     const id = trimmedVal("task-id");
     if (id) await updateDoc(doc(db, "tasks", id), payload);
