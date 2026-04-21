@@ -46,7 +46,7 @@ function clearRepeatChecks() {
   [1,2,3,4,5,6,7,8,9,10,11,12].forEach(m => { const el = byId(`repeat-month-${m}`); if (el) el.checked = false; });
 }
 
-function taskOccursOnDate(task, dateStr) {
+function taskOccursByRule(task, dateStr) {
   if (!task) return false;
   if (!task.repeatEnabled) return task.date === dateStr;
 
@@ -64,6 +64,27 @@ function taskOccursOnDate(task, dateStr) {
   const dayOk = days.length ? days.includes(weekday) : true;
   const monthOk = months.length ? months.includes(month) : true;
   return dayOk && monthOk;
+}
+
+function taskOccursOnDate(task, dateStr) {
+  if (!task) return false;
+  if (!task.repeatEnabled) return task.date === dateStr;
+
+  const moved = task.movedOccurrences || {};
+  const movedTargets = Object.values(moved || {});
+  if (movedTargets.includes(dateStr)) return true;
+  if (taskOccursByRule(task, dateStr) && !moved[dateStr]) return true;
+  return false;
+}
+
+function getOccurrenceStatus(task, dateStr) {
+  return task?.occurrenceOverrides?.[dateStr]?.status || task?.status || "a_fazer";
+}
+
+function getOccurrenceSourceDate(task, dateStr) {
+  if (!task?.repeatEnabled) return task?.date || dateStr;
+  const entry = Object.entries(task.movedOccurrences || {}).find(([, target]) => target === dateStr);
+  return entry ? entry[0] : dateStr;
 }
 
 function repeatSummary(task) {
@@ -142,6 +163,8 @@ let clientsData = [];
 let benefitsData = [];
 let settingsData = { themeColor: "#8B252C", fontFamily: "Inter, sans-serif" };
 let draggedTaskId = null;
+let draggedOccurrenceDate = null;
+let currentCalendarOccurrence = null;
 
 const loginScreen = byId("login-screen");
 const dashboardScreen = byId("dashboard-screen");
@@ -198,6 +221,8 @@ const clearBoardFiltersBtn = byId("clear-board-filters-btn");
 const calendarTaskModal = byId("calendar-task-modal");
 const calendarTaskContent = byId("calendar-task-content");
 const calendarTaskEditBtn = byId("calendar-task-edit-btn");
+const calendarOccurrenceStatus = byId("calendar-occurrence-status");
+const calendarTaskStatusBtn = byId("calendar-task-status-btn");
 
 function isManager() { return currentProfile?.role === "gerencia"; }
 function getPerm(key) { return isManager() || currentProfile?.permissions?.[key] === true; }
@@ -481,7 +506,7 @@ function renderCalendar() {
     const div = document.createElement("div");
     div.className = "calendar-cell droppable-calendar";
     div.dataset.date = date;
-    div.innerHTML = `<div class="day-number">${String(day).padStart(2, "0")}/${String(month).padStart(2, "0")}</div>${dayTasks.length ? dayTasks.slice(0, 4).map(task => `<div class="calendar-mini clickable status-${task.status || "a_fazer"}" draggable="${isManager() || getPerm("canEditAgenda")}" data-task-id="${task.id}" onclick="window.openCalendarTask('${task.id}')">${task.extraordinary ? "⚡ " : ""}<strong>${escapeHtml(task.title || "")}</strong><br>${escapeHtml(task.time || "--:--")} • ${statusLabel(task.status || "a_fazer")}</div>`).join("") : `<div class="empty-state">Sem demanda</div>`}`;
+    div.innerHTML = `<div class="day-number">${String(day).padStart(2, "0")}/${String(month).padStart(2, "0")}</div>${dayTasks.length ? dayTasks.slice(0, 4).map(task => `<div class="calendar-mini clickable status-${getOccurrenceStatus(task, date)}" draggable="${isManager() || getPerm("canEditAgenda")}" data-task-id="${task.id}" data-occurrence-date="${date}" onclick="window.openCalendarTask('${task.id}', '${date}')">${task.extraordinary ? "⚡ " : ""}<strong>${escapeHtml(task.title || "")}</strong><br>${escapeHtml(task.time || "--:--")} • ${statusLabel(getOccurrenceStatus(task, date))}</div>`).join("") : `<div class="empty-state">Sem demanda</div>`}`;
     calendarGrid.appendChild(div);
   }
 }
@@ -518,16 +543,17 @@ function renderAccesses() {
 function initDragAndDrop() {
   document.querySelectorAll(".task-card[draggable='true']").forEach(card => {
     card.addEventListener("dragstart", () => { draggedTaskId = card.dataset.taskId; card.classList.add("dragging"); });
-    card.addEventListener("dragend", () => { draggedTaskId = null; card.classList.remove("dragging"); });
+    card.addEventListener("dragend", () => { draggedTaskId = null; draggedOccurrenceDate = null; card.classList.remove("dragging"); });
   });
 
   document.querySelectorAll(".calendar-mini[draggable='true']").forEach(card => {
     card.addEventListener("dragstart", (e) => {
       draggedTaskId = card.dataset.taskId;
+      draggedOccurrenceDate = card.dataset.occurrenceDate || null;
       card.classList.add("dragging");
       e.stopPropagation();
     });
-    card.addEventListener("dragend", () => { draggedTaskId = null; card.classList.remove("dragging"); });
+    card.addEventListener("dragend", () => { draggedTaskId = null; draggedOccurrenceDate = null; card.classList.remove("dragging"); });
   });
 
   document.querySelectorAll(".droppable").forEach(zone => {
@@ -558,15 +584,15 @@ function initDragAndDrop() {
       const task = tasksData.find(t => t.id === draggedTaskId);
       if (!task) return;
       const newDate = cell.dataset.date;
-      const payload = { date: newDate, updatedAt: serverTimestamp() };
-
-      if (task.repeatEnabled) {
-        payload.repeatStartDate = newDate;
-        if (task.repeatEndDate && task.repeatEndDate < newDate) payload.repeatEndDate = newDate;
-      }
 
       try {
-        await updateDoc(doc(db, "tasks", draggedTaskId), payload);
+        if (task.repeatEnabled && draggedOccurrenceDate) {
+          const movedOccurrences = { ...(task.movedOccurrences || {}) };
+          movedOccurrences[draggedOccurrenceDate] = newDate;
+          await updateDoc(doc(db, "tasks", draggedTaskId), { movedOccurrences, updatedAt: serverTimestamp() });
+        } else {
+          await updateDoc(doc(db, "tasks", draggedTaskId), { date: newDate, updatedAt: serverTimestamp() });
+        }
         await reloadAllData();
       } catch (err) {
         console.error(err);
@@ -657,20 +683,27 @@ window.toggleTaskCard = function(id) {
   card.classList.toggle("expanded");
 };
 
-window.openCalendarTask = function(id) {
+window.openCalendarTask = function(id, occurrenceDate = null) {
   const task = tasksData.find(t => t.id === id);
   if (!task || !calendarTaskContent) return;
+
+  const dateRef = occurrenceDate || task.date;
+  currentCalendarOccurrence = { taskId: id, date: dateRef };
 
   calendarTaskContent.innerHTML = `
     <div class="field"><label>Título</label><div>${escapeHtml(task.title || "-")}</div></div>
     <div class="field"><label>Cliente</label><div>${escapeHtml(task.clientName || "-")}</div></div>
     <div class="field"><label>Responsável</label><div>${escapeHtml(task.responsibleName || "-")}</div></div>
-    <div class="field"><label>Status</label><div>${statusLabel(task.status || "a_fazer")}</div></div>
-    <div class="field"><label>Data</label><div>${formatDateBR(task.date)} ${task.time ? "• " + escapeHtml(task.time) : ""}</div></div>
+    <div class="field"><label>Status atual deste dia</label><div>${statusLabel(getOccurrenceStatus(task, dateRef))}</div></div>
+    <div class="field"><label>Data</label><div>${formatDateBR(dateRef)} ${task.time ? "• " + escapeHtml(task.time) : ""}</div></div>
     <div class="field"><label>Descrição</label><div>${escapeHtml(task.description || "-")}</div></div>
     <div class="field"><label>Tema</label><div>${escapeHtml(task.theme || "-")}</div></div>
     ${task.repeatEnabled ? `<div class="field"><label>Repetição</label><div>${repeatSummary(task)}</div></div>` : ""}
   `;
+
+  if (calendarOccurrenceStatus) {
+    calendarOccurrenceStatus.value = getOccurrenceStatus(task, dateRef);
+  }
 
   if (calendarTaskEditBtn) {
     calendarTaskEditBtn.onclick = () => {
@@ -820,6 +853,30 @@ loadMusicBtn?.addEventListener("click", () => { const url = normalizeMusicInput(
 boardDateFilter?.addEventListener("change", renderBoard);
 boardIncludeOverdue?.addEventListener("change", renderBoard);
 clearBoardFiltersBtn?.addEventListener("click", () => { if (boardDateFilter) boardDateFilter.value = ""; if (boardIncludeOverdue) boardIncludeOverdue.checked = false; renderBoard(); });
+calendarTaskStatusBtn?.addEventListener("click", async () => {
+  if (!currentCalendarOccurrence || !(isManager() || getPerm("canEditAgenda"))) return;
+  const task = tasksData.find(t => t.id === currentCalendarOccurrence.taskId);
+  if (!task) return;
+  const newStatus = calendarOccurrenceStatus?.value || task.status || "a_fazer";
+
+  try {
+    if (task.repeatEnabled) {
+      const occurrenceOverrides = { ...(task.occurrenceOverrides || {}) };
+      occurrenceOverrides[currentCalendarOccurrence.date] = {
+        ...(occurrenceOverrides[currentCalendarOccurrence.date] || {}),
+        status: newStatus
+      };
+      await updateDoc(doc(db, "tasks", task.id), { occurrenceOverrides, updatedAt: serverTimestamp() });
+    } else {
+      await updateDoc(doc(db, "tasks", task.id), { status: newStatus, updatedAt: serverTimestamp() });
+    }
+    closeModal(calendarTaskModal);
+    await reloadAllData();
+  } catch (err) {
+    console.error(err);
+    alert("Não foi possível atualizar o status deste dia.");
+  }
+});
 
 onAuthStateChanged(auth, async (user) => {
   if (!user) { currentUser = null; currentProfile = null; showLoginScreen(); return; }
