@@ -95,7 +95,22 @@
           </div>
         </div>
 
+        <div class="card">
+          <h3>Colaboradores ativos na agenda</h3>
+          <div id="agenda-team-summary" class="team-summary-grid"></div>
+        </div>
+
         <div id="agenda-board-view" class="agenda-view active">
+          <div class="card">
+            <div class="section-header">
+              <h3>Filtros do board</h3>
+              <div class="row-actions">
+                <input type="date" id="board-date-filter" class="input small" />
+                <label class="check-card"><input type="checkbox" id="board-include-overdue"> Ver atividades de datas anteriores</label>
+                <button id="clear-board-filters-btn" class="btn btn-light">Limpar filtro</button>
+              </div>
+            </div>
+          </div>
           <div class="board">
             <div class="board-column"><h4>A fazer</h4><div class="task-list droppable" data-status="a_fazer"></div></div>
             <div class="board-column"><h4>Em andamento</h4><div class="task-list droppable" data-status="em_andamento"></div></div>
@@ -357,6 +372,21 @@
         </div>
         <div class="modal-actions"><button type="button" class="btn btn-light" data-close-modal="user-modal">Fechar</button><button type="submit" class="btn btn-primary">Salvar usuário</button></div>
       </form>
+    </div>
+  </div>
+
+
+  <div id="calendar-task-modal" class="modal hidden">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>Detalhes da atividade</h3>
+        <button type="button" class="icon-btn" data-close-modal="calendar-task-modal">×</button>
+      </div>
+      <div id="calendar-task-content" class="form"></div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-light" data-close-modal="calendar-task-modal">Fechar</button>
+        <button type="button" id="calendar-task-edit-btn" class="btn btn-primary manager-only">Editar atividade</button>
+      </div>
     </div>
   </div>
 
