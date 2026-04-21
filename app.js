@@ -355,8 +355,7 @@ function renderCalendar() {
 }
 
 function formatMultilineText(text = "") {
-  return escapeHtml(text || "-").replace(/
-/g, "<br>");
+  return escapeHtml(text || "-").split("\n").join("<br>");
 }
 
 function paymentPill(status = "pendente") {
