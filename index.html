@@ -207,10 +207,52 @@
           <div class="field"><label>Prioridade</label><select id="task-priority" class="input"><option value="baixa">Baixa</option><option value="media">Média</option><option value="alta">Alta</option><option value="urgente">Urgente</option></select></div>
         </div>
         <div class="grid three">
-          <div class="field"><label>Data</label><input type="date" id="task-date" required /></div>
+          <div class="field"><label>Data inicial</label><input type="date" id="task-date" required /></div>
           <div class="field"><label>Hora</label><input type="time" id="task-time" /></div>
           <div class="field"><label>Tema / campanha</label><input id="task-theme" /></div>
         </div>
+
+        <div class="permissions-box">
+          <h4>Repetição da atividade</h4>
+          <div class="field checkbox-line"><input type="checkbox" id="task-repeat-enabled" /><label for="task-repeat-enabled">Essa atividade se repete</label></div>
+
+          <div class="grid two">
+            <div class="field"><label>Período inicial</label><input type="date" id="task-repeat-start" /></div>
+            <div class="field"><label>Período final</label><input type="date" id="task-repeat-end" /></div>
+          </div>
+
+          <div class="field">
+            <label>Dias da semana</label>
+            <div class="repeat-grid">
+              <label class="check-card"><input type="checkbox" id="repeat-day-1"> Seg</label>
+              <label class="check-card"><input type="checkbox" id="repeat-day-2"> Ter</label>
+              <label class="check-card"><input type="checkbox" id="repeat-day-3"> Qua</label>
+              <label class="check-card"><input type="checkbox" id="repeat-day-4"> Qui</label>
+              <label class="check-card"><input type="checkbox" id="repeat-day-5"> Sex</label>
+              <label class="check-card"><input type="checkbox" id="repeat-day-6"> Sáb</label>
+              <label class="check-card"><input type="checkbox" id="repeat-day-0"> Dom</label>
+            </div>
+          </div>
+
+          <div class="field">
+            <label>Meses em que se repete</label>
+            <div class="repeat-grid months-grid">
+              <label class="check-card"><input type="checkbox" id="repeat-month-1"> Jan</label>
+              <label class="check-card"><input type="checkbox" id="repeat-month-2"> Fev</label>
+              <label class="check-card"><input type="checkbox" id="repeat-month-3"> Mar</label>
+              <label class="check-card"><input type="checkbox" id="repeat-month-4"> Abr</label>
+              <label class="check-card"><input type="checkbox" id="repeat-month-5"> Mai</label>
+              <label class="check-card"><input type="checkbox" id="repeat-month-6"> Jun</label>
+              <label class="check-card"><input type="checkbox" id="repeat-month-7"> Jul</label>
+              <label class="check-card"><input type="checkbox" id="repeat-month-8"> Ago</label>
+              <label class="check-card"><input type="checkbox" id="repeat-month-9"> Set</label>
+              <label class="check-card"><input type="checkbox" id="repeat-month-10"> Out</label>
+              <label class="check-card"><input type="checkbox" id="repeat-month-11"> Nov</label>
+              <label class="check-card"><input type="checkbox" id="repeat-month-12"> Dez</label>
+            </div>
+          </div>
+        </div>
+
         <div class="field checkbox-line"><input type="checkbox" id="task-extraordinary" /><label for="task-extraordinary">Atividade extraordinária / última hora</label></div>
         <div class="modal-actions"><button type="button" class="btn btn-light" data-close-modal="task-modal">Fechar</button><button type="submit" class="btn btn-primary">Salvar demanda</button></div>
       </form>
