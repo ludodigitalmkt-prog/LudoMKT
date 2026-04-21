@@ -420,3 +420,10 @@ input:focus,textarea:focus,select:focus{
 .calendar-mini.clickable{cursor:pointer;transition:.2s ease}
 .calendar-mini.clickable:hover{transform:translateY(-1px);box-shadow:0 8px 20px rgba(20,35,60,.08)}
 @media (max-width:860px){.team-summary-grid{grid-template-columns:1fr}}
+
+.calendar-cell.drag-over{outline:2px dashed rgba(48,116,255,.35);background:rgba(48,116,255,.05)}
+.calendar-mini.status-a_fazer{border-left:4px solid #94a3b8;background:rgba(148,163,184,.06)}
+.calendar-mini.status-em_andamento{border-left:4px solid #3074ff;background:rgba(48,116,255,.08)}
+.calendar-mini.status-revisao{border-left:4px solid #d89614;background:rgba(216,150,20,.08)}
+.calendar-mini.status-publicado{border-left:4px solid #8b5cf6;background:rgba(139,92,246,.08)}
+.calendar-mini.status-concluido{border-left:4px solid #0c8c52;background:rgba(12,140,82,.08)}
