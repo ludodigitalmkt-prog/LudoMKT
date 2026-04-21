@@ -74,6 +74,25 @@ function repeatSummary(task) {
   return `<div><strong>Repete:</strong> ${days || "Todos os dias"}</div><div><strong>Meses:</strong> ${months || "Todos"}</div><div><strong>Período:</strong> ${period}</div>`;
 }
 function normalizeUsername(v = "") { return String(v).trim().toLowerCase().replace(/\s+/g, "."); }
+function normalizeMusicInput(raw = "") {
+  const value = String(raw || "").trim();
+  if (!value) return "";
+
+  const iframeMatch = value.match(/src=["']([^"']+)["']/i);
+  let url = iframeMatch ? iframeMatch[1] : value;
+
+  if (url.includes("open.spotify.com/playlist/") && !url.includes("/embed/")) {
+    url = url.replace("open.spotify.com/playlist/", "open.spotify.com/embed/playlist/");
+  }
+  if (url.includes("open.spotify.com/album/") && !url.includes("/embed/")) {
+    url = url.replace("open.spotify.com/album/", "open.spotify.com/embed/album/");
+  }
+  if (url.includes("open.spotify.com/track/") && !url.includes("/embed/")) {
+    url = url.replace("open.spotify.com/track/", "open.spotify.com/embed/track/");
+  }
+
+  return url;
+}
 
 let currentUser = null;
 let currentProfile = null;
@@ -658,7 +677,7 @@ userForm?.addEventListener("submit", saveUserProfile);
 saveSettingsBtn?.addEventListener("click", saveSettings);
 directionDateInput?.addEventListener("change", renderDirection);
 calendarMonthInput?.addEventListener("change", renderCalendar);
-loadMusicBtn?.addEventListener("click", () => { const url = trimmedVal("music-url"); if (!url || !musicFrame) { alert("Cole uma URL válida."); return; } musicFrame.src = url; });
+loadMusicBtn?.addEventListener("click", () => { const url = normalizeMusicInput(trimmedVal("music-url")); if (!url || !musicFrame) { alert("Cole um link ou iframe válido."); return; } musicFrame.src = url; });
 
 onAuthStateChanged(auth, async (user) => {
   if (!user) { currentUser = null; currentProfile = null; showLoginScreen(); return; }
