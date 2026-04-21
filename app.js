@@ -1,10 +1,10 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
+import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
 import {
   getAuth,
-  createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   signOut,
-  onAuthStateChanged
+  onAuthStateChanged,
+  createUserWithEmailAndPassword
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
 import {
   getFirestore,
@@ -17,14 +17,10 @@ import {
   getDoc,
   getDocs,
   query,
-  where,
   orderBy,
   serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 
-// =============================
-// FIREBASE
-// =============================
 const firebaseConfig = {
   apiKey: "AIzaSyAiPpqV9wI4o4mqsxUk9QP_BG1_DgydR-E",
   authDomain: "ludodigitalmkt-2913f.firebaseapp.com",
@@ -38,100 +34,31 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-// app secundário para criar usuários sem derrubar a sessão atual
-const creatorApp = initializeApp(firebaseConfig, "creator-app");
-const creatorAuth = getAuth(creatorApp);
+const secondaryApp = getApps().find(a => a.name === "SecondaryAgenda")
+  || initializeApp(firebaseConfig, "SecondaryAgenda");
+const secondaryAuth = getAuth(secondaryApp);
 
-const DEFAULT_LOGO = "./logo.png";
-const FALLBACK_LOGO = "data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 96 96%22%3E%3Cdefs%3E%3ClinearGradient id=%22g%22 x1=%220%22 y1=%220%22 x2=%221%22 y2=%221%22%3E%3Cstop stop-color=%22%238B252C%22/%3E%3Cstop offset=%221%22 stop-color=%22%23b73039%22/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width=%2296%22 height=%2296%22 rx=%2224%22 fill=%22url(%23g)%22/%3E%3Cpath d=%22M22 28h52v40H22z%22 fill=%22white%22 opacity=%220.18%22/%3E%3Cpath d=%22M32 24v48M48 24v48M64 24v48M24 36h48M24 52h48M24 68h48%22 stroke=%22white%22 stroke-width=%224%22 stroke-linecap=%22round%22/%3E%3C/svg%3E";
-const SETTINGS_KEY = "agenda_inteligente_settings_v2";
+const byId = (id) => document.getElementById(id);
+const val = (id) => byId(id)?.value ?? "";
+const trimmedVal = (id) => val(id).trim();
+const checkedVal = (id) => !!byId(id)?.checked;
 
-// =============================
-// ESTADO
-// =============================
-let currentUser = null;
-let currentProfile = null;
-let deferredPrompt = null;
+function normalizeUsername(username = "") {
+  return String(username)
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9._-]/g, "");
+}
 
-let usersData = [];
-let clientsData = [];
-let benefitsData = [];
-let tasksData = [];
-let settingsData = {
-  themeColor: "#8B252C",
-  fontFamily: "Inter, sans-serif"
-};
+function toHiddenEmail(login = "") {
+  const raw = String(login).trim().toLowerCase();
+  if (!raw) return "";
+  if (raw.includes("@")) return raw;
+  return `${normalizeUsername(raw)}@interno.ludo.com`;
+}
 
-let draggedTaskId = null;
-
-// =============================
-// ELEMENTOS
-// =============================
-const loginScreen = document.getElementById("login-screen");
-const dashboardScreen = document.getElementById("dashboard-screen");
-const loginForm = document.getElementById("login-form");
-const loginUsernameInput = document.getElementById("login-username");
-const loginPasswordInput = document.getElementById("login-password");
-const loginMessage = document.getElementById("login-message");
-const logoutBtn = document.getElementById("logout-btn");
-
-const menuItems = document.querySelectorAll(".menu-item");
-const tabs = document.querySelectorAll(".tab-content");
-const pageTitle = document.getElementById("page-title");
-const welcomeText = document.getElementById("welcome-text");
-const userRoleBadge = document.getElementById("user-role-badge");
-const currentUserEmail = document.getElementById("current-user-email");
-
-const statAFazer = document.getElementById("stat-a-fazer");
-const statAndamento = document.getElementById("stat-andamento");
-const statConcluidas = document.getElementById("stat-concluidas");
-const birthdayList = document.getElementById("birthday-list");
-const teamCards = document.getElementById("team-cards");
-
-const agendaViewSelect = document.getElementById("agenda-view-select");
-const agendaBoardView = document.getElementById("agenda-board-view");
-const agendaCalendarView = document.getElementById("agenda-calendar-view");
-const agendaDirecaoView = document.getElementById("agenda-direcao-view");
-
-const openTaskModalBtn = document.getElementById("open-task-modal-btn");
-const openClientModalBtn = document.getElementById("open-client-modal-btn");
-const openBenefitModalBtn = document.getElementById("open-benefit-modal-btn");
-const openUserModalBtn = document.getElementById("open-user-modal-btn");
-
-const taskModal = document.getElementById("task-modal");
-const clientModal = document.getElementById("client-modal");
-const benefitModal = document.getElementById("benefit-modal");
-const userModal = document.getElementById("user-modal");
-
-const taskForm = document.getElementById("task-form");
-const clientForm = document.getElementById("client-form");
-const benefitForm = document.getElementById("benefit-form");
-const userForm = document.getElementById("user-form");
-
-const clientsList = document.getElementById("clients-list");
-const benefitsList = document.getElementById("benefits-list");
-const rhList = document.getElementById("rh-list");
-const directionList = document.getElementById("direction-list");
-const calendarGrid = document.getElementById("calendar-grid");
-const directionDateInput = document.getElementById("direction-date-input");
-const calendarMonthInput = document.getElementById("calendar-month-input");
-
-const taskClientSelect = document.getElementById("task-client");
-const taskResponsibleSelect = document.getElementById("task-responsible");
-
-const themeColorInput = document.getElementById("theme-color-input");
-const fontSelect = document.getElementById("font-select");
-const saveSettingsBtn = document.getElementById("save-settings-btn");
-
-const musicUrlInput = document.getElementById("music-url");
-const loadMusicBtn = document.getElementById("load-music-btn");
-const musicFrame = document.getElementById("music-frame");
-
-const installBtn = document.getElementById("install-btn");
-
-// =============================
-// HELPERS
-// =============================
 function formatDateBR(dateString) {
   if (!dateString) return "-";
   const [year, month, day] = dateString.split("-");
@@ -147,152 +74,112 @@ function escapeHtml(str = "") {
     .replaceAll("'", "&#039;");
 }
 
-function sanitizeUsername(value = "") {
-  return String(value)
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
-    .trim()
-    .replace(/\s+/g, ".")
-    .replace(/[^a-z0-9._-]/g, "");
+function monthDays(year, month) {
+  return new Date(year, month, 0).getDate();
 }
 
-function makeInternalEmail(username = "") {
-  const clean = sanitizeUsername(username);
-  return clean ? `${clean}@interno.agenda` : "";
+function todayISO() {
+  return new Date().toISOString().slice(0, 10);
 }
 
-function loginIdentifierToEmail(identifier = "") {
-  const clean = String(identifier).trim();
-  return clean.includes("@") ? clean : makeInternalEmail(clean);
+function closeModal(modal) { if (modal) modal.classList.add("hidden"); }
+function openModal(modal) { if (modal) modal.classList.remove("hidden"); }
+
+let currentUser = null;
+let currentProfile = null;
+let usersData = [];
+let colaboradoresData = [];
+let tasksData = [];
+let clientsData = [];
+let benefitsData = [];
+let settingsData = { themeColor: "#8B252C", fontFamily: "Inter, sans-serif" };
+let draggedTaskId = null;
+
+const loginScreen = byId("login-screen");
+const dashboardScreen = byId("dashboard-screen");
+const loginForm = byId("login-form");
+const loginMessage = byId("login-message");
+const logoutBtn = byId("logout-btn");
+const menuItems = document.querySelectorAll(".menu-item");
+const tabs = document.querySelectorAll(".tab-content");
+const pageTitle = byId("page-title");
+const welcomeText = byId("welcome-text");
+const homeHello = byId("home-hello");
+const userRoleBadge = byId("user-role-badge");
+const currentUserName = byId("current-user-name");
+const currentUserLogin = byId("current-user-login");
+const statAFazer = byId("stat-a-fazer");
+const statAndamento = byId("stat-andamento");
+const statConcluidas = byId("stat-concluidas");
+const agendaViewSelect = byId("agenda-view-select");
+const agendaBoardView = byId("agenda-board-view");
+const agendaCalendarView = byId("agenda-calendar-view");
+const agendaDirecaoView = byId("agenda-direcao-view");
+const directionList = byId("direction-list");
+const directionDateInput = byId("direction-date-input");
+const calendarMonthInput = byId("calendar-month-input");
+const calendarGrid = byId("calendar-grid");
+const openTaskModalBtn = byId("open-task-modal-btn");
+const openClientModalBtn = byId("open-client-modal-btn");
+const openBenefitModalBtn = byId("open-benefit-modal-btn");
+const openUserModalBtn = byId("open-user-modal-btn");
+const taskModal = byId("task-modal");
+const clientModal = byId("client-modal");
+const benefitModal = byId("benefit-modal");
+const userModal = byId("user-modal");
+const taskForm = byId("task-form");
+const clientForm = byId("client-form");
+const benefitForm = byId("benefit-form");
+const userForm = byId("user-form");
+const taskClientSelect = byId("task-client");
+const taskResponsibleSelect = byId("task-responsible");
+const clientsList = byId("clients-list");
+const benefitsList = byId("benefits-list");
+const rhList = byId("rh-list");
+const themeColorInput = byId("theme-color-input");
+const fontSelect = byId("font-select");
+const saveSettingsBtn = byId("save-settings-btn");
+const musicUrlInput = byId("music-url");
+const loadMusicBtn = byId("load-music-btn");
+const musicFrame = byId("music-frame");
+
+function isManager() { return currentProfile?.role === "gerencia"; }
+function getPerm(key) { return isManager() || currentProfile?.permissions?.[key] === true; }
+
+function applyRoleVisibility() {
+  document.querySelectorAll(".manager-only").forEach(el => {
+    if (
+      isManager() ||
+      getPerm("canEditAgenda") ||
+      getPerm("canEditClientes") ||
+      getPerm("canEditBeneficios") ||
+      getPerm("canEditRh") ||
+      getPerm("canEditAjustes")
+    ) el.classList.remove("is-hidden-by-role");
+    else el.classList.add("is-hidden-by-role");
+  });
 }
 
-function getLogoSrc(url) {
-  return url && String(url).trim() ? url : DEFAULT_LOGO;
-}
-
-function showScreen(screen) {
-  [loginScreen, dashboardScreen].forEach(s => s.classList.remove("active"));
-  screen.classList.add("active");
-}
-
-function openModal(modal) {
-  modal.classList.remove("hidden");
-}
-
-function closeModal(modal) {
-  modal.classList.add("hidden");
-}
-
-function defaultPermissions() {
-  return {
-    accessInicio: true,
-    accessAgenda: true,
-    accessClientes: true,
-    accessBeneficios: false,
-    accessRh: false,
-    accessMusic: true,
-    accessAjustes: false,
-    canViewDirecao: false,
-    canEditAgenda: false,
-    canEditClientes: false,
-    canEditBeneficios: false,
-    canEditRh: false,
-    canEditAjustes: false
-  };
-}
-
-function normalizePermissions(raw = {}) {
-  return {
-    ...defaultPermissions(),
-    ...(raw || {})
-  };
-}
-
-function getUserPermissions() {
-  return normalizePermissions(currentProfile?.permissions || {});
-}
-
-function isManager() {
-  return currentProfile?.role === "gerencia";
-}
-
-function hasTabAccess(tabName) {
-  if (isManager()) return true;
-  const p = getUserPermissions();
-
-  const map = {
-    inicio: p.accessInicio,
-    agenda: p.accessAgenda,
-    clientes: p.accessClientes,
-    beneficios: p.accessBeneficios,
-    rh: p.accessRh,
-    music: p.accessMusic,
-    ajustes: p.accessAjustes
-  };
-
-  return !!map[tabName];
-}
-
-function canEditScope(scope) {
-  if (isManager()) return true;
-  const p = getUserPermissions();
-
-  const map = {
-    agenda: p.canEditAgenda,
-    clientes: p.canEditClientes,
-    beneficios: p.canEditBeneficios,
-    rh: p.canEditRh,
-    ajustes: p.canEditAjustes
+function applyTabVisibility() {
+  const rules = {
+    inicio: getPerm("accessInicio") || isManager(),
+    agenda: getPerm("accessAgenda") || isManager(),
+    clientes: getPerm("accessClientes") || isManager(),
+    beneficios: getPerm("accessBeneficios") || isManager(),
+    rh: getPerm("accessRh") || isManager(),
+    music: getPerm("accessMusic") || isManager(),
+    ajustes: getPerm("accessAjustes") || isManager()
   };
 
-  return !!map[scope];
-}
-
-function canViewDirecao() {
-  if (isManager()) return true;
-  return !!getUserPermissions().canViewDirecao;
-}
-
-function normalizeHex(hex) {
-  const value = String(hex || "").trim();
-  if (!value.startsWith("#")) return "#8B252C";
-  if (value.length === 4) {
-    return "#" + value.slice(1).split("").map(char => char + char).join("");
-  }
-  return value.length === 7 ? value : "#8B252C";
-}
-
-function hexToRgb(hex) {
-  const clean = normalizeHex(hex).replace("#", "");
-  const num = parseInt(clean, 16);
-  return {
-    r: (num >> 16) & 255,
-    g: (num >> 8) & 255,
-    b: num & 255
-  };
-}
-
-function shadeHex(hex, factor = 0) {
-  const { r, g, b } = hexToRgb(hex);
-  const calc = (value) => Math.min(255, Math.max(0, Math.round(value + (255 - value) * factor)));
-  const calcDark = (value) => Math.min(255, Math.max(0, Math.round(value * (1 + factor))));
-  const apply = factor >= 0 ? calc : calcDark;
-  const rr = apply(r).toString(16).padStart(2, "0");
-  const gg = apply(g).toString(16).padStart(2, "0");
-  const bb = apply(b).toString(16).padStart(2, "0");
-  return `#${rr}${gg}${bb}`;
+  menuItems.forEach(item => {
+    const ok = rules[item.dataset.tab] !== false;
+    item.style.display = ok ? "" : "none";
+  });
 }
 
 function setActiveTab(tabName) {
-  if (!hasTabAccess(tabName)) {
-    const firstAllowed = Array.from(menuItems).find(item => hasTabAccess(item.dataset.tab));
-    tabName = firstAllowed ? firstAllowed.dataset.tab : "inicio";
-  }
-
   menuItems.forEach(item => item.classList.toggle("active", item.dataset.tab === tabName));
   tabs.forEach(tab => tab.classList.toggle("active", tab.id === `tab-${tabName}`));
-
   const titles = {
     inicio: "Tela Inicial",
     agenda: "Agenda",
@@ -302,357 +189,158 @@ function setActiveTab(tabName) {
     music: "Music",
     ajustes: "Ajustes"
   };
-
   pageTitle.textContent = titles[tabName] || "Sistema";
 }
 
-function applyRoleVisibility() {
-  document.querySelectorAll(".manager-only").forEach(el => {
-    const scope = el.dataset.editorScope || "";
-    const shouldShow = scope ? canEditScope(scope) : isManager();
-    el.classList.toggle("is-hidden-by-role", !shouldShow);
-  });
-
-  menuItems.forEach(item => {
-    item.classList.toggle("is-hidden-by-access", !hasTabAccess(item.dataset.tab));
-  });
-
-  const directionOption = document.querySelector('#agenda-view-select option[value="direcao"]');
-  if (directionOption) {
-    directionOption.hidden = !canViewDirecao();
-    if (!canViewDirecao() && agendaViewSelect.value === "direcao") {
-      agendaViewSelect.value = "board";
-      agendaBoardView.classList.add("active");
-      agendaCalendarView.classList.remove("active");
-      agendaDirecaoView.classList.remove("active");
-    }
-  }
-}
-
-function fillUserPermissionsForm(permissions = {}) {
-  const p = normalizePermissions(permissions);
-  document.getElementById("perm-access-inicio").checked = p.accessInicio;
-  document.getElementById("perm-access-agenda").checked = p.accessAgenda;
-  document.getElementById("perm-access-clientes").checked = p.accessClientes;
-  document.getElementById("perm-access-beneficios").checked = p.accessBeneficios;
-  document.getElementById("perm-access-rh").checked = p.accessRh;
-  document.getElementById("perm-access-music").checked = p.accessMusic;
-  document.getElementById("perm-access-ajustes").checked = p.accessAjustes;
-  document.getElementById("perm-view-direcao").checked = p.canViewDirecao;
-  document.getElementById("perm-edit-agenda").checked = p.canEditAgenda;
-  document.getElementById("perm-edit-clientes").checked = p.canEditClientes;
-  document.getElementById("perm-edit-beneficios").checked = p.canEditBeneficios;
-  document.getElementById("perm-edit-rh").checked = p.canEditRh;
-  document.getElementById("perm-edit-ajustes").checked = p.canEditAjustes;
-}
-
-function readUserPermissionsForm() {
-  return {
-    accessInicio: document.getElementById("perm-access-inicio").checked,
-    accessAgenda: document.getElementById("perm-access-agenda").checked,
-    accessClientes: document.getElementById("perm-access-clientes").checked,
-    accessBeneficios: document.getElementById("perm-access-beneficios").checked,
-    accessRh: document.getElementById("perm-access-rh").checked,
-    accessMusic: document.getElementById("perm-access-music").checked,
-    accessAjustes: document.getElementById("perm-access-ajustes").checked,
-    canViewDirecao: document.getElementById("perm-view-direcao").checked,
-    canEditAgenda: document.getElementById("perm-edit-agenda").checked,
-    canEditClientes: document.getElementById("perm-edit-clientes").checked,
-    canEditBeneficios: document.getElementById("perm-edit-beneficios").checked,
-    canEditRh: document.getElementById("perm-edit-rh").checked,
-    canEditAjustes: document.getElementById("perm-edit-ajustes").checked
-  };
-}
-
-function resetTaskForm() {
-  taskForm.reset();
-  document.getElementById("task-id").value = "";
-  document.getElementById("task-status").value = "a_fazer";
-  document.getElementById("task-priority").value = "media";
-  document.getElementById("task-date").value = new Date().toISOString().slice(0, 10);
-}
-
-function resetClientForm() {
-  clientForm.reset();
-  document.getElementById("client-id").value = "";
-}
-
-function resetBenefitForm() {
-  benefitForm.reset();
-  document.getElementById("benefit-id").value = "";
-  document.getElementById("benefit-status").value = "ativo";
-}
-
-function resetUserForm() {
-  userForm.reset();
-  if (byId("user-id")) byId("user-id").value = "";
-  if (byId("user-role")) byId("user-role").value = "colaborador";
-  if (byId("user-active")) byId("user-active").checked = true;
-
-  const usernameField = document.getElementById("user-username");
-  const passwordField = document.getElementById("user-password");
-
-  if (usernameField) usernameField.readOnly = false;
-  if (passwordField) {
-    passwordField.disabled = false;
-    passwordField.value = "";
-  }
-
-  fillUserPermissionsForm(defaultPermissions());
-}
-
-function normalizeIframeUrl(url) {
-  const trimmed = String(url || "").trim();
-  if (!trimmed) return "";
-
-  if (trimmed.includes("open.spotify.com/playlist/")) {
-    return trimmed.replace("open.spotify.com/", "open.spotify.com/embed/");
-  }
-  if (trimmed.includes("open.spotify.com/album/")) {
-    return trimmed.replace("open.spotify.com/", "open.spotify.com/embed/");
-  }
-  if (trimmed.includes("open.spotify.com/track/")) {
-    return trimmed.replace("open.spotify.com/", "open.spotify.com/embed/");
-  }
-  return trimmed;
-}
-
-function byId(id) {
-  return document.getElementById(id);
-}
-
-function val(id, fallback = "") {
-  return byId(id)?.value ?? fallback;
-}
-
-function trimmedVal(id, fallback = "") {
-  return String(byId(id)?.value ?? fallback).trim();
-}
-
-function checkedVal(id, fallback = false) {
-  const el = byId(id);
-  return el ? !!el.checked : fallback;
-}
-
-// =============================
-// SETTINGS
-// =============================
 function applySettings() {
-  const color = normalizeHex(settingsData.themeColor || "#8B252C");
-  const font = settingsData.fontFamily || "Inter, sans-serif";
-
-  document.documentElement.style.setProperty("--primary", color);
-  document.documentElement.style.setProperty("--primary-2", shadeHex(color, -0.12));
-  document.documentElement.style.setProperty("--font-main", font);
-
-  document.documentElement.style.setProperty("--sidebar-bg", shadeHex(color, -0.84));
-  document.documentElement.style.setProperty("--sidebar-card", shadeHex(color, -0.72));
-  document.documentElement.style.setProperty("--sidebar-active", "rgba(255,255,255,.14)");
-  document.documentElement.style.setProperty("--btn-dark-bg", shadeHex(color, -0.68));
-  document.documentElement.style.setProperty("--surface-card", "rgba(255,255,255,.72)");
-  document.documentElement.style.setProperty("--surface-soft", "#f6f8fc");
-
-  themeColorInput.value = color;
-  fontSelect.value = font;
+  document.documentElement.style.setProperty("--primary", settingsData.themeColor || "#8B252C");
+  document.documentElement.style.setProperty("--font-main", settingsData.fontFamily || "Inter, sans-serif");
+  if (themeColorInput) themeColorInput.value = settingsData.themeColor || "#8B252C";
+  if (fontSelect) fontSelect.value = settingsData.fontFamily || "Inter, sans-serif";
+  localStorage.setItem("agenda-settings", JSON.stringify(settingsData));
 }
 
-function loadSettingsFromLocal() {
-  try {
-    const raw = localStorage.getItem(SETTINGS_KEY);
-    if (!raw) return;
-    settingsData = {
-      ...settingsData,
-      ...JSON.parse(raw)
-    };
-  } catch (error) {
-    console.error("Erro ao ler settings do localStorage:", error);
+async function loadSettings() {
+  const local = localStorage.getItem("agenda-settings");
+  if (local) {
+    try { settingsData = { ...settingsData, ...JSON.parse(local) }; } catch {}
   }
-}
-
-async function loadSettingsFromCloud() {
   try {
-    const ref = doc(db, "settings", "global");
-    const snap = await getDoc(ref);
-    if (snap.exists()) {
-      settingsData = {
-        ...settingsData,
-        ...snap.data()
-      };
-      localStorage.setItem(SETTINGS_KEY, JSON.stringify(settingsData));
-    }
-  } catch (error) {
-    console.warn("Não foi possível ler settings online. Usando local.", error);
-  }
+    const snap = await getDoc(doc(db, "settings", "global"));
+    if (snap.exists()) settingsData = { ...settingsData, ...snap.data() };
+  } catch (e) { console.warn("Ajustes carregados localmente."); }
+  applySettings();
 }
 
 async function saveSettings() {
-  if (!canEditScope("ajustes")) return;
-
-  settingsData.themeColor = themeColorInput.value;
-  settingsData.fontFamily = fontSelect.value;
-
+  if (!getPerm("canEditAjustes") && !isManager()) return;
+  settingsData.themeColor = themeColorInput?.value || "#8B252C";
+  settingsData.fontFamily = fontSelect?.value || "Inter, sans-serif";
   applySettings();
-  localStorage.setItem(SETTINGS_KEY, JSON.stringify(settingsData));
-
   try {
     await setDoc(doc(db, "settings", "global"), settingsData, { merge: true });
     alert("Ajustes salvos.");
-  } catch (error) {
-    console.warn(error);
-    alert("Ajustes aplicados e salvos localmente neste navegador.");
+  } catch (e) {
+    console.warn(e);
+    alert("Ajustes salvos localmente. Verifique as rules se quiser salvar no Firebase.");
   }
 }
 
-// =============================
-// PERFIL / AUTH
-// =============================
-async function bootstrapProfileIfNeeded(user) {
-  const userRef = doc(db, "users", user.uid);
-  const snap = await getDoc(userRef);
-
+async function bootstrapGestao(user) {
+  const ref = doc(db, "users", user.uid);
+  const snap = await getDoc(ref);
   if (snap.exists()) {
-    currentProfile = {
-      id: snap.id,
-      ...snap.data(),
-      active: snap.data().active !== false,
-      permissions: normalizePermissions(snap.data().permissions)
-    };
+    currentProfile = { id: snap.id, ...snap.data() };
     return;
   }
-
-  const byEmail = await getDocs(query(collection(db, "users"), where("email", "==", user.email || "")));
-
-  if (!byEmail.empty) {
-    const source = byEmail.docs[0];
-    const sourceData = source.data();
-
-    const migrated = {
-      ...sourceData,
+  if ((user.email || "").toLowerCase() === "gestao@ludo.com") {
+    const profile = {
       uid: user.uid,
-      email: user.email || sourceData.email || "",
-      username: sourceData.username || sanitizeUsername((user.email || "").split("@")[0]),
-      active: sourceData.active !== false,
-      permissions: normalizePermissions(sourceData.permissions),
-      updatedAt: serverTimestamp()
+      username: "gestao",
+      name: "Gestão",
+      email: user.email,
+      role: "gerencia",
+      position: "Administrador",
+      sector: "Gestão",
+      active: true,
+      permissions: {
+        accessInicio: true,
+        accessAgenda: true,
+        accessClientes: true,
+        accessBeneficios: true,
+        accessRh: true,
+        accessMusic: true,
+        accessAjustes: true,
+        canViewDirecao: true,
+        canEditAgenda: true,
+        canEditClientes: true,
+        canEditBeneficios: true,
+        canEditRh: true,
+        canEditAjustes: true
+      },
+      createdAt: serverTimestamp()
     };
-
-    await setDoc(userRef, migrated, { merge: true });
-    currentProfile = { id: user.uid, ...migrated };
-    return;
+    await setDoc(ref, profile, { merge: true });
+    currentProfile = { id: user.uid, ...profile };
+  } else {
+    throw new Error("Perfil do usuário não encontrado. Cadastre-o no RH ou faça login com a gestão.");
   }
-
-  const usersSnap = await getDocs(collection(db, "users"));
-  const firstRole = usersSnap.empty ? "gerencia" : "colaborador";
-
-  const profile = {
-    uid: user.uid,
-    name: user.email?.split("@")[0] || "Usuário",
-    username: sanitizeUsername((user.email || "").split("@")[0]),
-    email: user.email || "",
-    role: firstRole,
-    position: firstRole === "gerencia" ? "Administrador" : "",
-    sector: firstRole === "gerencia" ? "Gestão" : "Equipe",
-    birthday: "",
-    photoUrl: "",
-    benefits: "",
-    active: true,
-    permissions: firstRole === "gerencia"
-      ? {
-          accessInicio: true,
-          accessAgenda: true,
-          accessClientes: true,
-          accessBeneficios: true,
-          accessRh: true,
-          accessMusic: true,
-          accessAjustes: true,
-          canViewDirecao: true,
-          canEditAgenda: true,
-          canEditClientes: true,
-          canEditBeneficios: true,
-          canEditRh: true,
-          canEditAjustes: true
-        }
-      : defaultPermissions(),
-    createdAt: serverTimestamp()
-  };
-
-  await setDoc(userRef, profile);
-  currentProfile = { id: user.uid, ...profile };
 }
 
 async function loadCurrentProfile(user) {
-  await bootstrapProfileIfNeeded(user);
-  currentProfile.permissions = normalizePermissions(currentProfile.permissions);
-
-  userRoleBadge.textContent = currentProfile.role === "gerencia" ? "Gestão Administrador" : "Colaborador";
-  currentUserEmail.textContent = currentProfile.username
-    ? `Usuário: ${currentProfile.username}`
-    : (currentProfile.email || "");
-  welcomeText.textContent = `Olá, ${currentProfile.name || "usuário"}!`;
-
+  await bootstrapGestao(user);
+  if (!currentProfile) throw new Error("Sem perfil.");
+  userRoleBadge.textContent = isManager() ? "Gestão Administrador" : "Colaborador";
+  currentUserName.textContent = currentProfile.name || "-";
+  currentUserLogin.textContent = currentProfile.username || currentProfile.email || "-";
+  welcomeText.textContent = `Bem-vindo, ${currentProfile.name || "usuário"}!`;
+  homeHello.textContent = `Olá, ${currentProfile.name || "usuário"}!`;
   applyRoleVisibility();
+  applyTabVisibility();
 }
 
-// =============================
-// DADOS
-// =============================
-async function loadUsers() {
-  const q = query(collection(db, "users"), orderBy("name"));
-  const snap = await getDocs(q);
+function showScreen(screen) {
+  [loginScreen, dashboardScreen].forEach(s => s?.classList.remove("active"));
+  screen?.classList.add("active");
+}
 
-  const all = snap.docs.map(d => ({
-    id: d.id,
-    ...d.data(),
-    active: d.data().active !== false,
-    permissions: normalizePermissions(d.data().permissions)
-  }));
-
-  const byLogin = new Map();
-
-  for (const user of all) {
-    const key = String(user.username || user.email || user.id).toLowerCase();
-    if (!byLogin.has(key)) {
-      byLogin.set(key, user);
-      continue;
-    }
-
-    const existing = byLogin.get(key);
-    if (existing.id !== existing.uid && user.id === user.uid) {
-      byLogin.set(key, user);
-    }
+loginForm?.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  loginMessage.textContent = "";
+  const login = trimmedVal("login-username");
+  const password = val("login-password");
+  if (!login || !password) {
+    loginMessage.textContent = "Preencha usuário e senha.";
+    return;
   }
+  try {
+    const email = toHiddenEmail(login);
+    await signInWithEmailAndPassword(auth, email, password);
+  } catch (error) {
+    console.error(error);
+    loginMessage.textContent = "Não foi possível entrar. Verifique usuário e senha.";
+  }
+});
 
-  usersData = Array.from(byLogin.values());
+logoutBtn?.addEventListener("click", async () => { await signOut(auth); });
+
+async function loadUsers() {
+  try {
+    const snap = await getDocs(query(collection(db, "users"), orderBy("name")));
+    usersData = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  } catch (e) { usersData = []; console.warn("Sem users:", e.message); }
 }
 
-async function loadClients() {
-  const q = query(collection(db, "clients"), orderBy("name"));
-  const snap = await getDocs(q);
-  clientsData = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-}
-
-async function loadBenefits() {
-  const q = query(collection(db, "benefits"), orderBy("name"));
-  const snap = await getDocs(q);
-  benefitsData = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+async function loadColaboradores() {
+  try {
+    const snap = await getDocs(query(collection(db, "colaboradores"), orderBy("name")));
+    colaboradoresData = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  } catch (e) { colaboradoresData = []; console.warn("Sem colaboradores:", e.message); }
 }
 
 async function loadTasks() {
-  const q = query(collection(db, "tasks"), orderBy("date"));
-  const snap = await getDocs(q);
-  tasksData = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  try {
+    const snap = await getDocs(query(collection(db, "tasks"), orderBy("date")));
+    tasksData = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  } catch (e) { tasksData = []; }
+}
+
+async function loadClients() {
+  try {
+    const snap = await getDocs(query(collection(db, "clients"), orderBy("name")));
+    clientsData = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  } catch (e) { clientsData = []; }
+}
+
+async function loadBenefits() {
+  try {
+    const snap = await getDocs(query(collection(db, "benefits"), orderBy("name")));
+    benefitsData = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  } catch (e) { benefitsData = []; }
 }
 
 async function reloadAllData() {
-  await Promise.all([
-    loadUsers(),
-    loadClients(),
-    loadBenefits(),
-    loadTasks()
-  ]);
-
-  renderTeam();
-  renderBirthdays();
+  await Promise.all([loadUsers(), loadColaboradores(), loadTasks(), loadClients(), loadBenefits(), loadSettings()]);
   renderStats();
   renderClients();
   renderBenefits();
@@ -661,814 +349,564 @@ async function reloadAllData() {
   renderBoard();
   renderDirection();
   renderCalendar();
+  initDragAndDrop();
 }
 
-// =============================
-// BOARD DND
-// =============================
-async function updateTaskStatus(taskId, newStatus) {
-  if (!canEditScope("agenda")) return;
-  const task = tasksData.find(item => item.id === taskId);
-  if (!task || task.status === newStatus) return;
-
-  try {
-    await updateDoc(doc(db, "tasks", taskId), {
-      status: newStatus,
-      updatedAt: serverTimestamp()
-    });
-    await reloadAllData();
-  } catch (error) {
-    console.error(error);
-    alert("Não foi possível mover o card.");
-  }
-}
-
-function initBoardDnD() {
-  document.querySelectorAll('.task-list').forEach((list) => {
-    if (list.dataset.dndBound === '1') return;
-    list.dataset.dndBound = '1';
-
-    list.addEventListener('dragover', (event) => {
-      event.preventDefault();
-      if (!canEditScope("agenda")) return;
-      list.classList.add('drag-over');
-    });
-
-    list.addEventListener('dragleave', () => {
-      list.classList.remove('drag-over');
-    });
-
-    list.addEventListener('drop', async (event) => {
-      event.preventDefault();
-      list.classList.remove('drag-over');
-      if (!draggedTaskId) return;
-      await updateTaskStatus(draggedTaskId, list.dataset.status);
-      draggedTaskId = null;
-    });
-  });
-}
-
-window.startTaskDrag = function(taskId) {
-  if (!canEditScope("agenda")) return;
-  draggedTaskId = taskId;
-};
-
-window.endTaskDrag = function() {
-  draggedTaskId = null;
-  document.querySelectorAll('.task-list').forEach(list => list.classList.remove('drag-over'));
-};
-
-// =============================
-// RENDER
-// =============================
 function renderStats() {
-  const today = new Date().toISOString().slice(0, 10);
-  const dayTasks = tasksData.filter(task => task.date === today);
-
-  statAFazer.textContent = dayTasks.filter(t => t.status === "a_fazer").length;
-  statAndamento.textContent = dayTasks.filter(t => t.status === "em_andamento").length;
-  statConcluidas.textContent = dayTasks.filter(t => t.status === "concluido").length;
-}
-
-function renderBirthdays() {
-  const month = new Date().getMonth() + 1;
-  const birthdays = usersData
-    .filter(user => user.active !== false)
-    .filter(user => {
-      if (!user.birthday) return false;
-      const birthMonth = Number(user.birthday.split("-")[1]);
-      return birthMonth === month;
-    });
-
-  if (!birthdays.length) {
-    birthdayList.className = "list empty-state";
-    birthdayList.textContent = "Nenhum aniversariante neste mês.";
-    return;
-  }
-
-  birthdayList.className = "list";
-  birthdayList.innerHTML = birthdays.map(user => `
-    <div class="team-card">
-      <img class="team-avatar" src="${escapeHtml(getLogoSrc(user.photoUrl))}" alt="${escapeHtml(user.name || "")}" onerror="this.onerror=null;this.src='${FALLBACK_LOGO}'">
-      <div class="team-content">
-        <h4>${escapeHtml(user.name || "")}</h4>
-        <div class="team-meta">
-          <div>Usuário: ${escapeHtml(user.username || "-")}</div>
-          <div>Setor: ${escapeHtml(user.sector || "-")}</div>
-          <div>Aniversário: ${formatDateBR(user.birthday)}</div>
-        </div>
-      </div>
-    </div>
-  `).join("");
-}
-
-function renderTeam() {
-  const activeUsers = usersData.filter(user => user.active !== false);
-
-  if (!activeUsers.length) {
-    teamCards.innerHTML = `<div class="empty-state">Nenhum colaborador ativo cadastrado.</div>`;
-    return;
-  }
-
-  teamCards.innerHTML = activeUsers.map(user => {
-    const userTasksToday = tasksData.filter(task => task.responsibleId === user.id && task.date === new Date().toISOString().slice(0, 10));
-    const doneCount = userTasksToday.filter(t => t.status === "concluido").length;
-
-    return `
-      <div class="team-card">
-        <img class="team-avatar" src="${escapeHtml(getLogoSrc(user.photoUrl))}" alt="${escapeHtml(user.name || "")}" onerror="this.onerror=null;this.src='${FALLBACK_LOGO}'">
-        <div class="team-content">
-          <h4>${escapeHtml(user.name || "")}</h4>
-          <div class="team-meta">
-            <div>Usuário: ${escapeHtml(user.username || "-")}</div>
-            <div>Cargo: ${escapeHtml(user.position || "-")}</div>
-            <div>Setor: ${escapeHtml(user.sector || "-")}</div>
-            <div>${userTasksToday.length} do dia • ${doneCount} concluída(s)</div>
-          </div>
-        </div>
-      </div>
-    `;
-  }).join("");
+  const dayTasks = tasksData.filter(t => t.date === todayISO());
+  if (statAFazer) statAFazer.textContent = dayTasks.filter(t => t.status === "a_fazer").length;
+  if (statAndamento) statAndamento.textContent = dayTasks.filter(t => t.status === "em_andamento").length;
+  if (statConcluidas) statConcluidas.textContent = dayTasks.filter(t => t.status === "concluido").length;
 }
 
 function fillTaskSelects() {
-  const activeUsers = usersData.filter(user => user.active !== false);
-
-  taskClientSelect.innerHTML = `<option value="">Selecione</option>` + clientsData.map(client => `
-    <option value="${client.id}">${escapeHtml(client.name || "")}</option>
-  `).join("");
-
-  taskResponsibleSelect.innerHTML = activeUsers.map(user => `
-    <option value="${user.id}">${escapeHtml(user.name || "")}</option>
-  `).join("");
+  if (taskClientSelect) {
+    taskClientSelect.innerHTML = `<option value="">Selecione</option>` +
+      clientsData.map(c => `<option value="${c.id}">${escapeHtml(c.name || "")}</option>`).join("");
+  }
+  const ativos = colaboradoresData.filter(c => c.active !== false);
+  if (taskResponsibleSelect) {
+    taskResponsibleSelect.innerHTML = `<option value="">Selecione</option>` +
+      ativos.map(c => `<option value="${c.id}">${escapeHtml(c.name || "")}</option>`).join("");
+  }
 }
 
 function taskCardTemplate(task, mode = "board") {
-  const canEdit = canEditScope("agenda");
-  const client = clientsData.find(c => c.id === task.clientId);
-  const responsible = usersData.find(u => u.id === task.responsibleId);
+  const canEdit = isManager() || getPerm("canEditAgenda");
   const isExtra = task.extraordinary === true;
-
   return `
-    <div class="task-card ${isExtra ? 'extraordinary' : ''}" draggable="true" ondragstart="window.startTaskDrag('${task.id}')" ondragend="window.endTaskDrag()">
-      <div class="task-title">${isExtra ? '⚡ ' : ''}${escapeHtml(task.title || "")}</div>
+    <div class="task-card ${isExtra ? "extraordinary" : ""}" draggable="${canEdit}" data-task-id="${task.id}">
+      <div class="task-title">${isExtra ? "⚡ " : ""}${escapeHtml(task.title || "")}</div>
       <div class="task-sub">
-        <div><strong>Cliente:</strong> ${escapeHtml(client?.name || "-")}</div>
-        <div><strong>Responsável:</strong> ${escapeHtml(responsible?.name || "-")}</div>
+        <div><strong>Cliente:</strong> ${escapeHtml(task.clientName || "-")}</div>
+        <div><strong>Responsável:</strong> ${escapeHtml(task.responsibleName || "-")}</div>
         <div><strong>Data:</strong> ${formatDateBR(task.date)} ${task.time ? "• " + escapeHtml(task.time) : ""}</div>
         <div><strong>Prioridade:</strong> ${escapeHtml(task.priority || "-")}</div>
         ${task.theme ? `<div><strong>Tema:</strong> ${escapeHtml(task.theme)}</div>` : ""}
       </div>
-      ${mode === "board" ? `
-      <div class="task-actions">
-        ${canEdit ? `<button class="btn btn-light" onclick="window.editTask('${task.id}')">Editar</button>` : ""}
-        ${canEdit ? `<button class="btn btn-light" onclick="window.advanceTask('${task.id}')">Avançar</button>` : ""}
-        ${canEdit ? `<button class="btn btn-light" onclick="window.deleteTask('${task.id}')">Excluir</button>` : ""}
+      ${mode === "board" && canEdit ? `<div class="task-actions">
+        <button class="btn btn-light" onclick="window.editTask('${task.id}')">Editar</button>
+        <button class="btn btn-light" onclick="window.advanceTask('${task.id}')">Avançar</button>
+        <button class="btn btn-light" onclick="window.deleteTask('${task.id}')">Excluir</button>
       </div>` : ""}
-    </div>
-  `;
+    </div>`;
 }
 
 function renderBoard() {
-  initBoardDnD();
   document.querySelectorAll(".task-list").forEach(list => {
     const status = list.dataset.status;
     const filtered = tasksData.filter(task => task.status === status);
-
     if (!filtered.length) {
       list.innerHTML = `<div class="empty-state">Sem itens</div>`;
       return;
     }
-
     list.innerHTML = filtered.map(task => taskCardTemplate(task, "board")).join("");
   });
 }
 
 function renderDirection() {
-  const selectedDate = directionDateInput.value || new Date().toISOString().slice(0, 10);
+  if (!directionList || !directionDateInput) return;
+  const selectedDate = directionDateInput.value || todayISO();
   directionDateInput.value = selectedDate;
-
-  const filtered = tasksData
-    .filter(task => task.date === selectedDate)
-    .sort((a, b) => (a.time || "").localeCompare(b.time || ""));
-
+  const filtered = tasksData.filter(task => task.date === selectedDate).sort((a, b) => (a.time || "").localeCompare(b.time || ""));
   if (!filtered.length) {
     directionList.className = "list empty-state";
     directionList.textContent = "Nenhuma demanda nesta data.";
     return;
   }
-
   directionList.className = "list";
-  directionList.innerHTML = filtered.map(task => `
-    <div class="direction-item">
-      ${taskCardTemplate(task, "direction")}
-    </div>
-  `).join("");
+  directionList.innerHTML = filtered.map(task => `<div class="direction-item">${taskCardTemplate(task, "direction")}</div>`).join("");
 }
 
 function renderCalendar() {
+  if (!calendarGrid || !calendarMonthInput) return;
   const current = calendarMonthInput.value || new Date().toISOString().slice(0, 7);
   calendarMonthInput.value = current;
-
   const [year, month] = current.split("-").map(Number);
-  const lastDay = new Date(year, month, 0).getDate();
-
+  const total = monthDays(year, month);
   calendarGrid.innerHTML = "";
-
-  for (let day = 1; day <= lastDay; day++) {
+  for (let day = 1; day <= total; day++) {
     const date = `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
     const dayTasks = tasksData.filter(task => task.date === date);
-
-    const cell = document.createElement("div");
-    cell.className = "calendar-cell";
-    cell.innerHTML = `
+    const div = document.createElement("div");
+    div.className = "calendar-cell";
+    div.innerHTML = `
       <div class="day-number">${String(day).padStart(2, "0")}/${String(month).padStart(2, "0")}</div>
-      <div class="calendar-items">
-        ${
-          dayTasks.length
-            ? dayTasks.slice(0, 4).map(task => `
-                <div class="calendar-mini">
-                  ${task.extraordinary ? '⚡ ' : ''}
-                  <strong>${escapeHtml(task.title || "")}</strong><br>
-                  ${escapeHtml(task.time || "--:--")} • ${escapeHtml(task.status || "")}
-                </div>
-              `).join("")
-            : `<div class="empty-state">Sem demanda</div>`
-        }
-      </div>
+      ${dayTasks.length ? dayTasks.slice(0, 4).map(task => `
+        <div class="calendar-mini">
+          ${task.extraordinary ? "⚡ " : ""}
+          <strong>${escapeHtml(task.title || "")}</strong><br>
+          ${escapeHtml(task.time || "--:--")} • ${escapeHtml(task.status || "")}
+        </div>
+      `).join("") : `<div class="empty-state">Sem demanda</div>`}
     `;
-    calendarGrid.appendChild(cell);
+    calendarGrid.appendChild(div);
   }
 }
 
 function renderClients() {
+  if (!clientsList) return;
   if (!clientsData.length) {
     clientsList.innerHTML = `<div class="empty-state">Nenhum cliente cadastrado.</div>`;
     return;
   }
-
+  const canEdit = isManager() || getPerm("canEditClientes");
   clientsList.innerHTML = clientsData.map(client => `
     <div class="client-card">
       <div class="card-top-line">
         <div>
           <h3>${escapeHtml(client.name || "")}</h3>
-          <p class="team-meta">${escapeHtml(client.contractType || "-")} • ${escapeHtml(client.plan || "-")}</p>
+          <p class="muted">${escapeHtml(client.contractType || "-")} • ${escapeHtml(client.plan || "-")}</p>
         </div>
-        ${canEditScope("clientes") ? `
-          <div class="card-actions">
-            <button class="icon-btn" onclick="window.editClient('${client.id}')">✎</button>
-            <button class="icon-btn danger" onclick="window.deleteClient('${client.id}')">🗑</button>
-          </div>
-        ` : ""}
+        ${canEdit ? `<div class="card-actions">
+          <button class="icon-btn" onclick="window.editClient('${client.id}')">✎</button>
+          <button class="icon-btn danger" onclick="window.deleteClient('${client.id}')">🗑</button>
+        </div>` : ""}
       </div>
-      <div class="team-meta"><strong>Serviços:</strong> ${escapeHtml(client.services || "-")}</div>
-      <div class="team-meta"><strong>Docs:</strong> ${escapeHtml(client.docs || "-")}</div>
-    </div>
-  `).join("");
+      <div class="muted"><strong>Serviços:</strong> ${escapeHtml(client.services || "-")}</div>
+      <div class="muted"><strong>Docs:</strong> ${escapeHtml(client.docs || "-")}</div>
+    </div>`).join("");
 }
 
 function renderBenefits() {
+  if (!benefitsList) return;
   if (!benefitsData.length) {
     benefitsList.innerHTML = `<div class="empty-state">Nenhum benefício cadastrado.</div>`;
     return;
   }
-
+  const canEdit = isManager() || getPerm("canEditBeneficios");
   benefitsList.innerHTML = benefitsData.map(benefit => `
     <div class="benefit-card">
       <div class="card-top-line">
         <div>
           <h3>${escapeHtml(benefit.name || "")}</h3>
-          <p class="team-meta">${escapeHtml(benefit.type || "-")} • ${escapeHtml(benefit.value || "-")}</p>
+          <p class="muted">${escapeHtml(benefit.type || "-")} • ${escapeHtml(benefit.value || "-")}</p>
         </div>
-        ${canEditScope("beneficios") ? `
-          <div class="card-actions">
-            <button class="icon-btn" onclick="window.editBenefit('${benefit.id}')">✎</button>
-            <button class="icon-btn danger" onclick="window.deleteBenefit('${benefit.id}')">🗑</button>
-          </div>
-        ` : ""}
+        ${canEdit ? `<div class="card-actions">
+          <button class="icon-btn" onclick="window.editBenefit('${benefit.id}')">✎</button>
+          <button class="icon-btn danger" onclick="window.deleteBenefit('${benefit.id}')">🗑</button>
+        </div>` : ""}
       </div>
-      <span class="pill ${benefit.status === 'ativo' ? 'green' : 'yellow'}">${escapeHtml(benefit.status || 'ativo')}</span>
-      <div class="team-meta">${escapeHtml(benefit.description || "-")}</div>
-    </div>
-  `).join("");
-}
-
-function getAccessSummary(user) {
-  const perms = normalizePermissions(user?.permissions || {});
-  const summary = [];
-  if (perms.canEditAgenda) summary.push("Editor agenda");
-  if (perms.canEditClientes) summary.push("Editor clientes");
-  if (perms.canEditBeneficios) summary.push("Editor benefícios");
-  if (perms.canEditRh) summary.push("Editor RH");
-  if (perms.canEditAjustes) summary.push("Editor ajustes");
-  return summary;
+      <span class="pill ${benefit.status === "ativo" ? "green" : "yellow"}">${escapeHtml(benefit.status || "ativo")}</span>
+      <div class="muted">${escapeHtml(benefit.description || "-")}</div>
+    </div>`).join("");
 }
 
 function renderRH() {
-  if (!usersData.length) {
+  if (!rhList) return;
+  if (!colaboradoresData.length) {
     rhList.innerHTML = `<div class="empty-state">Nenhum colaborador cadastrado.</div>`;
     return;
   }
-
-  rhList.innerHTML = usersData.map(user => {
-    const accessSummary = getAccessSummary(user);
-    const isActive = user.active !== false;
-
-    return `
-      <div class="rh-card">
-        <div class="card-top-line">
-          <div>
-            <h3>${escapeHtml(user.name || "")}</h3>
-            <p class="team-meta">Usuário: ${escapeHtml(user.username || "-")}</p>
-          </div>
-          ${canEditScope("rh") ? `
-            <div class="card-actions">
-              <button class="icon-btn" onclick="window.editUserProfile('${user.id}')">✎</button>
-              <button class="icon-btn ${isActive ? 'danger' : 'success'}" onclick="window.toggleUserActive('${user.id}')">${isActive ? '⏸' : '▶'}</button>
-              <button class="icon-btn danger" onclick="window.deleteUserProfile('${user.id}')">🗑</button>
-            </div>
-          ` : ""}
+  const canEdit = isManager() || getPerm("canEditRh");
+  rhList.innerHTML = colaboradoresData.map(user => `
+    <div class="rh-card">
+      <div class="card-top-line">
+        <div>
+          <h3>${escapeHtml(user.name || "")}</h3>
+          <p class="muted">Usuário: ${escapeHtml(user.username || "-")}</p>
         </div>
-        <div class="team-meta"><strong>Perfil:</strong> ${escapeHtml(user.role || "-")}</div>
-        <div class="team-meta"><strong>Cargo:</strong> ${escapeHtml(user.position || "-")}</div>
-        <div class="team-meta"><strong>Setor:</strong> ${escapeHtml(user.sector || "-")}</div>
-        <div class="team-meta"><strong>Status:</strong> ${isActive ? "Ativo" : "Inativo"}</div>
-        <div class="team-meta"><strong>Benefícios:</strong> ${escapeHtml(user.benefits || "-")}</div>
-        <div class="access-tags">
-          <span class="access-tag ${isActive ? '' : 'inactive'}">${isActive ? 'Ativo na agenda' : 'Fora da agenda'}</span>
-          ${accessSummary.length ? accessSummary.map(item => `<span class="access-tag">${escapeHtml(item)}</span>`).join("") : `<span class="access-tag">Somente visualização</span>`}
-        </div>
+        ${canEdit ? `<div class="card-actions">
+          <button class="icon-btn" onclick="window.editUserProfile('${user.id}')">✎</button>
+          <button class="icon-btn" onclick="window.toggleUserActive('${user.id}')">${user.active === false ? "▶" : "⏸"}</button>
+          <button class="icon-btn danger" onclick="window.deleteUserProfile('${user.id}')">🗑</button>
+        </div>` : ""}
       </div>
-    `;
-  }).join("");
+      <div class="muted"><strong>Perfil:</strong> ${escapeHtml(user.role || "-")}</div>
+      <div class="muted"><strong>Cargo:</strong> ${escapeHtml(user.position || "-")}</div>
+      <div class="muted"><strong>Setor:</strong> ${escapeHtml(user.sector || "-")}</div>
+      <div class="muted"><strong>Status:</strong> ${user.active === false ? "Inativo" : "Ativo"}</div>
+      <div class="muted"><strong>Benefícios:</strong> ${escapeHtml(user.benefits || "-")}</div>
+      <div class="task-actions">
+        ${(user.active !== false) ? `<span class="pill blue">Ativo na agenda</span>` : ""}
+        ${user.permissions?.canEditAgenda ? `<span class="pill blue">Editor agenda</span>` : ""}
+        ${user.permissions?.canEditClientes ? `<span class="pill blue">Editor clientes</span>` : ""}
+        ${user.permissions?.canEditBeneficios ? `<span class="pill blue">Editor benefícios</span>` : ""}
+        ${user.permissions?.canEditRh ? `<span class="pill blue">Editor RH</span>` : ""}
+        ${user.permissions?.canEditAjustes ? `<span class="pill blue">Editor ajustes</span>` : ""}
+      </div>
+    </div>`).join("");
 }
 
-// =============================
-// CRUD TAREFAS
-// =============================
-async function saveTask(event) {
-  event.preventDefault();
-  if (!canEditScope("agenda")) return;
+function initDragAndDrop() {
+  document.querySelectorAll(".task-card[draggable='true']").forEach(card => {
+    card.addEventListener("dragstart", () => { draggedTaskId = card.dataset.taskId; card.classList.add("dragging"); });
+    card.addEventListener("dragend", () => { draggedTaskId = null; card.classList.remove("dragging"); });
+  });
+  document.querySelectorAll(".droppable").forEach(zone => {
+    zone.addEventListener("dragover", (e) => { e.preventDefault(); zone.classList.add("drag-over"); });
+    zone.addEventListener("dragleave", () => { zone.classList.remove("drag-over"); });
+    zone.addEventListener("drop", async (e) => {
+      e.preventDefault();
+      zone.classList.remove("drag-over");
+      if (!draggedTaskId) return;
+      if (!(isManager() || getPerm("canEditAgenda"))) return;
+      const newStatus = zone.dataset.status;
+      try {
+        await updateDoc(doc(db, "tasks", draggedTaskId), { status: newStatus, updatedAt: serverTimestamp() });
+        await reloadAllData();
+      } catch (err) {
+        console.error(err);
+        alert("Não foi possível mover o card. Verifique as rules.");
+      }
+    });
+  });
+}
 
-  const id = document.getElementById("task-id").value.trim();
-  const payload = {
-    title: document.getElementById("task-title").value.trim(),
-    clientId: document.getElementById("task-client").value || "",
-    description: document.getElementById("task-description").value.trim(),
-    responsibleId: document.getElementById("task-responsible").value || "",
-    status: document.getElementById("task-status").value,
-    priority: document.getElementById("task-priority").value,
-    date: document.getElementById("task-date").value,
-    time: document.getElementById("task-time").value,
-    theme: document.getElementById("task-theme").value.trim(),
-    link: document.getElementById("task-link").value.trim(),
-    extraordinary: document.getElementById("task-extraordinary").checked,
-    updatedAt: serverTimestamp()
-  };
-
-  if (!payload.title || !payload.date) {
-    alert("Preencha título e data.");
-    return;
-  }
-
-  try {
-    if (id) {
-      await updateDoc(doc(db, "tasks", id), payload);
-    } else {
-      await addDoc(collection(db, "tasks"), {
-        ...payload,
-        createdAt: serverTimestamp(),
-        createdBy: currentUser.uid
-      });
-    }
-
-    closeModal(taskModal);
-    resetTaskForm();
-    await reloadAllData();
-  } catch (error) {
-    console.error(error);
-    alert("Não foi possível salvar a demanda.");
-  }
+function resetTaskForm() {
+  taskForm?.reset();
+  byId("task-id").value = "";
+  byId("task-status").value = "a_fazer";
+  byId("task-priority").value = "media";
+  byId("task-date").value = todayISO();
+}
+function resetClientForm() { clientForm?.reset(); byId("client-id").value = ""; }
+function resetBenefitForm() { benefitForm?.reset(); byId("benefit-id").value = ""; byId("benefit-status").value = "ativo"; }
+function resetUserForm() {
+  userForm?.reset();
+  byId("user-id").value = "";
+  byId("user-role").value = "colaborador";
+  byId("user-active").checked = true;
+  [
+    "perm-accessInicio","perm-accessAgenda","perm-accessClientes","perm-accessBeneficios","perm-accessRh",
+    "perm-accessMusic","perm-accessAjustes","perm-canViewDirecao",
+    "perm-canEditAgenda","perm-canEditClientes","perm-canEditBeneficios","perm-canEditRh","perm-canEditAjustes"
+  ].forEach(id => { const el = byId(id); if (el) el.checked = false; });
+  byId("perm-accessInicio").checked = true;
+  byId("perm-accessAgenda").checked = true;
+  byId("perm-accessMusic").checked = true;
 }
 
 window.editTask = function(id) {
-  if (!canEditScope("agenda")) return;
-  const task = tasksData.find(item => item.id === id);
+  if (!(isManager() || getPerm("canEditAgenda"))) return;
+  const task = tasksData.find(t => t.id === id);
   if (!task) return;
-
-  document.getElementById("task-id").value = task.id;
-  document.getElementById("task-title").value = task.title || "";
-  document.getElementById("task-client").value = task.clientId || "";
-  document.getElementById("task-description").value = task.description || "";
-  document.getElementById("task-responsible").value = task.responsibleId || "";
-  document.getElementById("task-status").value = task.status || "a_fazer";
-  document.getElementById("task-priority").value = task.priority || "media";
-  document.getElementById("task-date").value = task.date || "";
-  document.getElementById("task-time").value = task.time || "";
-  document.getElementById("task-theme").value = task.theme || "";
-  document.getElementById("task-link").value = task.link || "";
-  document.getElementById("task-extraordinary").checked = task.extraordinary === true;
-
+  byId("task-id").value = task.id;
+  byId("task-title").value = task.title || "";
+  byId("task-client").value = task.clientId || "";
+  byId("task-description").value = task.description || "";
+  byId("task-responsible").value = task.responsibleId || "";
+  byId("task-status").value = task.status || "a_fazer";
+  byId("task-priority").value = task.priority || "media";
+  byId("task-date").value = task.date || "";
+  byId("task-time").value = task.time || "";
+  byId("task-theme").value = task.theme || "";
+  byId("task-extraordinary").checked = task.extraordinary === true;
   openModal(taskModal);
 };
 
-window.advanceTask = async function(id) {
-  if (!canEditScope("agenda")) return;
-  const task = tasksData.find(item => item.id === id);
-  if (!task) return;
-
-  const steps = ["a_fazer", "em_andamento", "revisao", "publicado", "concluido"];
-  const currentIndex = steps.indexOf(task.status);
-  const nextStatus = steps[Math.min(currentIndex + 1, steps.length - 1)];
-
-  try {
-    await updateDoc(doc(db, "tasks", id), {
-      status: nextStatus,
-      updatedAt: serverTimestamp()
-    });
-    await reloadAllData();
-  } catch (error) {
-    console.error(error);
-    alert("Não foi possível atualizar a demanda.");
-  }
-};
-
-window.deleteTask = async function(id) {
-  if (!canEditScope("agenda")) return;
-  if (!confirm("Deseja excluir esta demanda?")) return;
-
-  try {
-    await deleteDoc(doc(db, "tasks", id));
-    await reloadAllData();
-  } catch (error) {
-    console.error(error);
-    alert("Não foi possível excluir a demanda.");
-  }
-};
-
-// =============================
-// CRUD CLIENTES
-// =============================
-async function saveClient(event) {
-  event.preventDefault();
-  if (!canEditScope("clientes")) return;
-
-  const id = document.getElementById("client-id").value.trim();
-  const payload = {
-    name: document.getElementById("client-name").value.trim(),
-    contractType: document.getElementById("client-contract").value.trim(),
-    plan: document.getElementById("client-plan").value.trim(),
-    docs: document.getElementById("client-docs").value.trim(),
-    services: document.getElementById("client-services").value.trim(),
-    updatedAt: serverTimestamp()
-  };
-
-  if (!payload.name) {
-    alert("Informe o nome do cliente.");
-    return;
-  }
-
-  try {
-    if (id) {
-      await updateDoc(doc(db, "clients", id), payload);
-    } else {
-      await addDoc(collection(db, "clients"), {
-        ...payload,
-        createdAt: serverTimestamp()
-      });
-    }
-
-    closeModal(clientModal);
-    resetClientForm();
-    await reloadAllData();
-  } catch (error) {
-    console.error(error);
-    alert("Não foi possível salvar o cliente.");
-  }
-}
-
 window.editClient = function(id) {
-  if (!canEditScope("clientes")) return;
-  const client = clientsData.find(item => item.id === id);
+  if (!(isManager() || getPerm("canEditClientes"))) return;
+  const client = clientsData.find(c => c.id === id);
   if (!client) return;
-
-  document.getElementById("client-id").value = client.id;
-  document.getElementById("client-name").value = client.name || "";
-  document.getElementById("client-contract").value = client.contractType || "";
-  document.getElementById("client-plan").value = client.plan || "";
-  document.getElementById("client-docs").value = client.docs || "";
-  document.getElementById("client-services").value = client.services || "";
-
+  byId("client-id").value = client.id;
+  byId("client-name").value = client.name || "";
+  byId("client-contract").value = client.contractType || "";
+  byId("client-plan").value = client.plan || "";
+  byId("client-docs").value = client.docs || "";
+  byId("client-services").value = client.services || "";
   openModal(clientModal);
 };
 
-window.deleteClient = async function(id) {
-  if (!canEditScope("clientes")) return;
-  if (!confirm("Deseja excluir este cliente?")) return;
-
-  try {
-    await deleteDoc(doc(db, "clients", id));
-    await reloadAllData();
-  } catch (error) {
-    console.error(error);
-    alert("Não foi possível excluir o cliente.");
-  }
-};
-
-// =============================
-// CRUD BENEFÍCIOS
-// =============================
-async function saveBenefit(event) {
-  event.preventDefault();
-  if (!canEditScope("beneficios")) return;
-
-  const id = document.getElementById("benefit-id").value.trim();
-  const payload = {
-    name: document.getElementById("benefit-name").value.trim(),
-    type: document.getElementById("benefit-type").value.trim(),
-    value: document.getElementById("benefit-value").value.trim(),
-    status: document.getElementById("benefit-status").value,
-    description: document.getElementById("benefit-description").value.trim(),
-    updatedAt: serverTimestamp()
-  };
-
-  if (!payload.name) {
-    alert("Informe o nome do benefício.");
-    return;
-  }
-
-  try {
-    if (id) {
-      await updateDoc(doc(db, "benefits", id), payload);
-    } else {
-      await addDoc(collection(db, "benefits"), {
-        ...payload,
-        createdAt: serverTimestamp()
-      });
-    }
-
-    closeModal(benefitModal);
-    resetBenefitForm();
-    await reloadAllData();
-  } catch (error) {
-    console.error(error);
-    alert("Não foi possível salvar o benefício.");
-  }
-}
-
 window.editBenefit = function(id) {
-  if (!canEditScope("beneficios")) return;
-  const benefit = benefitsData.find(item => item.id === id);
+  if (!(isManager() || getPerm("canEditBeneficios"))) return;
+  const benefit = benefitsData.find(b => b.id === id);
   if (!benefit) return;
-
-  document.getElementById("benefit-id").value = benefit.id;
-  document.getElementById("benefit-name").value = benefit.name || "";
-  document.getElementById("benefit-type").value = benefit.type || "";
-  document.getElementById("benefit-value").value = benefit.value || "";
-  document.getElementById("benefit-status").value = benefit.status || "ativo";
-  document.getElementById("benefit-description").value = benefit.description || "";
-
+  byId("benefit-id").value = benefit.id;
+  byId("benefit-name").value = benefit.name || "";
+  byId("benefit-type").value = benefit.type || "";
+  byId("benefit-value").value = benefit.value || "";
+  byId("benefit-status").value = benefit.status || "ativo";
+  byId("benefit-description").value = benefit.description || "";
   openModal(benefitModal);
 };
 
-window.deleteBenefit = async function(id) {
-  if (!canEditScope("beneficios")) return;
-  if (!confirm("Deseja excluir este benefício?")) return;
-
-  try {
-    await deleteDoc(doc(db, "benefits", id));
-    await reloadAllData();
-  } catch (error) {
-    console.error(error);
-    alert("Não foi possível excluir o benefício.");
-  }
+window.editUserProfile = function(id) {
+  if (!(isManager() || getPerm("canEditRh"))) return;
+  const user = colaboradoresData.find(u => u.id === id);
+  if (!user) return;
+  byId("user-id").value = user.id;
+  byId("user-name").value = user.name || "";
+  byId("user-username").value = user.username || "";
+  byId("user-password").value = "";
+  byId("user-email").value = user.email || "";
+  byId("user-role").value = user.role || "colaborador";
+  byId("user-position").value = user.position || "";
+  byId("user-sector").value = user.sector || "";
+  byId("user-birthday").value = user.birthday || "";
+  byId("user-photo").value = user.photoUrl || "";
+  byId("user-benefits").value = user.benefits || "";
+  byId("user-active").checked = user.active !== false;
+  const p = user.permissions || {};
+  byId("perm-accessInicio").checked = !!p.accessInicio;
+  byId("perm-accessAgenda").checked = !!p.accessAgenda;
+  byId("perm-accessClientes").checked = !!p.accessClientes;
+  byId("perm-accessBeneficios").checked = !!p.accessBeneficios;
+  byId("perm-accessRh").checked = !!p.accessRh;
+  byId("perm-accessMusic").checked = !!p.accessMusic;
+  byId("perm-accessAjustes").checked = !!p.accessAjustes;
+  byId("perm-canViewDirecao").checked = !!p.canViewDirecao;
+  byId("perm-canEditAgenda").checked = !!p.canEditAgenda;
+  byId("perm-canEditClientes").checked = !!p.canEditClientes;
+  byId("perm-canEditBeneficios").checked = !!p.canEditBeneficios;
+  byId("perm-canEditRh").checked = !!p.canEditRh;
+  byId("perm-canEditAjustes").checked = !!p.canEditAjustes;
+  openModal(userModal);
 };
 
-// =============================
-// CRUD USUÁRIOS / RH
-// =============================
-async function saveUserProfile(event) {
-  event.preventDefault();
-  if (!canEditScope("rh")) return;
-
-  const documentId = trimmedVal("user-id");
-  const username = sanitizeUsername(val("user-username"));
-  const name = trimmedVal("user-name");
-  const initialPassword = val("user-password");
-  const internalEmail = makeInternalEmail(username);
-
-  if (!name || !username) {
-    alert("Informe nome e usuário.");
-    return;
-  }
-
-  let userId = documentId;
-  let storedEmail = internalEmail;
-
-  if (!documentId) {
-    if (!initialPassword || initialPassword.length < 6) {
-      alert("A senha inicial precisa ter pelo menos 6 caracteres.");
-      return;
-    }
-
-    try {
-      const credential = await createUserWithEmailAndPassword(creatorAuth, internalEmail, initialPassword);
-      userId = credential.user.uid;
-      storedEmail = credential.user.email || internalEmail;
-      await signOut(creatorAuth);
-    } catch (error) {
-      console.error(error);
-      if (error.code === "auth/email-already-in-use") {
-        alert("Esse usuário já existe. Escolha outro nome de usuário.");
-      } else {
-        alert("Não foi possível criar o login interno do colaborador.");
-      }
-      return;
-    }
-  } else {
-    const existing = usersData.find(item => item.id === documentId);
-    storedEmail = existing?.email || internalEmail;
-  }
-
+async function saveTask(e) {
+  e.preventDefault();
+  if (!(isManager() || getPerm("canEditAgenda"))) return;
+  const responsibleId = val("task-responsible");
+  const responsible = colaboradoresData.find(c => c.id === responsibleId);
+  const clientId = val("task-client");
+  const client = clientsData.find(c => c.id === clientId);
   const payload = {
-    uid: userId,
+    title: trimmedVal("task-title"),
+    clientId,
+    clientName: client?.name || "",
+    description: trimmedVal("task-description"),
+    responsibleId,
+    responsibleName: responsible?.name || "",
+    status: val("task-status"),
+    priority: val("task-priority"),
+    date: val("task-date"),
+    time: val("task-time"),
+    theme: trimmedVal("task-theme"),
+    extraordinary: checkedVal("task-extraordinary"),
+    updatedAt: serverTimestamp()
+  };
+  if (!payload.title || !payload.date) { alert("Preencha título e data."); return; }
+  try {
+    const id = trimmedVal("task-id");
+    if (id) await updateDoc(doc(db, "tasks", id), payload);
+    else await addDoc(collection(db, "tasks"), { ...payload, createdAt: serverTimestamp(), createdBy: currentUser.uid });
+    closeModal(taskModal);
+    resetTaskForm();
+    await reloadAllData();
+  } catch (e2) {
+    console.error(e2);
+    alert("Não foi possível salvar a atividade. Verifique as rules.");
+  }
+}
+
+window.advanceTask = async function(id) {
+  if (!(isManager() || getPerm("canEditAgenda"))) return;
+  const task = tasksData.find(item => item.id === id);
+  if (!task) return;
+  const steps = ["a_fazer", "em_andamento", "revisao", "publicado", "concluido"];
+  const currentIndex = steps.indexOf(task.status);
+  const nextStatus = steps[Math.min(currentIndex + 1, steps.length - 1)];
+  try {
+    await updateDoc(doc(db, "tasks", id), { status: nextStatus, updatedAt: serverTimestamp() });
+    await reloadAllData();
+  } catch (e) { alert("Não foi possível atualizar o status."); }
+};
+
+window.deleteTask = async function(id) {
+  if (!(isManager() || getPerm("canEditAgenda"))) return;
+  if (!confirm("Deseja excluir esta demanda?")) return;
+  try { await deleteDoc(doc(db, "tasks", id)); await reloadAllData(); } catch (e) { alert("Não foi possível excluir."); }
+};
+
+async function saveClient(e) {
+  e.preventDefault();
+  if (!(isManager() || getPerm("canEditClientes"))) return;
+  const payload = {
+    name: trimmedVal("client-name"),
+    contractType: trimmedVal("client-contract"),
+    plan: trimmedVal("client-plan"),
+    docs: trimmedVal("client-docs"),
+    services: trimmedVal("client-services"),
+    updatedAt: serverTimestamp()
+  };
+  if (!payload.name) { alert("Informe o nome do cliente."); return; }
+  try {
+    const id = trimmedVal("client-id");
+    if (id) await updateDoc(doc(db, "clients", id), payload);
+    else await addDoc(collection(db, "clients"), { ...payload, createdAt: serverTimestamp() });
+    closeModal(clientModal);
+    resetClientForm();
+    await reloadAllData();
+  } catch (e2) { alert("Não foi possível salvar o cliente."); }
+}
+
+window.deleteClient = async function(id) {
+  if (!(isManager() || getPerm("canEditClientes"))) return;
+  if (!confirm("Deseja excluir este cliente?")) return;
+  try { await deleteDoc(doc(db, "clients", id)); await reloadAllData(); } catch (e) { alert("Não foi possível excluir o cliente."); }
+};
+
+async function saveBenefit(e) {
+  e.preventDefault();
+  if (!(isManager() || getPerm("canEditBeneficios"))) return;
+  const payload = {
+    name: trimmedVal("benefit-name"),
+    type: trimmedVal("benefit-type"),
+    value: trimmedVal("benefit-value"),
+    status: val("benefit-status"),
+    description: trimmedVal("benefit-description"),
+    updatedAt: serverTimestamp()
+  };
+  if (!payload.name) { alert("Informe o nome do benefício."); return; }
+  try {
+    const id = trimmedVal("benefit-id");
+    if (id) await updateDoc(doc(db, "benefits", id), payload);
+    else await addDoc(collection(db, "benefits"), { ...payload, createdAt: serverTimestamp() });
+    closeModal(benefitModal);
+    resetBenefitForm();
+    await reloadAllData();
+  } catch (e2) { alert("Não foi possível salvar o benefício."); }
+}
+
+window.deleteBenefit = async function(id) {
+  if (!(isManager() || getPerm("canEditBeneficios"))) return;
+  if (!confirm("Deseja excluir este benefício?")) return;
+  try { await deleteDoc(doc(db, "benefits", id)); await reloadAllData(); } catch (e) { alert("Não foi possível excluir o benefício."); }
+};
+
+function collectPermissions() {
+  return {
+    accessInicio: checkedVal("perm-accessInicio"),
+    accessAgenda: checkedVal("perm-accessAgenda"),
+    accessClientes: checkedVal("perm-accessClientes"),
+    accessBeneficios: checkedVal("perm-accessBeneficios"),
+    accessRh: checkedVal("perm-accessRh"),
+    accessMusic: checkedVal("perm-accessMusic"),
+    accessAjustes: checkedVal("perm-accessAjustes"),
+    canViewDirecao: checkedVal("perm-canViewDirecao"),
+    canEditAgenda: checkedVal("perm-canEditAgenda"),
+    canEditClientes: checkedVal("perm-canEditClientes"),
+    canEditBeneficios: checkedVal("perm-canEditBeneficios"),
+    canEditRh: checkedVal("perm-canEditRh"),
+    canEditAjustes: checkedVal("perm-canEditAjustes")
+  };
+}
+
+async function saveUserProfile(e) {
+  e.preventDefault();
+  if (!(isManager() || getPerm("canEditRh"))) return;
+  const editingId = trimmedVal("user-id");
+  const name = trimmedVal("user-name");
+  const usernameRaw = trimmedVal("user-username");
+  const username = normalizeUsername(usernameRaw);
+  const password = val("user-password");
+  const emailOptional = trimmedVal("user-email");
+  if (!name) { alert("Informe o nome do colaborador."); return; }
+  const permissions = collectPermissions();
+  const basePayload = {
     name,
     username,
-    email: storedEmail,
-    role: val("user-role", "colaborador"),
+    email: emailOptional || (username ? toHiddenEmail(username) : ""),
+    role: val("user-role") || "colaborador",
     position: trimmedVal("user-position"),
     sector: trimmedVal("user-sector"),
     birthday: val("user-birthday"),
     photoUrl: trimmedVal("user-photo"),
     benefits: trimmedVal("user-benefits"),
-    active: checkedVal("user-active", true),
-    permissions: readUserPermissionsForm(),
-    updatedAt: serverTimestamp(),
-    createdAt: serverTimestamp()
+    active: checkedVal("user-active"),
+    permissions,
+    updatedAt: serverTimestamp()
   };
-
   try {
-    await setDoc(doc(db, "users", userId), payload, { merge: true });
-    closeModal(userModal);
-    resetUserForm();
-    await reloadAllData();
-    alert(documentId ? "Colaborador atualizado com sucesso." : "Colaborador criado com sucesso.");
-  } catch (error) {
-    console.error(error);
-    alert("Não foi possível salvar o colaborador. Verifique as rules do Firestore.");
+    if (editingId) {
+      await updateDoc(doc(db, "colaboradores", editingId), basePayload);
+      await updateDoc(doc(db, "users", editingId), {
+        name: basePayload.name,
+        username: basePayload.username,
+        email: basePayload.email,
+        role: basePayload.role,
+        position: basePayload.position,
+        sector: basePayload.sector,
+        active: basePayload.active,
+        permissions: basePayload.permissions,
+        updatedAt: serverTimestamp()
+      });
+      closeModal(userModal); resetUserForm(); await reloadAllData(); alert("Colaborador atualizado."); return;
+    }
+    if (username && !password) { alert("Se informar um usuário, informe também a senha inicial."); return; }
+    let uid;
+    if (username && password) {
+      const hiddenEmail = toHiddenEmail(username);
+      const cred = await createUserWithEmailAndPassword(secondaryAuth, hiddenEmail, password);
+      uid = cred.user.uid;
+      await signOut(secondaryAuth);
+    } else {
+      uid = doc(collection(db, "colaboradores")).id;
+    }
+    await setDoc(doc(db, "colaboradores", uid), { uid, ...basePayload, createdAt: serverTimestamp() });
+    await setDoc(doc(db, "users", uid), {
+      uid,
+      username: basePayload.username,
+      name: basePayload.name,
+      email: basePayload.email,
+      role: basePayload.role,
+      position: basePayload.position,
+      sector: basePayload.sector,
+      active: basePayload.active,
+      permissions: basePayload.permissions,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp()
+    }, { merge: true });
+    closeModal(userModal); resetUserForm(); await reloadAllData(); alert("Colaborador salvo com sucesso.");
+  } catch (err) {
+    console.error(err);
+    alert("Não foi possível salvar o colaborador. Verifique Authentication e as rules do Firestore.");
   }
 }
 
-window.editUserProfile = function(id) {
-  if (!canEditScope("rh")) return;
-  const user = usersData.find(item => item.id === id);
-  if (!user) return;
-
-  if (byId("user-id")) byId("user-id").value = user.id;
-  if (byId("user-name")) byId("user-name").value = user.name || "";
-  if (byId("user-username")) byId("user-username").value = user.username || "";
-  if (byId("user-password")) byId("user-password").value = "";
-  if (byId("user-password")) byId("user-password").disabled = true;
-  if (byId("user-username")) byId("user-username").readOnly = true;
-  if (byId("user-role")) byId("user-role").value = user.role || "colaborador";
-  if (byId("user-position")) byId("user-position").value = user.position || "";
-  if (byId("user-sector")) byId("user-sector").value = user.sector || "";
-  if (byId("user-birthday")) byId("user-birthday").value = user.birthday || "";
-  if (byId("user-photo")) byId("user-photo").value = user.photoUrl || "";
-  if (byId("user-benefits")) byId("user-benefits").value = user.benefits || "";
-  if (byId("user-active")) byId("user-active").checked = user.active !== false;
-  fillUserPermissionsForm(user.permissions || defaultPermissions());
-
-  openModal(userModal);
-};
-
 window.toggleUserActive = async function(id) {
-  if (!canEditScope("rh")) return;
-  const user = usersData.find(item => item.id === id);
+  if (!(isManager() || getPerm("canEditRh"))) return;
+  const user = colaboradoresData.find(u => u.id === id);
   if (!user) return;
-
   try {
-    const nextValue = !(user.active !== false);
-    await setDoc(doc(db, "users", id), { active: nextValue, updatedAt: serverTimestamp() }, { merge: true });
+    await updateDoc(doc(db, "colaboradores", id), { active: !(user.active !== false), updatedAt: serverTimestamp() });
+    await updateDoc(doc(db, "users", id), { active: !(user.active !== false), updatedAt: serverTimestamp() });
     await reloadAllData();
-  } catch (error) {
-    console.error(error);
-    alert("Não foi possível alterar o status do colaborador.");
-  }
+  } catch (e) { alert("Não foi possível alterar o status."); }
 };
 
 window.deleteUserProfile = async function(id) {
-  if (!canEditScope("rh")) return;
-  if (id === currentUser.uid) {
-    alert("Você não pode excluir seu próprio perfil em uso.");
-    return;
-  }
+  if (!(isManager() || getPerm("canEditRh"))) return;
   if (!confirm("Deseja excluir esta ficha de colaborador?")) return;
-
   try {
+    await deleteDoc(doc(db, "colaboradores", id));
     await deleteDoc(doc(db, "users", id));
     await reloadAllData();
-  } catch (error) {
-    console.error(error);
-    alert("Não foi possível excluir o colaborador.");
-  }
+  } catch (e) { alert("Não foi possível excluir a ficha."); }
 };
 
-// =============================
-// EVENTOS
-// =============================
-loginForm.addEventListener("submit", async (event) => {
-  event.preventDefault();
-  loginMessage.textContent = "";
+menuItems.forEach(item => item.addEventListener("click", () => setActiveTab(item.dataset.tab)));
 
-  const identifier = (loginUsernameInput?.value || byId("login-email")?.value || "").trim();
-  const password = loginPasswordInput.value;
-  const loginEmail = loginIdentifierToEmail(identifier);
-
-  try {
-    await signInWithEmailAndPassword(auth, loginEmail, password);
-  } catch (error) {
-    console.error(error);
-    loginMessage.textContent = "Não foi possível entrar. Verifique usuário e senha.";
-  }
-});
-
-logoutBtn.addEventListener("click", async () => {
-  await signOut(auth);
-});
-
-menuItems.forEach(item => {
-  item.addEventListener("click", () => setActiveTab(item.dataset.tab));
-});
-
-agendaViewSelect.addEventListener("change", () => {
+agendaViewSelect?.addEventListener("change", () => {
   const value = agendaViewSelect.value;
-  agendaBoardView.classList.toggle("active", value === "board");
-  agendaCalendarView.classList.toggle("active", value === "calendar");
-  agendaDirecaoView.classList.toggle("active", value === "direcao");
+  agendaBoardView?.classList.toggle("active", value === "board");
+  agendaCalendarView?.classList.toggle("active", value === "calendar");
+  agendaDirecaoView?.classList.toggle("active", value === "direcao");
 });
 
-document.querySelectorAll("[data-close-modal]").forEach(button => {
-  button.addEventListener("click", () => {
-    const modalId = button.getAttribute("data-close-modal");
-    closeModal(document.getElementById(modalId));
-  });
+document.querySelectorAll("[data-close-modal]").forEach(btn => {
+  btn.addEventListener("click", () => closeModal(byId(btn.getAttribute("data-close-modal"))));
 });
 
-openTaskModalBtn?.addEventListener("click", () => {
-  resetTaskForm();
-  openModal(taskModal);
-});
+openTaskModalBtn?.addEventListener("click", () => { resetTaskForm(); openModal(taskModal); });
+openClientModalBtn?.addEventListener("click", () => { resetClientForm(); openModal(clientModal); });
+openBenefitModalBtn?.addEventListener("click", () => { resetBenefitForm(); openModal(benefitModal); });
+openUserModalBtn?.addEventListener("click", () => { resetUserForm(); openModal(userModal); });
 
-openClientModalBtn?.addEventListener("click", () => {
-  resetClientForm();
-  openModal(clientModal);
-});
-
-openBenefitModalBtn?.addEventListener("click", () => {
-  resetBenefitForm();
-  openModal(benefitModal);
-});
-
-openUserModalBtn?.addEventListener("click", () => {
-  resetUserForm();
-  openModal(userModal);
-});
-
-taskForm.addEventListener("submit", saveTask);
-clientForm.addEventListener("submit", saveClient);
-benefitForm.addEventListener("submit", saveBenefit);
-userForm.addEventListener("submit", saveUserProfile);
+taskForm?.addEventListener("submit", saveTask);
+clientForm?.addEventListener("submit", saveClient);
+benefitForm?.addEventListener("submit", saveBenefit);
+userForm?.addEventListener("submit", saveUserProfile);
 saveSettingsBtn?.addEventListener("click", saveSettings);
+directionDateInput?.addEventListener("change", renderDirection);
+calendarMonthInput?.addEventListener("change", renderCalendar);
+loadMusicBtn?.addEventListener("click", () => {
+  const url = trimmedVal("music-url");
+  if (!url || !musicFrame) { alert("Cole uma URL válida."); return; }
+  musicFrame.src = url;
+});
 
-if (directionDateInput) directionDateInput.addEventListener("change", renderDirection);
-if (calendarMonthInput) calendarMonthInput.addEventListener("change", renderCalendar);
-
-if (loadMusicBtn && musicUrlInput && musicFrame) {
-  loadMusicBtn.addEventListener("click", () => {
-    const url = normalizeIframeUrl(musicUrlInput.value);
-    if (!url) {
-      alert("Cole uma URL válida.");
-      return;
-    }
-    musicFrame.src = url;
-  });
-}
-
-// =============================
-// PWA
-// =============================
-if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => {
-    navigator.serviceWorker.register("./sw.js").catch(err => {
-      console.error("Erro ao registrar service worker:", err);
-    });
-  });
-}
-
-// =============================
-// AUTH OBSERVER
-// =============================
 onAuthStateChanged(auth, async (user) => {
   if (!user) {
     currentUser = null;
@@ -1476,44 +914,19 @@ onAuthStateChanged(auth, async (user) => {
     showScreen(loginScreen);
     return;
   }
-
   currentUser = user;
-
   try {
-    loadSettingsFromLocal();
-    applySettings();
-
     await loadCurrentProfile(user);
-
-    if (currentProfile?.active === false) {
-      await signOut(auth);
-      alert("Este acesso está inativo. Procure a gerência.");
-      return;
-    }
-
-    await loadSettingsFromCloud();
-    applySettings();
     await reloadAllData();
-
-    if (!directionDateInput.value) {
-      directionDateInput.value = new Date().toISOString().slice(0, 10);
-    }
-
-    if (!calendarMonthInput.value) {
-      calendarMonthInput.value = new Date().toISOString().slice(0, 7);
-    }
-
+    if (!directionDateInput.value) directionDateInput.value = todayISO();
+    if (!calendarMonthInput.value) calendarMonthInput.value = new Date().toISOString().slice(0, 7);
     renderDirection();
     renderCalendar();
-
     setActiveTab("inicio");
     showScreen(dashboardScreen);
-  } catch (error) {
-    console.error(error);
-    alert("Erro ao carregar dados do sistema.");
+  } catch (e) {
+    console.error(e);
+    alert(e.message || "Erro ao carregar o sistema.");
+    await signOut(auth);
   }
 });
-
-// aplica local logo no carregamento
-loadSettingsFromLocal();
-applySettings();
