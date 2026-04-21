@@ -33,7 +33,7 @@
     </div>
   </section>
 
-  <section id="dashboard-screen" class="screen">
+  <section id="dashboard-screen" class="screen" style="display:none">
     <aside class="sidebar">
       <div class="sidebar-top">
         <img src="./logo.png" alt="Logo" class="sidebar-logo" onerror="this.style.display='none'">
@@ -230,7 +230,22 @@
           <div class="field"><label>Plano</label><input id="client-plan" /></div>
           <div class="field"><label>Docs / links</label><input id="client-docs" /></div>
         </div>
-        <div class="field"><label>Serviços realizados</label><textarea id="client-services" rows="4"></textarea></div>
+        <div class="grid two">
+          <div class="field">
+            <label>Status de pagamento</label>
+            <select id="client-payment-status" class="input">
+              <option value="pendente">Pendente</option>
+              <option value="pago">Pago</option>
+              <option value="parcial">Pago parcial</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Valor / mensalidade</label>
+            <input id="client-payment-value" placeholder="Ex: R$ 1.500,00" />
+          </div>
+        </div>
+        <div class="field"><label>Serviços realizados</label><textarea id="client-services" rows="6" placeholder="Coloque um item por linha para ficar organizado."></textarea></div>
+        <div class="field"><label>Observações</label><textarea id="client-notes" rows="4" placeholder="Observações internas, briefing, pendências, observações de pagamento..."></textarea></div>
         <div class="modal-actions"><button type="button" class="btn btn-light" data-close-modal="client-modal">Fechar</button><button type="submit" class="btn btn-primary">Salvar cliente</button></div>
       </form>
     </div>
