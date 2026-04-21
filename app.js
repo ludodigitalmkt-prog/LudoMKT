@@ -73,6 +73,46 @@ function repeatSummary(task) {
   const period = `${formatDateBR(task.repeatStartDate || task.date)} até ${formatDateBR(task.repeatEndDate || task.date)}`;
   return `<div><strong>Repete:</strong> ${days || "Todos os dias"}</div><div><strong>Meses:</strong> ${months || "Todos"}</div><div><strong>Período:</strong> ${period}</div>`;
 }
+function statusLabel(status = "a_fazer") {
+  const map = { a_fazer: "A fazer", em_andamento: "Em andamento", revisao: "Revisão", publicado: "Publicado", concluido: "Concluído" };
+  return map[status] || status;
+}
+
+function boardFilteredTasks() {
+  const selectedDate = boardDateFilter?.value || "";
+  const includeOverdue = !!boardIncludeOverdue?.checked;
+  let list = [...tasksData];
+
+  if (selectedDate) {
+    list = list.filter(task => taskOccursOnDate(task, selectedDate));
+  }
+
+  if (includeOverdue) {
+    const today = todayISO();
+    list = list.filter(task => (task.date && task.date < today && task.status !== "concluido") || (!selectedDate || taskOccursOnDate(task, selectedDate)));
+  }
+
+  return list;
+}
+
+function renderAgendaTeamSummary() {
+  if (!agendaTeamSummary) return;
+  const ativos = usersData.filter(u => u.active !== false);
+  if (!ativos.length) {
+    agendaTeamSummary.innerHTML = `<div class="empty-state">Nenhum usuário ativo.</div>`;
+    return;
+  }
+
+  agendaTeamSummary.innerHTML = ativos.map(user => {
+    const userTasks = tasksData.filter(task => task.responsibleId === user.id);
+    const aFazer = userTasks.filter(t => t.status === "a_fazer").length;
+    const andamento = userTasks.filter(t => t.status === "em_andamento").length;
+    const revisao = userTasks.filter(t => t.status === "revisao").length;
+    const publicado = userTasks.filter(t => t.status === "publicado").length;
+    const concluido = userTasks.filter(t => t.status === "concluido").length;
+    return `<div class="team-summary-card"><h4>${escapeHtml(user.name || user.username || user.email || "-")}</h4><div class="muted">${escapeHtml(user.position || user.sector || "-")}</div><div class="team-summary-stats"><span class="pill blue">${userTasks.length} atividade(s)</span><span class="pill ${aFazer ? "yellow" : "blue"}">A fazer: ${aFazer}</span><span class="pill blue">Andamento: ${andamento}</span><span class="pill yellow">Revisão: ${revisao}</span><span class="pill blue">Publicado: ${publicado}</span><span class="pill green">Concluído: ${concluido}</span></div></div>`;
+  }).join("");
+}
 function normalizeUsername(v = "") { return String(v).trim().toLowerCase().replace(/\s+/g, "."); }
 function normalizeMusicInput(raw = "") {
   const value = String(raw || "").trim();
@@ -151,6 +191,13 @@ const saveSettingsBtn = byId("save-settings-btn");
 const musicUrlInput = byId("music-url");
 const loadMusicBtn = byId("load-music-btn");
 const musicFrame = byId("music-frame");
+const agendaTeamSummary = byId("agenda-team-summary");
+const boardDateFilter = byId("board-date-filter");
+const boardIncludeOverdue = byId("board-include-overdue");
+const clearBoardFiltersBtn = byId("clear-board-filters-btn");
+const calendarTaskModal = byId("calendar-task-modal");
+const calendarTaskContent = byId("calendar-task-content");
+const calendarTaskEditBtn = byId("calendar-task-edit-btn");
 
 function isManager() { return currentProfile?.role === "gerencia"; }
 function getPerm(key) { return isManager() || currentProfile?.permissions?.[key] === true; }
@@ -357,6 +404,7 @@ async function reloadAllData() {
   renderBoard();
   renderDirection();
   renderCalendar();
+  renderAgendaTeamSummary();
   initDragAndDrop();
 }
 
@@ -376,24 +424,38 @@ function fillTaskSelects() {
 function taskCardTemplate(task, mode = "board") {
   const canEdit = isManager() || getPerm("canEditAgenda");
   const isExtra = task.extraordinary === true;
+  const status = task.status || "a_fazer";
+
   return `
-    <div class="task-card ${isExtra ? "extraordinary" : ""}" draggable="${canEdit}" data-task-id="${task.id}">
-      <div class="task-title">${isExtra ? "⚡ " : ""}${escapeHtml(task.title || "")}</div>
-      <div class="task-sub">
-        <div><strong>Cliente:</strong> ${escapeHtml(task.clientName || "-")}</div>
-        <div><strong>Responsável:</strong> ${escapeHtml(task.responsibleName || "-")}</div>
-        <div><strong>Data:</strong> ${formatDateBR(task.date)} ${task.time ? "• " + escapeHtml(task.time) : ""}</div>
-        <div><strong>Prioridade:</strong> ${escapeHtml(task.priority || "-")}</div>
-        ${task.theme ? `<div><strong>Tema:</strong> ${escapeHtml(task.theme)}</div>` : ""}${repeatSummary(task)}
+    <div class="task-card status-${status}" draggable="${canEdit}" data-task-id="${task.id}">
+      <div class="task-card-header">
+        <div>
+          <div class="task-title">${isExtra ? "⚡ " : ""}${escapeHtml(task.title || "")}</div>
+          <div class="task-sub">${formatDateBR(task.date)} ${task.time ? "• " + escapeHtml(task.time) : ""}</div>
+        </div>
+        <button class="btn btn-light" type="button" onclick="window.toggleTaskCard('${task.id}')">Detalhes</button>
       </div>
-      ${mode === "board" && canEdit ? `<div class="task-actions"><button class="btn btn-light" onclick="window.editTask('${task.id}')">Editar</button><button class="btn btn-light" onclick="window.advanceTask('${task.id}')">Avançar</button><button class="btn btn-light" onclick="window.deleteTask('${task.id}')">Excluir</button></div>` : ""}
+      <div class="task-actions">
+        <span class="task-status-badge status-${status}">${statusLabel(status)}</span>
+        ${task.clientName ? `<span class="pill blue">${escapeHtml(task.clientName)}</span>` : ""}
+        ${task.responsibleName ? `<span class="pill blue">${escapeHtml(task.responsibleName)}</span>` : ""}
+      </div>
+      <div class="task-card-body" id="task-body-${task.id}">
+        <div class="task-sub">
+          ${task.description ? `<div><strong>Descrição:</strong> ${escapeHtml(task.description)}</div>` : ""}
+          <div><strong>Prioridade:</strong> ${escapeHtml(task.priority || "-")}</div>
+          ${task.theme ? `<div><strong>Tema:</strong> ${escapeHtml(task.theme)}</div>` : ""}
+          ${repeatSummary(task)}
+        </div>
+        ${mode === "board" && canEdit ? `<div class="task-actions"><button class="btn btn-light" onclick="window.editTask('${task.id}')">Editar</button><button class="btn btn-light" onclick="window.advanceTask('${task.id}')">Avançar</button><button class="btn btn-light" onclick="window.deleteTask('${task.id}')">Excluir</button></div>` : ""}
+      </div>
     </div>`;
 }
 
 function renderBoard() {
   document.querySelectorAll(".task-list").forEach(list => {
     const status = list.dataset.status;
-    const filtered = tasksData.filter(task => task.status === status);
+    const filtered = boardFilteredTasks().filter(task => task.status === status);
     list.innerHTML = filtered.length ? filtered.map(task => taskCardTemplate(task, "board")).join("") : `<div class="empty-state">Sem itens</div>`;
   });
 }
@@ -418,7 +480,7 @@ function renderCalendar() {
     const dayTasks = tasksData.filter(task => taskOccursOnDate(task, date));
     const div = document.createElement("div");
     div.className = "calendar-cell";
-    div.innerHTML = `<div class="day-number">${String(day).padStart(2, "0")}/${String(month).padStart(2, "0")}</div>${dayTasks.length ? dayTasks.slice(0, 4).map(task => `<div class="calendar-mini">${task.extraordinary ? "⚡ " : ""}<strong>${escapeHtml(task.title || "")}</strong><br>${escapeHtml(task.time || "--:--")} • ${escapeHtml(task.status || "")}</div>`).join("") : `<div class="empty-state">Sem demanda</div>`}`;
+    div.innerHTML = `<div class="day-number">${String(day).padStart(2, "0")}/${String(month).padStart(2, "0")}</div>${dayTasks.length ? dayTasks.slice(0, 4).map(task => `<div class="calendar-mini clickable" onclick="window.openCalendarTask('${task.id}')">${task.extraordinary ? "⚡ " : ""}<strong>${escapeHtml(task.title || "")}</strong><br>${escapeHtml(task.time || "--:--")} • ${statusLabel(task.status || "a_fazer")}</div>`).join("") : `<div class="empty-state">Sem demanda</div>`}`;
     calendarGrid.appendChild(div);
   }
 }
@@ -542,6 +604,38 @@ window.advanceTask = async function(id) {
   try { await updateDoc(doc(db, "tasks", id), { status: nextStatus, updatedAt: serverTimestamp() }); await reloadAllData(); } catch { alert("Não foi possível atualizar o status."); }
 };
 window.deleteTask = async function(id) { if (!(isManager() || getPerm("canEditAgenda"))) return; if (!confirm("Deseja excluir esta demanda?")) return; try { await deleteDoc(doc(db, "tasks", id)); await reloadAllData(); } catch { alert("Não foi possível excluir."); } };
+
+window.toggleTaskCard = function(id) {
+  const card = document.querySelector(`[data-task-id="${id}"]`);
+  const body = byId(`task-body-${id}`);
+  if (!card || !body) return;
+  card.classList.toggle("expanded");
+};
+
+window.openCalendarTask = function(id) {
+  const task = tasksData.find(t => t.id === id);
+  if (!task || !calendarTaskContent) return;
+
+  calendarTaskContent.innerHTML = `
+    <div class="field"><label>Título</label><div>${escapeHtml(task.title || "-")}</div></div>
+    <div class="field"><label>Cliente</label><div>${escapeHtml(task.clientName || "-")}</div></div>
+    <div class="field"><label>Responsável</label><div>${escapeHtml(task.responsibleName || "-")}</div></div>
+    <div class="field"><label>Status</label><div>${statusLabel(task.status || "a_fazer")}</div></div>
+    <div class="field"><label>Data</label><div>${formatDateBR(task.date)} ${task.time ? "• " + escapeHtml(task.time) : ""}</div></div>
+    <div class="field"><label>Descrição</label><div>${escapeHtml(task.description || "-")}</div></div>
+    <div class="field"><label>Tema</label><div>${escapeHtml(task.theme || "-")}</div></div>
+    ${task.repeatEnabled ? `<div class="field"><label>Repetição</label><div>${repeatSummary(task)}</div></div>` : ""}
+  `;
+
+  if (calendarTaskEditBtn) {
+    calendarTaskEditBtn.onclick = () => {
+      closeModal(calendarTaskModal);
+      window.editTask(id);
+    };
+  }
+
+  openModal(calendarTaskModal);
+};
 
 async function saveClient(e) {
   e.preventDefault(); if (!(isManager() || getPerm("canEditClientes"))) return;
@@ -678,6 +772,9 @@ saveSettingsBtn?.addEventListener("click", saveSettings);
 directionDateInput?.addEventListener("change", renderDirection);
 calendarMonthInput?.addEventListener("change", renderCalendar);
 loadMusicBtn?.addEventListener("click", () => { const url = normalizeMusicInput(trimmedVal("music-url")); if (!url || !musicFrame) { alert("Cole um link ou iframe válido."); return; } musicFrame.src = url; });
+boardDateFilter?.addEventListener("change", renderBoard);
+boardIncludeOverdue?.addEventListener("change", renderBoard);
+clearBoardFiltersBtn?.addEventListener("click", () => { if (boardDateFilter) boardDateFilter.value = ""; if (boardIncludeOverdue) boardIncludeOverdue.checked = false; renderBoard(); });
 
 onAuthStateChanged(auth, async (user) => {
   if (!user) { currentUser = null; currentProfile = null; showLoginScreen(); return; }
