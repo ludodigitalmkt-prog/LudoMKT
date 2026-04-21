@@ -354,10 +354,21 @@ function renderCalendar() {
   }
 }
 
+function formatMultilineText(text = "") {
+  return escapeHtml(text || "-").replace(/
+/g, "<br>");
+}
+
+function paymentPill(status = "pendente") {
+  if (status === "pago") return `<span class="pill green">Pago</span>`;
+  if (status === "parcial") return `<span class="pill yellow">Pago parcial</span>`;
+  return `<span class="pill yellow">Pendente</span>`;
+}
+
 function renderClients() {
   if (!clientsData.length) { clientsList.innerHTML = `<div class="empty-state">Nenhum cliente cadastrado.</div>`; return; }
   const canEdit = isManager() || getPerm("canEditClientes");
-  clientsList.innerHTML = clientsData.map(client => `<div class="client-card"><div class="card-top-line"><div><h3>${escapeHtml(client.name || "")}</h3><p class="muted">${escapeHtml(client.contractType || "-")} • ${escapeHtml(client.plan || "-")}</p></div>${canEdit ? `<div class="card-actions"><button class="icon-btn" onclick="window.editClient('${client.id}')">✎</button><button class="icon-btn danger" onclick="window.deleteClient('${client.id}')">🗑</button></div>` : ""}</div><div class="muted"><strong>Serviços:</strong> ${escapeHtml(client.services || "-")}</div><div class="muted"><strong>Docs:</strong> ${escapeHtml(client.docs || "-")}</div></div>`).join("");
+  clientsList.innerHTML = clientsData.map(client => `<div class="client-card"><div class="card-top-line"><div><h3>${escapeHtml(client.name || "")}</h3><p class="muted">${escapeHtml(client.contractType || "-")} • ${escapeHtml(client.plan || "-")}</p></div>${canEdit ? `<div class="card-actions"><button class="icon-btn" onclick="window.printClient('${client.id}')">🖨</button><button class="icon-btn" onclick="window.editClient('${client.id}')">✎</button><button class="icon-btn danger" onclick="window.deleteClient('${client.id}')">🗑</button></div>` : `<div class="card-actions"><button class="icon-btn" onclick="window.printClient('${client.id}')">🖨</button></div>`}</div><div class="task-actions">${paymentPill(client.paymentStatus || "pendente")}${client.paymentValue ? `<span class="pill blue">${escapeHtml(client.paymentValue)}</span>` : ""}</div><div class="muted multiline-text"><strong>Serviços:</strong><br>${formatMultilineText(client.services || "-")}</div><div class="muted multiline-text"><strong>Observações:</strong><br>${formatMultilineText(client.notes || "-")}</div><div class="muted multiline-text"><strong>Docs:</strong><br>${formatMultilineText(client.docs || "-")}</div></div>`).join("");
 }
 
 function renderBenefits() {
@@ -402,7 +413,7 @@ window.editTask = function(id) {
 window.editClient = function(id) {
   if (!(isManager() || getPerm("canEditClientes"))) return;
   const client = clientsData.find(c => c.id === id); if (!client) return;
-  byId("client-id").value = client.id; byId("client-name").value = client.name || ""; byId("client-contract").value = client.contractType || ""; byId("client-plan").value = client.plan || ""; byId("client-docs").value = client.docs || ""; byId("client-services").value = client.services || ""; openModal(clientModal);
+  byId("client-id").value = client.id; byId("client-name").value = client.name || ""; byId("client-contract").value = client.contractType || ""; byId("client-plan").value = client.plan || ""; byId("client-docs").value = client.docs || ""; byId("client-payment-status").value = client.paymentStatus || "pendente"; byId("client-payment-value").value = client.paymentValue || ""; byId("client-services").value = client.services || ""; byId("client-notes").value = client.notes || ""; openModal(clientModal);
 };
 window.editBenefit = function(id) {
   if (!(isManager() || getPerm("canEditBeneficios"))) return;
@@ -464,11 +475,48 @@ window.deleteTask = async function(id) { if (!(isManager() || getPerm("canEditAg
 
 async function saveClient(e) {
   e.preventDefault(); if (!(isManager() || getPerm("canEditClientes"))) return;
-  const payload = { name: trimmedVal("client-name"), contractType: trimmedVal("client-contract"), plan: trimmedVal("client-plan"), docs: trimmedVal("client-docs"), services: trimmedVal("client-services"), updatedAt: serverTimestamp() };
+  const payload = { name: trimmedVal("client-name"), contractType: trimmedVal("client-contract"), plan: trimmedVal("client-plan"), docs: trimmedVal("client-docs"), paymentStatus: val("client-payment-status"), paymentValue: trimmedVal("client-payment-value"), services: trimmedVal("client-services"), notes: trimmedVal("client-notes"), updatedAt: serverTimestamp() };
   if (!payload.name) { alert("Informe o nome do cliente."); return; }
   try { const id = trimmedVal("client-id"); if (id) await updateDoc(doc(db, "clients", id), payload); else await addDoc(collection(db, "clients"), { ...payload, createdAt: serverTimestamp() }); closeModal(clientModal); resetClientForm(); await reloadAllData(); } catch { alert("Não foi possível salvar o cliente."); }
 }
 window.deleteClient = async function(id) { if (!(isManager() || getPerm("canEditClientes"))) return; if (!confirm("Deseja excluir este cliente?")) return; try { await deleteDoc(doc(db, "clients", id)); await reloadAllData(); } catch { alert("Não foi possível excluir o cliente."); } };
+
+window.printClient = function(id) {
+  const client = clientsData.find(c => c.id === id);
+  if (!client) return;
+
+  const w = window.open("", "_blank", "width=900,height=700");
+  if (!w) return;
+
+  const html = `
+    <html>
+      <head>
+        <title>Cliente - ${escapeHtml(client.name || "")}</title>
+        <style>
+          body { font-family: Arial, sans-serif; padding: 32px; color: #1f2937; }
+          h1 { margin-bottom: 8px; }
+          .muted { color: #6b7280; margin-bottom: 20px; }
+          .box { border: 1px solid #d8e0eb; border-radius: 12px; padding: 16px; margin-bottom: 16px; }
+          .label { font-weight: bold; margin-bottom: 8px; }
+          .multiline { white-space: pre-line; line-height: 1.6; }
+        </style>
+      </head>
+      <body>
+        <h1>${escapeHtml(client.name || "-")}</h1>
+        <div class="muted">${escapeHtml(client.contractType || "-")} • ${escapeHtml(client.plan || "-")}</div>
+        <div class="box"><div class="label">Status de pagamento</div><div>${escapeHtml(client.paymentStatus || "pendente")}</div></div>
+        <div class="box"><div class="label">Valor</div><div>${escapeHtml(client.paymentValue || "-")}</div></div>
+        <div class="box"><div class="label">Serviços</div><div class="multiline">${escapeHtml(client.services || "-")}</div></div>
+        <div class="box"><div class="label">Observações</div><div class="multiline">${escapeHtml(client.notes || "-")}</div></div>
+        <div class="box"><div class="label">Docs</div><div class="multiline">${escapeHtml(client.docs || "-")}</div></div>
+        <script>window.onload = () => window.print();<\/script>
+      </body>
+    </html>`;
+
+  w.document.open();
+  w.document.write(html);
+  w.document.close();
+};
 
 async function saveBenefit(e) {
   e.preventDefault(); if (!(isManager() || getPerm("canEditBeneficios"))) return;
