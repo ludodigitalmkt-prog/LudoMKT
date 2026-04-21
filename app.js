@@ -98,6 +98,23 @@ function statusLabel(status = "a_fazer") {
   const map = { a_fazer: "A fazer", em_andamento: "Em andamento", revisao: "Revisão", publicado: "Publicado", concluido: "Concluído" };
   return map[status] || status;
 }
+function daySummaryClass(tasks, dateStr) {
+  if (!tasks.length) return "";
+  const statuses = tasks.map(t => getOccurrenceStatus(t, dateStr));
+  if (statuses.every(s => s === "concluido")) return "day-done";
+  if (statuses.some(s => s === "em_andamento" || s === "publicado")) return "day-progress";
+  return "day-pending";
+}
+
+function dayCounts(tasks, dateStr) {
+  const statuses = tasks.map(t => getOccurrenceStatus(t, dateStr));
+  return {
+    total: tasks.length,
+    concluido: statuses.filter(s => s === "concluido").length,
+    pendente: statuses.filter(s => s === "a_fazer" || s === "revisao").length,
+    andamento: statuses.filter(s => s === "em_andamento" || s === "publicado").length
+  };
+}
 
 function boardFilteredTasks() {
   const selectedDate = boardDateFilter?.value || "";
@@ -131,7 +148,7 @@ function renderAgendaTeamSummary() {
     const revisao = userTasks.filter(t => t.status === "revisao").length;
     const publicado = userTasks.filter(t => t.status === "publicado").length;
     const concluido = userTasks.filter(t => t.status === "concluido").length;
-    return `<div class="team-summary-card"><h4>${escapeHtml(user.name || user.username || user.email || "-")}</h4><div class="muted">${escapeHtml(user.position || user.sector || "-")}</div><div class="team-summary-stats"><span class="pill blue">${userTasks.length} atividade(s)</span><span class="pill ${aFazer ? "yellow" : "blue"}">A fazer: ${aFazer}</span><span class="pill blue">Andamento: ${andamento}</span><span class="pill yellow">Revisão: ${revisao}</span><span class="pill blue">Publicado: ${publicado}</span><span class="pill green">Concluído: ${concluido}</span></div></div>`;
+    return `<div class="team-summary-card with-photo"><img class="team-summary-avatar" src="${escapeHtml(user.photoUrl || './logo.png')}" alt="${escapeHtml(user.name || '')}"><div><h4>${escapeHtml(user.name || user.username || user.email || "-")}</h4><div class="muted">${escapeHtml(user.position || user.sector || "-")}</div><div class="team-summary-stats"><span class="pill blue">${userTasks.length} atividade(s)</span><span class="pill ${aFazer ? "yellow" : "blue"}">A fazer: ${aFazer}</span><span class="pill blue">Andamento: ${andamento}</span><span class="pill yellow">Revisão: ${revisao}</span><span class="pill blue">Publicado: ${publicado}</span><span class="pill green">Concluído: ${concluido}</span></div></div></div>`;
   }).join("");
 }
 function normalizeUsername(v = "") { return String(v).trim().toLowerCase().replace(/\s+/g, "."); }
@@ -223,6 +240,9 @@ const calendarTaskContent = byId("calendar-task-content");
 const calendarTaskEditBtn = byId("calendar-task-edit-btn");
 const calendarOccurrenceStatus = byId("calendar-occurrence-status");
 const calendarTaskStatusBtn = byId("calendar-task-status-btn");
+const calendarDayModal = byId("calendar-day-modal");
+const calendarDayTitle = byId("calendar-day-title");
+const calendarDayContent = byId("calendar-day-content");
 
 function isManager() { return currentProfile?.role === "gerencia"; }
 function getPerm(key) { return isManager() || currentProfile?.permissions?.[key] === true; }
@@ -499,14 +519,45 @@ function renderCalendar() {
   calendarMonthInput.value = current;
   const [year, month] = current.split("-").map(Number);
   const total = monthDays(year, month);
+  const firstDay = new Date(`${current}-01T00:00:00`).getDay();
+  const startOffset = (firstDay + 6) % 7; // segunda = 0
+
   calendarGrid.innerHTML = "";
+  ["SEG", "TER", "QUA", "QUI", "SEX", "SÁB", "DOM"].forEach(label => {
+    const h = document.createElement("div");
+    h.className = "calendar-weekday";
+    h.textContent = label;
+    calendarGrid.appendChild(h);
+  });
+
+  for (let i = 0; i < startOffset; i++) {
+    const empty = document.createElement("div");
+    empty.className = "calendar-cell empty";
+    calendarGrid.appendChild(empty);
+  }
+
   for (let day = 1; day <= total; day++) {
     const date = `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
     const dayTasks = tasksData.filter(task => taskOccursOnDate(task, date));
+    const counts = dayCounts(dayTasks, date);
+    const summaryClass = daySummaryClass(dayTasks, date);
+
     const div = document.createElement("div");
-    div.className = "calendar-cell droppable-calendar";
+    div.className = `calendar-cell calendar-day-box ${summaryClass}`;
     div.dataset.date = date;
-    div.innerHTML = `<div class="day-number">${String(day).padStart(2, "0")}/${String(month).padStart(2, "0")}</div>${dayTasks.length ? dayTasks.slice(0, 4).map(task => `<div class="calendar-mini clickable status-${getOccurrenceStatus(task, date)}" draggable="${isManager() || getPerm("canEditAgenda")}" data-task-id="${task.id}" data-occurrence-date="${date}" onclick="window.openCalendarTask('${task.id}', '${date}')">${task.extraordinary ? "⚡ " : ""}<strong>${escapeHtml(task.title || "")}</strong><br>${escapeHtml(task.time || "--:--")} • ${statusLabel(getOccurrenceStatus(task, date))}</div>`).join("") : `<div class="empty-state">Sem demanda</div>`}`;
+    div.innerHTML = `
+      <div class="day-number">${String(day).padStart(2, "0")}/${String(month).padStart(2, "0")}</div>
+      ${dayTasks.length ? `
+        <div class="calendar-counts">
+          <span class="pill blue">${counts.total} demanda(s)</span>
+          ${counts.pendente ? `<span class="pill yellow">Há pendências</span>` : ``}
+          ${counts.andamento ? `<span class="pill blue">Em andamento</span>` : ``}
+          ${counts.concluido ? `<span class="pill green">${counts.concluido} concluída(s)</span>` : ``}
+        </div>
+        <div class="calendar-preview">${dayTasks.slice(0, 2).map(task => escapeHtml(task.title || '')).join(' • ')}</div>
+      ` : `<div class="empty-state">Sem demanda</div>`}
+    `;
+    div.addEventListener("click", () => window.openCalendarDay(date));
     calendarGrid.appendChild(div);
   }
 }
@@ -681,6 +732,48 @@ window.toggleTaskCard = function(id) {
   const body = byId(`task-body-${id}`);
   if (!card || !body) return;
   card.classList.toggle("expanded");
+};
+
+window.openCalendarDay = function(dateStr) {
+  const dayTasks = tasksData.filter(task => taskOccursOnDate(task, dateStr));
+  if (!calendarDayContent || !calendarDayTitle) return;
+  calendarDayTitle.textContent = `Demandas de ${formatDateBR(dateStr)}`;
+
+  if (!dayTasks.length) {
+    calendarDayContent.innerHTML = `<div class="empty-state">Nenhuma atividade nesta data.</div>`;
+    openModal(calendarDayModal);
+    return;
+  }
+
+  calendarDayContent.innerHTML = dayTasks.map(task => {
+    const status = getOccurrenceStatus(task, dateStr);
+    const statusClass = status === "concluido" ? "done" : (status === "em_andamento" || status === "publicado") ? "progress" : "pending";
+    return `<div class="calendar-day-card ${statusClass}"><div class="card-top-line"><div><h3>${escapeHtml(task.title || "-")}</h3><p class="muted">${formatDateBR(dateStr)} • ${escapeHtml(task.time || "--:--")}</p><p class="muted">Resp.: ${escapeHtml(task.responsibleName || "-")}</p></div><div class="card-actions"><button class="icon-btn" onclick="window.openCalendarTask('${task.id}','${dateStr}')">✎</button><button class="icon-btn" onclick="window.quickAdvanceOccurrence('${task.id}','${dateStr}')">✓</button></div></div><div class="muted">${escapeHtml(task.description || task.theme || "Sem detalhes")}</div></div>`;
+  }).join("");
+
+  openModal(calendarDayModal);
+};
+
+window.quickAdvanceOccurrence = async function(taskId, dateStr) {
+  const task = tasksData.find(t => t.id === taskId);
+  if (!task || !(isManager() || getPerm("canEditAgenda"))) return;
+  const currentStatus = getOccurrenceStatus(task, dateStr);
+  const steps = ["a_fazer", "em_andamento", "revisao", "publicado", "concluido"];
+  const nextStatus = steps[Math.min(steps.indexOf(currentStatus) + 1, steps.length - 1)];
+  try {
+    if (task.repeatEnabled) {
+      const occurrenceOverrides = { ...(task.occurrenceOverrides || {}) };
+      occurrenceOverrides[dateStr] = { ...(occurrenceOverrides[dateStr] || {}), status: nextStatus };
+      await updateDoc(doc(db, "tasks", task.id), { occurrenceOverrides, updatedAt: serverTimestamp() });
+    } else {
+      await updateDoc(doc(db, "tasks", task.id), { status: nextStatus, updatedAt: serverTimestamp() });
+    }
+    await reloadAllData();
+    window.openCalendarDay(dateStr);
+  } catch (err) {
+    console.error(err);
+    alert("Não foi possível atualizar esta atividade.");
+  }
 };
 
 window.openCalendarTask = function(id, occurrenceDate = null) {
