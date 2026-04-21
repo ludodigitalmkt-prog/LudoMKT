@@ -33,6 +33,8 @@ let clientsData = [];
 let benefitsData = [];
 let settingsData = { themeColor: "#8B252C", fontFamily: "Inter, sans-serif" };
 let draggedTaskId = null;
+if (loginScreen) loginScreen.style.display = "grid";
+if (dashboardScreen) dashboardScreen.style.display = "none";
 
 const loginScreen = byId("login-screen");
 const dashboardScreen = byId("dashboard-screen");
@@ -216,7 +218,27 @@ async function loadCurrentProfile(user) {
   applyTabVisibility();
 }
 
-function showScreen(screen) { [loginScreen, dashboardScreen].forEach(s => s?.classList.remove("active")); screen?.classList.add("active"); }
+function showLoginScreen() {
+  if (loginScreen) {
+    loginScreen.classList.add("active");
+    loginScreen.style.display = "grid";
+  }
+  if (dashboardScreen) {
+    dashboardScreen.classList.remove("active");
+    dashboardScreen.style.display = "none";
+  }
+}
+
+function showDashboardScreen() {
+  if (loginScreen) {
+    loginScreen.classList.remove("active");
+    loginScreen.style.display = "none";
+  }
+  if (dashboardScreen) {
+    dashboardScreen.classList.add("active");
+    dashboardScreen.style.display = "grid";
+  }
+}
 
 loginForm?.addEventListener("submit", async (e) => {
   e.preventDefault();
@@ -500,13 +522,13 @@ calendarMonthInput?.addEventListener("change", renderCalendar);
 loadMusicBtn?.addEventListener("click", () => { const url = trimmedVal("music-url"); if (!url || !musicFrame) { alert("Cole uma URL válida."); return; } musicFrame.src = url; });
 
 onAuthStateChanged(auth, async (user) => {
-  if (!user) { currentUser = null; currentProfile = null; showScreen(loginScreen); return; }
+  if (!user) { currentUser = null; currentProfile = null; showLoginScreen(); return; }
   currentUser = user;
   try {
     await loadCurrentProfile(user);
     await reloadAllData();
     if (!directionDateInput.value) directionDateInput.value = todayISO();
     if (!calendarMonthInput.value) calendarMonthInput.value = new Date().toISOString().slice(0, 7);
-    renderDirection(); renderCalendar(); setActiveTab("inicio"); showScreen(dashboardScreen);
+    renderDirection(); renderCalendar(); setActiveTab("inicio"); showDashboardScreen();
   } catch (e) { console.error(e); alert(e.message || "Erro ao carregar o sistema."); await signOut(auth); }
 });
