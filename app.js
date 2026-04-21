@@ -479,8 +479,9 @@ function renderCalendar() {
     const date = `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
     const dayTasks = tasksData.filter(task => taskOccursOnDate(task, date));
     const div = document.createElement("div");
-    div.className = "calendar-cell";
-    div.innerHTML = `<div class="day-number">${String(day).padStart(2, "0")}/${String(month).padStart(2, "0")}</div>${dayTasks.length ? dayTasks.slice(0, 4).map(task => `<div class="calendar-mini clickable" onclick="window.openCalendarTask('${task.id}')">${task.extraordinary ? "⚡ " : ""}<strong>${escapeHtml(task.title || "")}</strong><br>${escapeHtml(task.time || "--:--")} • ${statusLabel(task.status || "a_fazer")}</div>`).join("") : `<div class="empty-state">Sem demanda</div>`}`;
+    div.className = "calendar-cell droppable-calendar";
+    div.dataset.date = date;
+    div.innerHTML = `<div class="day-number">${String(day).padStart(2, "0")}/${String(month).padStart(2, "0")}</div>${dayTasks.length ? dayTasks.slice(0, 4).map(task => `<div class="calendar-mini clickable status-${task.status || "a_fazer"}" draggable="${isManager() || getPerm("canEditAgenda")}" data-task-id="${task.id}" onclick="window.openCalendarTask('${task.id}')">${task.extraordinary ? "⚡ " : ""}<strong>${escapeHtml(task.title || "")}</strong><br>${escapeHtml(task.time || "--:--")} • ${statusLabel(task.status || "a_fazer")}</div>`).join("") : `<div class="empty-state">Sem demanda</div>`}`;
     calendarGrid.appendChild(div);
   }
 }
@@ -519,14 +520,58 @@ function initDragAndDrop() {
     card.addEventListener("dragstart", () => { draggedTaskId = card.dataset.taskId; card.classList.add("dragging"); });
     card.addEventListener("dragend", () => { draggedTaskId = null; card.classList.remove("dragging"); });
   });
+
+  document.querySelectorAll(".calendar-mini[draggable='true']").forEach(card => {
+    card.addEventListener("dragstart", (e) => {
+      draggedTaskId = card.dataset.taskId;
+      card.classList.add("dragging");
+      e.stopPropagation();
+    });
+    card.addEventListener("dragend", () => { draggedTaskId = null; card.classList.remove("dragging"); });
+  });
+
   document.querySelectorAll(".droppable").forEach(zone => {
     zone.addEventListener("dragover", (e) => { e.preventDefault(); zone.classList.add("drag-over"); });
     zone.addEventListener("dragleave", () => zone.classList.remove("drag-over"));
     zone.addEventListener("drop", async (e) => {
-      e.preventDefault(); zone.classList.remove("drag-over");
+      e.preventDefault();
+      zone.classList.remove("drag-over");
       if (!draggedTaskId || !(isManager() || getPerm("canEditAgenda"))) return;
-      try { await updateDoc(doc(db, "tasks", draggedTaskId), { status: zone.dataset.status, updatedAt: serverTimestamp() }); await reloadAllData(); }
-      catch { alert("Não foi possível mover o card."); }
+      try {
+        await updateDoc(doc(db, "tasks", draggedTaskId), { status: zone.dataset.status, updatedAt: serverTimestamp() });
+        await reloadAllData();
+      } catch (err) {
+        console.error(err);
+        alert("Não foi possível mover o card. Verifique as rules.");
+      }
+    });
+  });
+
+  document.querySelectorAll(".droppable-calendar").forEach(cell => {
+    cell.addEventListener("dragover", (e) => { e.preventDefault(); cell.classList.add("drag-over"); });
+    cell.addEventListener("dragleave", () => cell.classList.remove("drag-over"));
+    cell.addEventListener("drop", async (e) => {
+      e.preventDefault();
+      cell.classList.remove("drag-over");
+      if (!draggedTaskId || !(isManager() || getPerm("canEditAgenda"))) return;
+
+      const task = tasksData.find(t => t.id === draggedTaskId);
+      if (!task) return;
+      const newDate = cell.dataset.date;
+      const payload = { date: newDate, updatedAt: serverTimestamp() };
+
+      if (task.repeatEnabled) {
+        payload.repeatStartDate = newDate;
+        if (task.repeatEndDate && task.repeatEndDate < newDate) payload.repeatEndDate = newDate;
+      }
+
+      try {
+        await updateDoc(doc(db, "tasks", draggedTaskId), payload);
+        await reloadAllData();
+      } catch (err) {
+        console.error(err);
+        alert("Não foi possível mover a atividade para outra data.");
+      }
     });
   });
 }
