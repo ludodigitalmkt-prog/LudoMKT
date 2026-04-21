@@ -398,3 +398,25 @@ input:focus,textarea:focus,select:focus{
 .multiline-text{white-space:normal;line-height:1.65}
 
 .repeat-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}.months-grid{grid-template-columns:repeat(4,minmax(0,1fr))}@media (max-width:860px){.repeat-grid,.months-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+.team-summary-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px}
+.team-summary-card{background:var(--surface-2);border:1px solid var(--line);border-radius:18px;padding:14px}
+.team-summary-card h4{margin-bottom:8px}
+.team-summary-stats{display:flex;flex-wrap:wrap;gap:8px}
+.task-card.status-a_fazer{border-left-color:#94a3b8}
+.task-card.status-em_andamento{border-left-color:#3074ff}
+.task-card.status-revisao{border-left-color:#d89614}
+.task-card.status-publicado{border-left-color:#8b5cf6}
+.task-card.status-concluido{border-left-color:#0c8c52}
+.task-status-badge{display:inline-flex;align-items:center;padding:6px 10px;border-radius:999px;font-size:.8rem;font-weight:700}
+.task-status-badge.status-a_fazer{background:rgba(148,163,184,.16);color:#475569}
+.task-status-badge.status-em_andamento{background:rgba(48,116,255,.12);color:#3074ff}
+.task-status-badge.status-revisao{background:rgba(216,150,20,.14);color:#b7791f}
+.task-status-badge.status-publicado{background:rgba(139,92,246,.12);color:#7c3aed}
+.task-status-badge.status-concluido{background:rgba(12,140,82,.12);color:#0c8c52}
+.task-card-header{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+.task-card-body{display:none}
+.task-card.expanded .task-card-body{display:block}
+.calendar-mini.clickable{cursor:pointer;transition:.2s ease}
+.calendar-mini.clickable:hover{transform:translateY(-1px);box-shadow:0 8px 20px rgba(20,35,60,.08)}
+@media (max-width:860px){.team-summary-grid{grid-template-columns:1fr}}
