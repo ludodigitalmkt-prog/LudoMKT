@@ -394,3 +394,5 @@ input:focus,textarea:focus,select:focus{
   .calendar-grid{grid-template-columns:1fr}
   .modal-card{padding:18px}
 }
+
+.multiline-text{white-space:normal;line-height:1.65}
