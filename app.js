@@ -147,10 +147,19 @@ async function saveSettings() {
 }
 
 async function bootstrapUserProfile(user) {
+  const blockedRef = doc(db, "blocked_users", user.uid);
+  const blockedSnap = await getDoc(blockedRef);
+  if (blockedSnap.exists()) {
+    throw new Error("Seu acesso foi removido pela gestão.");
+  }
+
   const ref = doc(db, "users", user.uid);
   const snap = await getDoc(ref);
   if (snap.exists()) {
     currentProfile = { id: snap.id, ...snap.data() };
+    if (currentProfile.active === false) {
+      throw new Error("Seu acesso está inativo no sistema.");
+    }
     return;
   }
 
@@ -361,7 +370,7 @@ function renderAccesses() {
   if (!accessList) return;
   if (!usersData.length) { accessList.innerHTML = `<div class="empty-state">Nenhum usuário encontrado. Eles aparecem aqui depois do primeiro login.</div>`; return; }
   if (!(isManager() || getPerm("canEditRh"))) { accessList.innerHTML = `<div class="empty-state">Sem permissão para visualizar esta área.</div>`; return; }
-  accessList.innerHTML = usersData.map(user => `<div class="rh-card"><div class="card-top-line"><div><h3>${escapeHtml(user.name || user.username || user.email || "")}</h3><p class="muted">${escapeHtml(user.email || "-")}</p></div><div class="card-actions"><button class="icon-btn" onclick="window.editUserProfile('${user.id}')">✎</button><button class="icon-btn" onclick="window.toggleUserActive('${user.id}')">${user.active === false ? "▶" : "⏸"}</button></div></div><div class="muted"><strong>Perfil:</strong> ${escapeHtml(user.role || "-")}</div><div class="muted"><strong>Cargo:</strong> ${escapeHtml(user.position || "-")}</div><div class="muted"><strong>Setor:</strong> ${escapeHtml(user.sector || "-")}</div><div class="muted"><strong>Status:</strong> ${user.active === false ? "Inativo" : "Ativo"}</div><div class="task-actions">${user.permissions?.canEditAgenda ? `<span class="pill blue">Editor agenda</span>` : ""}${user.permissions?.canEditClientes ? `<span class="pill blue">Editor clientes</span>` : ""}${user.permissions?.canEditBeneficios ? `<span class="pill blue">Editor benefícios</span>` : ""}${user.permissions?.canEditRh ? `<span class="pill blue">Editor acessos</span>` : ""}${user.permissions?.canEditAjustes ? `<span class="pill blue">Editor ajustes</span>` : ""}</div></div>`).join("");
+  accessList.innerHTML = usersData.map(user => `<div class="rh-card"><div class="card-top-line"><div><h3>${escapeHtml(user.name || user.username || user.email || "")}</h3><p class="muted">${escapeHtml(user.email || "-")}</p></div><div class="card-actions"><button class="icon-btn" onclick="window.editUserProfile('${user.id}')">✎</button><button class="icon-btn" onclick="window.toggleUserActive('${user.id}')">${user.active === false ? "▶" : "⏸"}</button><button class="icon-btn danger" onclick="window.deleteUserProfile('${user.id}')">🗑</button></div></div><div class="muted"><strong>Perfil:</strong> ${escapeHtml(user.role || "-")}</div><div class="muted"><strong>Cargo:</strong> ${escapeHtml(user.position || "-")}</div><div class="muted"><strong>Setor:</strong> ${escapeHtml(user.sector || "-")}</div><div class="muted"><strong>Status:</strong> ${user.active === false ? "Inativo" : "Ativo"}</div><div class="task-actions">${user.permissions?.canEditAgenda ? `<span class="pill blue">Editor agenda</span>` : ""}${user.permissions?.canEditClientes ? `<span class="pill blue">Editor clientes</span>` : ""}${user.permissions?.canEditBeneficios ? `<span class="pill blue">Editor benefícios</span>` : ""}${user.permissions?.canEditRh ? `<span class="pill blue">Editor acessos</span>` : ""}${user.permissions?.canEditAjustes ? `<span class="pill blue">Editor ajustes</span>` : ""}</div></div>`).join("");
 }
 
 function initDragAndDrop() {
@@ -498,6 +507,37 @@ window.toggleUserActive = async function(id) {
   if (!(isManager() || getPerm("canEditRh"))) return;
   const user = usersData.find(u => u.id === id); if (!user) return;
   try { await updateDoc(doc(db, "users", id), { active: !(user.active !== false), updatedAt: serverTimestamp() }); await reloadAllData(); } catch { alert("Não foi possível alterar o status."); }
+};
+
+window.deleteUserProfile = async function(id) {
+  if (!(isManager() || getPerm("canEditRh"))) return;
+  const user = usersData.find(u => u.id === id);
+  if (!user) return;
+  if (!confirm(`Deseja remover o acesso de ${user.name || user.email || 'este usuário'}?`)) return;
+
+  try {
+    await setDoc(doc(db, "blocked_users", id), {
+      uid: id,
+      email: user.email || "",
+      username: user.username || "",
+      name: user.name || "",
+      removedAt: serverTimestamp(),
+      removedBy: currentUser?.uid || ""
+    }, { merge: true });
+
+    await deleteDoc(doc(db, "users", id));
+
+    if (currentUser?.uid === id) {
+      await signOut(auth);
+      return;
+    }
+
+    await reloadAllData();
+    alert("Acesso removido do painel. Se quiser impedir o login também no Firebase, exclua o usuário no Authentication.");
+  } catch (err) {
+    console.error(err);
+    alert("Não foi possível remover o acesso.");
+  }
 };
 
 menuItems.forEach(item => item.addEventListener("click", () => setActiveTab(item.dataset.tab)));
