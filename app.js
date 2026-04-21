@@ -33,11 +33,11 @@ let clientsData = [];
 let benefitsData = [];
 let settingsData = { themeColor: "#8B252C", fontFamily: "Inter, sans-serif" };
 let draggedTaskId = null;
-if (loginScreen) loginScreen.style.display = "grid";
-if (dashboardScreen) dashboardScreen.style.display = "none";
 
 const loginScreen = byId("login-screen");
 const dashboardScreen = byId("dashboard-screen");
+if (loginScreen) loginScreen.style.display = "grid";
+if (dashboardScreen) dashboardScreen.style.display = "none";
 const loginForm = byId("login-form");
 const loginMessage = byId("login-message");
 const logoutBtn = byId("logout-btn");
